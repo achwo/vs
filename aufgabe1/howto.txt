@@ -1,0 +1,15 @@
+PID1 = rpc:call('jo@141.22.91.105',erlang,whereis,[shell]).
+flush().
+
+PID1 ! {self(),bla).
+
+
+Server
+1) S=server:start().
+2) net_adm:ping('bla@dasdsadsadsa').
+3) register(test,S).
+
+Client
+1) PID3 = rpc:call('jo@141.22.83.29',erlang,whereis,[test]).
+2) client:send(PID3).
+
