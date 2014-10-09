@@ -1,2 +1,7 @@
--Server Programmieren 
--Client Prggrammieren
+Server Programmieren 
+- Nachricht empfangen
+- Nachricht versenden
+
+Client Programmieren
+- Nachricht versenden
+
