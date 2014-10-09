@@ -4,7 +4,8 @@
 start() -> spawn(server,loop,[]).
 
 loop() -> receive 
-           {Client, X} -> Client ! {self(), ok}
+	{getmessages, Client} ->
+           Client ! {reply, number, nachricht, true}
           end,
 loop.
 

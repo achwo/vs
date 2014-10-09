@@ -2,8 +2,8 @@
 -export([send/1]).
 
 send(Server) -> 
-	Server ! {self(), 'hello'},
+	Server ! {getmessages, self()},
 	receive
-		{Server, ok} ->
-			erfolgreich
-end.
+		{reply, Number, Nachricht, Terminated} ->
+			Nachricht	
+	end.
