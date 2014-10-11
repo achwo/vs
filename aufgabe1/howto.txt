@@ -10,6 +10,7 @@ Server
 3) register(test,S).
 
 Client
+
 1) PID3 = rpc:call('jo@141.22.83.29',erlang,whereis,[test]).
 2) client:send(PID3).
 
