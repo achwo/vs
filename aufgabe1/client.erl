@@ -1,5 +1,5 @@
 - module(client).
-- import(werkzeug, [to_String/1, timeMilliSecond/0, get_config_value/2]).
+- import(werkzeug, [to_String/1, timeMilliSecond/0, get_config_value/2, logging/2]).
 %- export([start/2, send/2, message_builder/0, dropmessage/3]).
 - compile(export_all).
 
@@ -7,7 +7,8 @@
 start(Hostname, Adress) ->
   {ok, ConfigListe} = file:consult("client.cfg"),
   {ok, Servername} = get_config_value(servername, ConfigListe),
-  PID = get_PID(Servername, Hostname, Adress).
+  PID = get_PID(Servername, Hostname, Adress),
+  logging(lists:concat(["clientLog", timeMilliSecond(), ".log"]), to_String(PID)).
   %Connect = spawn(fun() -> starting()),
   %register(client, Connect).
 
@@ -34,8 +35,9 @@ message_builder() ->
 
 
 dropmessage(Server, Message, Number) ->
-	Server ! {dropmessage, {Number, Message}}.
-
+	Server ! {dropmessage, {Number, Message}},
+	%TODO: Message noch konvertieren???
+	logging(Logfile,Message).
 
 
 
