@@ -4,21 +4,22 @@
 - compile(export_all).
 
 
-start(Hostname, Adress) ->
+start(Hostadress) ->
   {ok, ConfigListe} = file:consult("client.cfg"),
   {ok, Servername} = get_config_value(servername, ConfigListe),
-  PID = get_PID(Servername, Hostname, Adress),
+  
+  PID = get_PID(Servername, Hostadress),
   
   %TODO: CLIENTNR in LOG-Name ergänzen
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
   logging(Logfile, to_String(PID)),
-  Msg = get_unique_id(PID, Logfile),
+ % Msg = get_unique_id(PID, Logfile),
   %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
-  dropmessage(PID, Msg, Number).
+ % dropmessage(PID, Msg, Number).
 
 
-get_PID(Servername, Hostname, Adress) ->
-	{Servername, list_to_atom(lists:concat([Hostname, "@", Adress]))}.
+get_PID(Servername, Hostadress) ->
+	{Servername, list_to_atom(Hostadress)}.
 
 
 send(Server, Msg) -> 
