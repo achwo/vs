@@ -8,9 +8,13 @@ start(Hostname, Adress) ->
   {ok, ConfigListe} = file:consult("client.cfg"),
   {ok, Servername} = get_config_value(servername, ConfigListe),
   PID = get_PID(Servername, Hostname, Adress),
-  logging(lists:concat(["clientLog", timeMilliSecond(), ".log"]), to_String(PID)).
-  %Connect = spawn(fun() -> starting()),
-  %register(client, Connect).
+  
+  %TODO: CLIENTNR in LOG-Name ergänzen
+  Logfile = lists:concat(["client_", to_String(node()), ".log"]),
+  logging(Logfile, to_String(PID)),
+  Msg = get_unique_id(PID, Logfile),
+  %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
+  dropmessage(PID, Msg, Number).
 
 
 get_PID(Servername, Hostname, Adress) ->
@@ -30,17 +34,21 @@ ping_server(Hostname, Adress) ->
 
 
 %TODO: Hier fehlt noch die Anzahl der Nachrichten
-message_builder() ->
-	Massage = lists:concat([to_String(node()), "-", to_String(self()), "-C-1-01:", "Sendezeit: ", timeMilliSecond(), "|\n"]).
+message_builder(Message, Logfile) ->
+	Msg = lists:concat([to_String(node()), "-", to_String(self()), "-C-1-01:", Message,"te Nachricht. Sendezeit: ", timeMilliSecond(), "(", Message, ")\n"]),
+	logging(Logfile, Msg),
+	Msg.
 
 
 dropmessage(Server, Message, Number) ->
-	Server ! {dropmessage, {Number, Message}},
+	Server ! {dropmessage, {Message, Number}}.
 	%TODO: Message noch konvertieren???
-	logging(Logfile,Message).
+	%logging(Logfile,Message).
 
 
-
- starting() ->
- 	message_builder().
+get_unique_id(Server, Logfile) ->
+	Server ! {getmsgid, self()},
+	receive{nid, Number} ->
+		message_builder(Number, Logfile)
+	end.
 
