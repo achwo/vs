@@ -1,6 +1,6 @@
 - module(client).
 - import(werkzeug, [to_String/1, timeMilliSecond/0, get_config_value/2, logging/2]).
-%- export([start/2, send/2, message_builder/0, dropmessage/3]).
+- export([start/1]).
 - compile(export_all).
 
 
@@ -14,25 +14,16 @@ start(Hostadress) ->
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
   logging(Logfile, to_String(PID)),
   
-  Uid = get_unique_id(PID, Logfile),
+  Uid = get_unique_id(PID),
   io:fwrite ("Uid ~p~n", [Uid]),
   Message_text = message_builder(Uid, Logfile),
-  dropmessage(Server, Message_text, Uid).
+  dropmessage(Servername, Message_text, Uid).
   %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
  % dropmessage(PID, Msg, Number).
 
 
 get_PID(Servername, Hostadress) ->
 	{Servername, list_to_atom(Hostadress)}.
-
-
-send(Server, Msg) -> 
-	Server ! {getmessages, self()},
-	receive
-		{reply, Number, Nachricht, Terminated} ->
-			Nachricht	
-	end.
-
 
 ping_server(Hostname, Adress) ->
 	net_adm:ping(erlang:list_to_atom(lists:concat([Hostname,"@", Adress]))).
@@ -44,20 +35,15 @@ message_builder(Message, Logfile) ->
 	logging(Logfile, Msg),
 	Msg.
 
-
-
 dropmessage(Server, Message, Number) ->
 	Server ! {dropmessage, {Message, Number}}.
-	
 
-
-get_unique_id(Server, Logfile) ->
+get_unique_id(Server) ->
 	io:fwrite ("Config ~p~n", [Server]),
 	Server ! {getmsgid, self()},
 	io:fwrite ("\nSend Message"),
 	receive{nid, Number} ->
 		io:fwrite ("Number: ~p~n", [Number]),
 		Number
-		
 	end.
 
