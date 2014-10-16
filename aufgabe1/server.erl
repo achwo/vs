@@ -7,8 +7,8 @@ loop() -> receive
 	{getmessages, Client} ->
            Client ! {reply, 2, nachricht, true};
     
-    {getmsgid,PID} ->
-    PID ! {nid, 2}
+    {getmsgid,Client} ->
+         Client ! {nid, 2}
 
           end,
 loop.
