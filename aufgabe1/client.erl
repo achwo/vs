@@ -13,14 +13,45 @@ start(Hostadress) ->
   %TODO: CLIENTNR in LOG-Name ergänzen
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
   logging(Logfile, to_String(PID)),
-  
-  Uid = get_unique_id(PID),
-  io:fwrite ("Uid ~p~n", [Uid]),
-  Message_text = message_builder(Uid, Logfile),
-  dropmessage(Servername, Message_text, Uid).
+  {ok, LifeTime} = get_config_value(lifetime, ConfigListe),
+  timer:kill_after(2 * 1000),
+  loop().
+
+  %Uid = get_unique_id(PID),
+  %io:fwrite ("Uid ~p~n", [Uid]),
+  %Message_text = message_builder(Uid, Logfile),
+  %dropmessage(Servername, Message_text, Uid).
   %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
  % dropmessage(PID, Msg, Number).
 
+loop() ->
+  redakteur(5),
+  leser(false),
+  loop().
+
+redakteur(0) -> 
+  io:fwrite("keine pommes!");
+redakteur(HowOften) when HowOften > 0 ->
+  io:fwrite("pommes "),
+  % warte n sekunden
+  % hole nachrichtennummer
+  % adde nummer zur liste selbstgeschickter nachrichten
+  % generiere nachricht
+  % sende nachricht
+  redakteur(HowOften-1).
+
+leser(Terminated) when Terminated == true ->
+  nix;
+leser(Terminated) when Terminated == false -> 
+  % hole nachricht
+  TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
+  % pruefe, ob nachricht selbstgeschickt
+  % generiere ausgabe
+  % ausgeben
+  leser(TerminatedFlag).
+
+receive_message(HowOften) ->
+  receive_message(HowOften-1).
 
 get_PID(Servername, Hostadress) ->
 	{Servername, list_to_atom(Hostadress)}.
