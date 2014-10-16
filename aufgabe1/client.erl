@@ -14,8 +14,10 @@ start(Hostadress) ->
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
   logging(Logfile, to_String(PID)),
   
-  Msg = get_unique_id(PID, Logfile),
-  io:fwrite ("Config ~p~n", [Msg]).
+  Uid = get_unique_id(PID, Logfile),
+  io:fwrite ("Uid ~p~n", [Uid]),
+  Message_text = message_builder(Uid, Logfile),
+  dropmessage(Server, Message_text, Uid).
   %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
  % dropmessage(PID, Msg, Number).
 
@@ -43,10 +45,10 @@ message_builder(Message, Logfile) ->
 	Msg.
 
 
+
 dropmessage(Server, Message, Number) ->
 	Server ! {dropmessage, {Message, Number}}.
-	%TODO: Message noch konvertieren???
-	%logging(Logfile,Message).
+	
 
 
 get_unique_id(Server, Logfile) ->
@@ -54,7 +56,8 @@ get_unique_id(Server, Logfile) ->
 	Server ! {getmsgid, self()},
 	io:fwrite ("\nSend Message"),
 	receive{nid, Number} ->
-		io:fwrite ("Number: ~p~n", [Number])
-		%message_builder(Number, Logfile)
+		io:fwrite ("Number: ~p~n", [Number]),
+		Number
+		
 	end.
 
