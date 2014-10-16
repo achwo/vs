@@ -54,7 +54,7 @@ get_unique_id(Server, Logfile) ->
 	Server ! {getmsgid, self()},
 	io:fwrite ("\nSend Message"),
 	receive{nid, Number} ->
-		io:fwrite ("Number: ~p~n", [Number]),
+		io:fwrite ("Number: ~p~n", [Number])
 		%message_builder(Number, Logfile)
 	end.
 
