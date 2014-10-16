@@ -10,4 +10,8 @@ rel/example_project
 .rebar
 *.swp
 .DS_Store
+<<<<<<< HEAD
 .log
+=======
+*.log
+>>>>>>> 32eda8afbc06cbc8f0f3c2cbfc6169483627c5d0
