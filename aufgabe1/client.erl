@@ -7,13 +7,15 @@
 start(Hostadress) ->
   {ok, ConfigListe} = file:consult("client.cfg"),
   {ok, Servername} = get_config_value(servername, ConfigListe),
-  
   PID = get_PID(Servername, Hostadress),
   
+
   %TODO: CLIENTNR in LOG-Name ergänzen
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
   logging(Logfile, to_String(PID)),
- % Msg = get_unique_id(PID, Logfile),
+  
+  Msg = get_unique_id(PID, Logfile),
+  io:fwrite ("Config ~p~n", [Msg]).
   %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
  % dropmessage(PID, Msg, Number).
 
@@ -48,7 +50,9 @@ dropmessage(Server, Message, Number) ->
 
 
 get_unique_id(Server, Logfile) ->
+	io:fwrite ("Config ~p~n", [Server]),
 	Server ! {getmsgid, self()},
+	io:fwrite ("\nSend Message"),
 	receive{nid, Number} ->
 		message_builder(Number, Logfile)
 	end.

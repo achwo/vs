@@ -5,7 +5,11 @@ start() -> spawn(server,loop,[]).
 
 loop() -> receive 
 	{getmessages, Client} ->
-           Client ! {reply, number, nachricht, true}
+           Client ! {reply, 2, nachricht, true};
+    
+    {getmsgid,PID} ->
+    PID ! {nid, 2}
+
           end,
 loop.
 
