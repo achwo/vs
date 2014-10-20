@@ -52,9 +52,10 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   OwnMessagesNew = lists:append(OwnMessages, [Number]),
   % generiere nachricht
   Message = message_builder(Number),
+  % sende nachricht
   dropmessage(PID, Message, Number),
   logging(Logfile, Message),
-  % sende nachricht
+  
   redakteur(HowOften-1, PID, OwnMessagesNew, Logfile).
 
 leser(Terminated, _) when Terminated == true ->
