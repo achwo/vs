@@ -11,3 +11,4 @@ rel/example_project
 *.swp
 .DS_Store
 *.log
+vs.sublime-*
