@@ -14,13 +14,13 @@ start() ->
 loop(ID) ->
 	New_ID = get_next_id(ID), 
 	receive 
-	{getmessages, Client} ->
-         Client ! {reply, New_ID, nachricht, true};
+    {getmessages, Client} ->
+      Client ! {reply, New_ID, nachricht, true};
    
-   	 {getmsgid,Client} ->
-         Client ! {nid, New_ID}
+    {getmsgid,Client} ->
+      Client ! {nid, New_ID}
 
-          end,
+  end,
 loop(New_ID).
 
 get_next_id(ID) ->
