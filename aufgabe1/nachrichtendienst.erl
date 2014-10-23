@@ -26,9 +26,9 @@ loop(ID, Queue) ->
         true -> Number = ClientListNumber + 1
       end,
 
-      % todo: what if there is an error? currently: message {reply, nil, nok, true}
       {{ActualNumber, Message}, Terminated} = dlq:get(Number, Queue),
-      
+
+      % todo: what if there is an error? currently: message {reply, nil, nok, true}      
       Client ! {reply, ActualNumber, Message, Terminated};
    
     {getmsgid,Client} ->
