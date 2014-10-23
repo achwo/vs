@@ -1,27 +1,26 @@
 -module(deliveryqueue).
--export([add/3, get/2, get_max_number/0]).
--import(werkzeug, [findSL/2,findneSL/2]).
+-export([add/3, get/2, get_max_number/1]).
 
 add(Content, ID, Queue) ->
-	%TODO: is_full
-	case is_full(Queue) of
-
-		true -> 
-			%TODO: fun for find the lowest ID
-		%	lists:delete({_,Lowest_ID}, Queue),
-			lists:append(Queue, [{Content,ID}]);
 	
-		false ->
-			 lists:append(Queue, [{Content,ID}])
-	end. 
+	IsFull = is_full(Queue),
+	if  IsFull -> 
+		delete_lowest_id(Queue)
+	end,
+	lists:append(Queue, [{ID,Content}]).	
 
 get(ID, Queue) -> 
-	TerminatedFlag = ID >= get_max_number(),
-	{findneSL(Queue,ID),TerminatedFlag}.
+	TerminatedFlag = ID >= get_max_number(Queue),
+	{{Queue,ID},TerminatedFlag}.
 		
 
-get_max_number() -> todo.
+get_max_number(Queue) -> 
+	MapAsList = maps:to_list(Queue),
+	{ID,_} = lists:max(MapAsList),
+	ID.
 
 is_full(Queue) -> todo.
+
+delete_lowest_id(Queue) -> todo.
 
 
