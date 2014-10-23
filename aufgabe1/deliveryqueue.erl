@@ -1,9 +1,9 @@
 -module(deliveryqueue).
--export([add/3, get/2, get_max_number/1,is_full/2,delete_lowest_id/1]).
+-export([add/4, get/2, get_max_number/1,is_full/2,delete_lowest_id/1]).
 
-add(Content, ID, Queue) ->
+add(Content, ID, Queue, QueueSize) ->
 	
-	IsFull = is_full(Queue,todo),
+	IsFull = is_full(Queue,QueueSize),
 	if  IsFull -> 
 		delete_lowest_id(Queue)
 	end,
