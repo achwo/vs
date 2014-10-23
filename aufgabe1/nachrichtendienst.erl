@@ -1,4 +1,4 @@
-- module(server).
+- module(nachrichtendienst).
 - import(werkzeug, [get_config_value/2]).
 - export([start/0]).
 
