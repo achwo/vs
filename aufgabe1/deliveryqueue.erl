@@ -1,9 +1,9 @@
 -module(deliveryqueue).
--export([add/3, get/2, get_max_number/1]).
+-export([add/3, get/2, get_max_number/1,is_full/2,delete_lowest_id/1]).
 
 add(Content, ID, Queue) ->
 	
-	IsFull = is_full(Queue),
+	IsFull = is_full(Queue,todo),
 	if  IsFull -> 
 		delete_lowest_id(Queue)
 	end,
@@ -15,12 +15,13 @@ get(ID, Queue) ->
 		
 
 get_max_number(Queue) -> 
-	MapAsList = maps:to_list(Queue),
-	{ID,_} = lists:max(MapAsList),
+	{ID,_} = lists:max(Queue),
 	ID.
 
-is_full(Queue) -> todo.
+is_full(Queue, Size) -> 
+	length(Queue) == Size.
 
-delete_lowest_id(Queue) -> todo.
-
+delete_lowest_id(Queue) -> 
+	Min = lists:min(Queue),
+	lists:delete(Min,Queue).
 
