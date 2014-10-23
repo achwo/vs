@@ -58,9 +58,7 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   
   redakteur(HowOften-1, PID, OwnMessagesNew, Logfile).
 
-leser(Terminated, _) when Terminated == true ->
-  nix;
-
+leser(true, _) -> nix;
 leser(Terminated, OwnMessages) when Terminated == false -> 
   % hole nachricht
   TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
