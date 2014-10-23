@@ -1,6 +1,6 @@
 - module(nachrichtendienst).
 - import(werkzeug, [get_config_value/2]).
-- import(deliveryqueue, [get/2]).
+- import(dlq, [get/2]).
 - export([start/0]).
 
 
@@ -26,7 +26,7 @@ loop(ID, Queue) ->
         true -> Number = ClientListNumber + 1
       end,
 
-      {{ActualNumber, Message}, Terminated} = deliveryqueue:get(Number, Queue),
+      {{ActualNumber, Message}, Terminated} = dlq:get(Number, Queue),
       
       Client ! {reply, ActualNumber, Message, Terminated};
    
