@@ -9,6 +9,7 @@ add(Content, ID, Queue, QueueSize) ->
 	end,
 	lists:append(Queue, [{ID,Content}]).	
 
+get(_, []) -> nil;
 get(ID, Queue) -> 
 	TerminatedFlag = ID >= get_max_number(Queue),
 	% TODO if id < smallest number, return smallest
