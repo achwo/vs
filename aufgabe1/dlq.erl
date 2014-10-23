@@ -1,5 +1,5 @@
 -module(dlq).
--import(werkzeug, [findneSL/2])
+-import(werkzeug, [findneSL/2]).
 -export([add/4, get/2, get_max_number/1]).
 
 add(Content, ID, Queue, QueueSize) ->
@@ -15,7 +15,7 @@ get(ID, Queue) ->
 	% TODO if id < smallest number, return smallest
 	ReversedList = lists:reverse(Queue),
 	Element = werkzeug:findneSL(ReversedList, ID),
-	
+
 	{ElemID, _} = Element,
 	TerminatedFlag = ElemID >= get_max_number(Queue),
 
