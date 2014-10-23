@@ -10,7 +10,7 @@ add(Content, ID, Queue, QueueSize) ->
 	end,
 	lists:append(Queue, [{ID,Content}]).	
 
-get(_, []) -> {{nil}};
+get(_, []) -> {{nil, nok}, true};
 get(ID, Queue) -> 
 	% TODO if id < smallest number, return smallest
 	ReversedList = lists:reverse(Queue),
