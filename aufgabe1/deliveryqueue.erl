@@ -1,5 +1,5 @@
 -module(deliveryqueue).
--export([add/4, get/2, get_max_number/1,is_full/2,delete_lowest_id/1]).
+-export([add/4, get/2, get_max_number/1]).
 
 add(Content, ID, Queue, QueueSize) ->
 	
@@ -11,8 +11,8 @@ add(Content, ID, Queue, QueueSize) ->
 
 get(ID, Queue) -> 
 	TerminatedFlag = ID >= get_max_number(Queue),
+	% TODO if id < smallest number, return smallest
 	{{Queue,ID},TerminatedFlag}.
-		
 
 get_max_number(Queue) -> 
 	{ID,_} = lists:max(Queue),
