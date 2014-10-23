@@ -15,7 +15,7 @@ get(ID, Queue) ->
 	% TODO if id < smallest number, return smallest
 	ReversedList = lists:reverse(Queue),
 	Element = werkzeug:findneSL(ReversedList, ID),
-
+	
 	{ElemID, _} = Element,
 	TerminatedFlag = ElemID >= get_max_number(Queue),
 
