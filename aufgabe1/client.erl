@@ -18,7 +18,6 @@ start(Hostadress) ->
   
   {ok, LifeTime} = get_config_value(lifetime, ConfigListe),
   OwnMessages = [],
-  ServerMessages = [],
   %timer:kill_after(LifeTime * 1000 / 45), % das 45 muss weg, ist nur wegen der warning
   timer:kill_after(3000),
   %redakteur(1, PID, OwnMessages, Logfile),
@@ -36,7 +35,7 @@ name() -> lists:concat([to_String(node()), to_String(self())]).
 
 loop(PID, OwnMessages, Logfile) ->
   redakteur(5, PID, OwnMessages, Logfile),
-  leser(false, OwnMessages),
+  leser(false, OwnMessages, PID, Logfile),
   loop(PID, OwnMessages, Logfile).
 
 redakteur(0, PID, _, Logfile) ->
@@ -59,28 +58,36 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   
   redakteur(HowOften-1, PID, OwnMessagesNew, Logfile).
 
-leser(true, OwnMessages) -> nix;
-leser(Terminated, OwnMessages, PID) when Terminated == false -> 
+leser(true, OwnMessages, PID, Logfile) -> nix;
+
+leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false -> 
   % hole nachricht
-  Terminated = receive_message(PID, ServerMessages),
+  {TerminatedFlag,Message} = receive_message(PID),
   %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
-  % pruefe, ob nachricht selbstgeschickt
-  
+  %überprüft ob die Nachricht von Ihm ist
+  {Number,TextMessage} = Message,
+  IsOwn = lists:any(Number,OwnMessages),
+  if IsOwn == true -> nix;
+    %Schreibe Log mit "own Message"
+    false -> nix
+    %schreibe Log ohne "own Message"
+  end,
   % generiere ausgabe
   % ausgeben
-  leser(TerminatedFlag, OwnMessages).
+  logging(Logfile, TextMessage),
+  %rekursiver Aufruf
+  leser(TerminatedFlag,OwnMessages,PID,Logfile).
 
-receive_message(Server, ServerMessages) ->
+receive_message(Server) ->
   % fragen Server nach Nachrichten
   Server ! {getmessages, self()},
   % hole Nachrichten vom Server ab
   receive
     {reply, Number, Nachricht, Terminated} ->
      % Speichere empfangene Nachrichten in Liste
-     NewServerMessages = lists:append(ServerMessages,[{Number,Nachricht}]),
-
+     NewMessage = {Number,Nachricht}
   end,
-  {Terminated, Serv.
+  {Terminated, NewMessage}.
   
 
 get_PID(Servername, Hostadress) ->
