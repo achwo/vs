@@ -18,6 +18,7 @@ start(Hostadress) ->
   
   {ok, LifeTime} = get_config_value(lifetime, ConfigListe),
   OwnMessages = [],
+  ServerMessages = [],
   %timer:kill_after(LifeTime * 1000 / 45), % das 45 muss weg, ist nur wegen der warning
   timer:kill_after(3000),
   %redakteur(1, PID, OwnMessages, Logfile),
@@ -58,17 +59,29 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   
   redakteur(HowOften-1, PID, OwnMessagesNew, Logfile).
 
-leser(true, _) -> nix;
-leser(Terminated, OwnMessages) when Terminated == false -> 
+leser(true, OwnMessages) -> nix;
+leser(Terminated, OwnMessages, PID) when Terminated == false -> 
   % hole nachricht
-  TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
+  Terminated = receive_message(PID, ServerMessages),
+  %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
   % pruefe, ob nachricht selbstgeschickt
+  
   % generiere ausgabe
   % ausgeben
   leser(TerminatedFlag, OwnMessages).
 
-receive_message(HowOften) ->
-  receive_message(HowOften-1).
+receive_message(Server, ServerMessages) ->
+  % fragen Server nach Nachrichten
+  Server ! {getmessages, self()},
+  % hole Nachrichten vom Server ab
+  receive
+    {reply, Number, Nachricht, Terminated} ->
+     % Speichere empfangene Nachrichten in Liste
+     NewServerMessages = lists:append(ServerMessages,[{Number,Nachricht}]),
+
+  end,
+  {Terminated, Serv.
+  
 
 get_PID(Servername, Hostadress) ->
 	{Servername, list_to_atom(Hostadress)}.
