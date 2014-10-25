@@ -2,6 +2,13 @@
 -import(werkzeug, [findneSL/2]).
 -export([add/4, get/2, get_max_number/1]).
 
+% TODO nachricht: {Nachricht, Nr}
+% TODO createNew():: void -> DLQ
+% TODO add(Msg, Nr, Queue) :: Nachricht x Nummer x DLQ -> DLQ... was ist mit Queue Size?
+% TODO get(Nr, Queue) :: Nummer x DLQ -> (Nachricht, Nummer, Flag)
+% TODO wenn in get keine nachricht mit der angegebenen nummer gefunden wird, wird "false" zurueckgegeben
+% TODO getLastMsgNr(DLQueue) :: DlQueue -> Nr
+
 add(Content, ID, Queue, QueueSize) ->
 	
 	IsFull = is_full(Queue,QueueSize),

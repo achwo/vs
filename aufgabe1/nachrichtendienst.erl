@@ -3,6 +3,21 @@
 - import(dlq, [get/2]).
 - export([start/0]).
 
+% TODO clientlist machen, format: [{ClientID, LastNumber, TimeStamp}]
+% TODO createNew() :: void -> ClientList
+% TODO add(ID, CurrentTime, Queue) :: -> ClientList
+% TODO exists(ID, Queue) -> Boolean
+% TODO update(CurrentTime, Queue) -> ClientList: laeuft durch die liste und loescht alte clients 
+% TODO setTime(ID, CurrentTime, Queue) -> ClientList
+% TODO lastMessageID(ClientID, Queue) -> Number
+% TODO setLastMessageID(ID, NewMessageID, Queue) -> ClientList
+
+% TODO Server ! {shutdown}
+% TODO message: Server ! {ping} ?
+% TODO dropmessage: falsche nummern abfangen
+% TODO logging
+
+
 
 start() ->
 	{ok, ConfigListe} = file:consult("server.cfg"),

@@ -2,6 +2,11 @@
 -import(dlq, [get_max_number/1]).
 -export([start/0]).
 
+% TODO loop in nachrichtendienst.erl uebernehmen
+% TODO listenformat [{Nachricht, Nr}]
+% TODO createNew() :: void -> HBQ
+% TODO add(Msg, Nr, HBQ, DLQ) :: .. -> HBQ x DLQ
+
 start() ->
   loop([], []).
 
@@ -27,7 +32,7 @@ close_holes_if_necessary(HBQ, DLQ) ->
   %   - luecken muessen geschlossen werden, wenn mehr als size(dlq) / 2; dann:
   %     - kleinsten wert in hbq holen
   %     - groessten wert in dlq holen
-  %     - fehlernachricht wird erzeugt und in hbq getan
+  %     - fehlernachricht wird erzeugt und in hbq getanh
   {HBQ, DLQ}.
 
 push_messages_to_dlq(HBQ, DLQ) -> 
