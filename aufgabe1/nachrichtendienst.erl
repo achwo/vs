@@ -4,7 +4,7 @@
 - export([start/0]).
 
 % TODO logging
-% TODO config as global
+% TODO config as global: application:set_env(server, dlq_max_size, 10).
 
 
 start() ->

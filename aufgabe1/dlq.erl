@@ -35,7 +35,5 @@ is_full(Queue) ->
 	{_, DLQ_max_size} = application:get_env(server, dlq_max_size),
 	DLQ_max_size == length(Queue).
 
-delete_lowest_id(Queue) -> 
-	Min = lists:min(Queue),
-	lists:delete(Min,Queue).
+delete_lowest_id([_|Rest]) -> Rest.
 
