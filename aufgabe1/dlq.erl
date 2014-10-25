@@ -1,39 +1,33 @@
 -module(dlq).
 -import(werkzeug, [findneSL/2]).
--export([add/4, get/2, get_max_number/1]).
+-export([createNew/0, add/3, get/2, getLastMsgNr/1]).
 
-% TODO nachricht: {Nachricht, Nr}
-% TODO createNew():: void -> DLQ
-% TODO add(Msg, Nr, Queue) :: Nachricht x Nummer x DLQ -> DLQ... was ist mit Queue Size?
-% TODO get(Nr, Queue) :: Nummer x DLQ -> (Nachricht, Nummer, Flag)
-% TODO wenn in get keine nachricht mit der angegebenen nummer gefunden wird, wird "false" zurueckgegeben
-% TODO getLastMsgNr(DLQueue) :: DlQueue -> Nr
+% TODO nachrichtenformat: [{Nachricht, Nr}]
 
-add(Content, ID, Queue, QueueSize) ->
-	
-	IsFull = is_full(Queue,QueueSize),
-	if  IsFull -> 
-		delete_lowest_id(Queue)
+createNew() -> [].
+
+add(Message, Number, Queue) ->
+	case is_full(Queue) of 
+		true 	-> NewQueue = lists:append(delete_lowest_id(Queue), [{Message, Number}]);
+		false -> NewQueue = lists:append(Queue, [{Message, Number}])
 	end,
-	lists:append(Queue, [{ID,Content}]).	
+	lists:keysort(2, NewQueue).
 
-get(_, []) -> {{nil, nok}, true};
-get(ID, Queue) -> 
-	% TODO if id < smallest number, return smallest
-	ReversedList = lists:reverse(Queue),
-	Element = werkzeug:findneSL(ReversedList, ID),
+get(_, []) -> false;
+get(Number, Queue) ->
+	% TODO suche nach {_, Number}
+	% TODO wenn in get keine nachricht mit der angegebenen nummer gefunden wird, wird "false" zurueckgegeben
+	Message = fake,
+	Number = -1,
+	TerminatedFlag = false,
+	{Message, Number, TerminatedFlag}.
 
-	{ElemID, _} = Element,
-	TerminatedFlag = ElemID >= get_max_number(Queue),
+getLastMsgNr(Queue) -> 
+	todo.
 
-	{Element,TerminatedFlag}.
-
-get_max_number(Queue) -> 
-	{ID,_} = lists:max(Queue),
-	ID.
-
-is_full(Queue, Size) -> 
-	length(Queue) == Size.
+is_full(Queue) -> 
+	{_, DLQ_max_size} = application:get_env(server, dlq_max_size),
+	DLQ_max_size == length(Queue).
 
 delete_lowest_id(Queue) -> 
 	Min = lists:min(Queue),

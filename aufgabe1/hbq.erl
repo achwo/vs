@@ -1,22 +1,12 @@
 -module(hbq).
 -import(dlq, [get_max_number/1]).
--export([start/0]).
+-export([]).
 
 % TODO loop in nachrichtendienst.erl uebernehmen
 % TODO listenformat [{Nachricht, Nr}]
 % TODO createNew() :: void -> HBQ
 % TODO add(Msg, Nr, HBQ, DLQ) :: .. -> HBQ x DLQ
 
-start() ->
-  loop([], []).
-
-loop(HBQ, DLQ) ->
-  receive
-    {dropmessage, {Message, Number}} -> 
-      {New_HBQ, New_DLQ} = dropmessage(Message, Number, HBQ, DLQ)
-  end,
-  % todo: manipulate lists
-  loop(New_HBQ, New_DLQ).
 
 dropmessage(Message, Number, HBQ, DLQ) -> 
 

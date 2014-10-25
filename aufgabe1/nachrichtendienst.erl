@@ -3,31 +3,19 @@
 - import(dlq, [get/2]).
 - export([start/0]).
 
-% TODO clientlist machen, format: [{ClientID, LastNumber, TimeStamp}]
-% TODO createNew() :: void -> ClientList
-% TODO add(ID, CurrentTime, Queue) :: -> ClientList
-% TODO exists(ID, Queue) -> Boolean
-% TODO update(CurrentTime, Queue) -> ClientList: laeuft durch die liste und loescht alte clients 
-% TODO setTime(ID, CurrentTime, Queue) -> ClientList
-% TODO lastMessageID(ClientID, Queue) -> Number
-% TODO setLastMessageID(ID, NewMessageID, Queue) -> ClientList
-
-% TODO Server ! {shutdown}
-% TODO message: Server ! {ping} ?
-% TODO dropmessage: falsche nummern abfangen
 % TODO logging
-
+% TODO config as global
 
 
 start() ->
 	{ok, ConfigListe} = file:consult("server.cfg"),
 	{ok, Servername} = get_config_value(servername, ConfigListe),
 	ID = 1,
-	PID = spawn_link(fun() -> loop(ID, []) end),
+	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew()) end),
 	register(Servername, PID),
 	PID.
 
-loop(ID, Queue) ->
+loop(ID, DLQ, HBQ) ->
 	receive 
     {getmessages, Client} ->
       New_ID = ID,
@@ -41,17 +29,30 @@ loop(ID, Queue) ->
         true -> Number = ClientListNumber + 1
       end,
 
-      {{ActualNumber, Message}, Terminated} = dlq:get(Number, Queue),
+      {{ActualNumber, Message}, Terminated} = dlq:get(Number, DLQ),
 
       % todo: what if there is an error? currently: message {reply, nil, nok, true}      
       Client ! {reply, ActualNumber, Message, Terminated};
    
     {getmsgid,Client} ->
       New_ID = get_next_id(ID), 
-      Client ! {nid, New_ID}
+      Client ! {nid, New_ID};
 
+    {dropmessage, {Message, Number}} -> 
+      % TODO dropmessage: falsche nummern abfangen
+      New_ID = ID,
+      {New_HBQ, New_DLQ} = dropmessage(Message, Number, HBQ, DLQ);
+
+    {shutdown} ->
+      New_ID = ID,
+      todo;
+
+    {ping} ->
+      New_ID = ID,
+      todo
   end,
-loop(New_ID, Queue).
+
+loop(New_ID, DLQ, HBQ).
 
 % returns last received number for Client
 client_list_number(Client) ->
@@ -59,4 +60,7 @@ client_list_number(Client) ->
 
 get_next_id(ID) ->
 	ID + 1.
+
+dropmessage(Message, Number, HBQ, DLQ) -> 
+  todo.
 	
