@@ -56,6 +56,7 @@ loop(New_ID, DLQ, HBQ).
 
 % returns last received number for Client
 client_list_number(Client) ->
+todo,
   nil.
 
 get_next_id(ID) ->
