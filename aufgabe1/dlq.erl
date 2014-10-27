@@ -15,16 +15,9 @@ add(Message, Number, Queue) ->
 	lists:keysort(2, NewQueue).
 
 get(_, []) -> false;
-
-
-get(Number, [{_, NewNumber}|Rest]) when NewNumber /= Number ->
-	get(Number, Rest);
-
-get(_, [{Message, NewNumber}|Rest]) when Rest /= [] ->
-	{Message, NewNumber, true};
-
-get(_, [{Message, NewNumber}|_]) ->
-	{Message, NewNumber, false}.
+get(Number, [{_, NewNumber}|Rest]) when NewNumber /= Number -> get(Number, Rest);
+get(_, [{Message, NewNumber}|Rest]) when Rest /= [] -> {Message, NewNumber, true};
+get(_, [{Message, NewNumber}|_]) -> {Message, NewNumber, false}.
 
 
 

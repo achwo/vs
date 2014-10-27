@@ -9,8 +9,9 @@ createNew() -> [].
 add(ID, CurrentTime, Queue) ->
   lists:append(Queue, [{ID, 0, CurrentTime}]).
 
-exists(ID, Queue) -> 
-  todo. % ob das wohl geht?
+exists(_, []) -> false;
+exists(ID, [{CurrentElement, _, _}|Rest]) when ID /= CurrentElement -> exists(ID, Rest);
+exists(ID, [{CurrentElement, _, _}|_]) when ID == CurrentElement -> true.
 
 update(CurrentTime, Queue) -> 
 % TODO update(CurrentTime, Queue) -> ClientList: laeuft durch die liste und loescht alte clients (anhand timestamp und config value)
