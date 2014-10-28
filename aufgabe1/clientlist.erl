@@ -1,6 +1,6 @@
 - module(clientlist).
-- import(werkzeug, [findSL/2]).
-- export([createNew/0, add/3, exists/2, update/2, setTime/3, lastMessageID/2, setLastMessageID/3]).
+- import(werkzeug, [findSL/2, timeMilliSecond/0]).
+- export([createNew/0, add/3, exists/2, update/2, setTime/3, lastMessageID/2, setLastMessageID/3, getMessage/2]).
 
 % format: [{ClientID, LastNumber, TimeStamp}]
 
@@ -19,12 +19,28 @@ update(CurrentTime, Queue) ->
 
 setTime(ID, CurrentTime, Queue) ->
 % TODO setTime(ID, CurrentTime, Queue) -> ClientList
-  todo.
+  case exists(ID, Queue) == true of 
+  	true -> {GetID, Number, TimeStamp} = getMessage(ID, Queue),
+  			NewList = lists:delete({GetID, Number, TimeStamp}, Queue),
+  			add(GetID, CurrentTime, NewList);
 
-lastMessageID(ID, Queue) ->
-% TODO lastMessageID(ID, Queue) -> Number
-  todo.
+  	   _ -> Queue
+end.
+
+
+getMessage(_, []) -> false;
+getMessage(ID, [{NewID, _, _}|Rest]) when ID /= NewID -> getMessage(ID, Rest);
+getMessage(ID, [{ID, Number, TimeStamp}|_]) -> {ID, Number, TimeStamp}. 
+
+
+lastMessageID(ID, Queue) -> 
+	{_,Number,_} = getMessage(ID, Queue),
+	Number.
+
 
 setLastMessageID(ID, NewMessageID, Queue) ->
 % TODO setLastMessageID(ID, NewMessageID, Queue) -> clientlist
-  todo.
+  Message = getMessage(ID, Queue),
+  NewList = lists:delete()
+
+
