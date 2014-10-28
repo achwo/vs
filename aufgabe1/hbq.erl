@@ -1,7 +1,8 @@
 -module(hbq).
 -import(dlq, [get_max_number/1, add/3]).
+-import(werkzeug, [to_String/1]).
 -export([createNew/0, add/4]).
--export([pop/2]).
+-export([pop/2, createErrorMessage/2]).
 
 
 % listenformat [{Nachricht, Nr}]
@@ -30,14 +31,14 @@ close_holes_if_necessary(HBQ, DLQ) ->
   case CloseHoles of
     true ->
       %   - kleinsten wert in hbq holen
-      HBQNumber = getFirstNumber(HBQ),
+      FirstInHBQ = getFirstNumber(HBQ),
       %   - groessten wert in dlq holen
       case DLQ == [] of
         true  -> LastInDLQ = 0; 
         false -> {_, LastInDLQ} = dlq:getLastMsgNr(DLQ)
       end,
       %   - fehlernachricht wird erzeugt und in hbq getan
-      HBQwithNewMessage = lists:append(HBQ, [createErrorMessage(HBQNumber, LastInDLQ)]),
+      HBQwithNewMessage = lists:append(HBQ, [createErrorMessage(FirstInHBQ, LastInDLQ)]),
       SortedHBQ = lists:keysort(2, HBQwithNewMessage);
 
 
@@ -70,7 +71,8 @@ push_messages_to_dlq(Number, HBQ, DLQ) ->
       push_messages_to_dlq(ElementNumber, RestHBQ, NewDLQ)
   end.
 
-% pops messages from list, stopping at holes
+% pops one message from list, stopping at holes
+% LastElement = element number, after which should be popped
 pop(_, []) -> 
   {{nothing, nil}, []};
 pop(LastElement, [{Message, Number}|Rest]) when LastElement + 1 == Number -> 
@@ -80,10 +82,13 @@ pop(_, List) ->
 
 getFirstNumber([{_,HBQNumber}|_]) -> HBQNumber.
 
-%todo test greater holes
-createErrorMessage(Holestart, Holeend) -> 
-  case Holeend of
-    0 -> MessageNumber = 1;
-    _ -> MessageNumber = Holeend + 1
-  end,
-  {{"Holestart bis Holeend", MessageNumber}, MessageNumber}. 
+createErrorMessage(LastInDLQ, FirstInHBQ) when FirstInHBQ - LastInDLQ == 2 ->
+  HoleNumber = FirstInHBQ - 1,
+  MessageText = to_String(HoleNumber),
+  {{MessageText, HoleNumber}, HoleNumber};
+createErrorMessage(LastInDLQ, FirstInHBQ) -> 
+  FirstMissing = LastInDLQ + 1,
+  LastMissing = FirstInHBQ - 1, 
+  MessageText = lists:concat([to_String(FirstMissing), " bis ", to_String(LastMissing)]),
+  {{MessageText, LastMissing}, LastMissing}. 
+

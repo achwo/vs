@@ -33,3 +33,22 @@ test_multiple_elements_without_holes() ->
 test_only_pops_if_LastIndex_fits_to_first_element() ->
   ?_assertEqual({{nothing, nil}, [{message1, 1}, {message2, 2}]},
       hbq:pop(1, [{message1, 1}, {message2, 2}])).
+
+
+createErrorMessage_test_() ->
+  [test_hole_size_one(),
+   test_larger_holes()
+  ].
+
+test_hole_size_one() ->
+  [
+    ?_assertEqual({{"1",1},1}, hbq:createErrorMessage(0, 2)),
+    ?_assertEqual({{"2",2},2}, hbq:createErrorMessage(1, 3))
+  ].
+
+test_larger_holes() ->
+  [
+    ?_assertEqual({{"1 bis 2", 2}, 2}, hbq:createErrorMessage(0, 3)),
+    ?_assertEqual({{"2 bis 4", 4}, 4}, hbq:createErrorMessage(1, 5))
+  ].
+
