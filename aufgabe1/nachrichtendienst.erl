@@ -1,8 +1,6 @@
 - module(nachrichtendienst).
 - import(werkzeug, [get_config_value/2]).
-- import(dlq, [get/2]).
-- import(hbq,[add/4]).
-- import(clientlist,[lastMessageID/2]).
+- import(werkzeug,[timeMilliSecond/0]).
 - export([start/0]).
 
 % TODO logging
@@ -13,18 +11,19 @@ start() ->
 	{ok, ConfigListe} = file:consult("server.cfg"),
 	{ok, Servername} = get_config_value(servername, ConfigListe),
 	ID = 0,
-	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew()) end),
+	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew()) end),
 	register(Servername, PID),
 	PID.
 
-loop(ID, DLQ, HBQ) ->
+loop(ID, DLQ, HBQ, Clientlist) ->
 	receive 
     {getmessages, Client} ->
       New_ID = ID,
       New_HBQ = HBQ,
       New_DLQ = DLQ,
       % pruefen, welche nachricht der client bekommen soll, falls er schon bekannt ist
-      ClientListNumber = clientlist:lastMessageID(Client, DLQ),
+      clientlist:add(ID,timeMilliSecond(),Clientlist),
+      ClientListNumber = clientlist:lastMessageID(Client, Clientlist),
       if 
         % sonst hole kleinste nachricht
         ClientListNumber == 0 -> Number = 1;
@@ -67,7 +66,7 @@ loop(ID, DLQ, HBQ) ->
       todo
   end,
 
-loop(New_ID, New_DLQ, New_HBQ).
+loop(New_ID, New_DLQ, New_HBQ, Clientlist).
 
 get_next_id(ID) ->
 	ID + 1.
