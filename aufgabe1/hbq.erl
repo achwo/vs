@@ -2,7 +2,7 @@
 -import(dlq, [get_max_number/1, add/3]).
 -import(werkzeug, [to_String/1]).
 -export([createNew/0, add/4]).
--export([pop/2, createErrorMessage/2, push_messages_to_dlq/2]).
+-export([pop/2, createErrorMessage/2, push_messages_to_dlq/2, close_holes_if_necessary/2]).
 
 
 % listenformat [{Nachricht, Nr}]
@@ -37,11 +37,14 @@ close_holes_if_necessary(HBQ, DLQ) ->
         true  -> LastInDLQ = 0; 
         false -> {_, LastInDLQ} = dlq:getLastMsgNr(DLQ)
       end,
-      %   - fehlernachricht wird erzeugt und in hbq getan
-      HBQwithNewMessage = lists:append(HBQ, [createErrorMessage(FirstInHBQ, LastInDLQ)]),
-      SortedHBQ = lists:keysort(2, HBQwithNewMessage);
 
-
+      case FirstInHBQ - LastInDLQ of 
+        1 -> SortedHBQ = HBQ;
+        _ -> 
+          %   - fehlernachricht wird erzeugt und in hbq getan
+          HBQwithNewMessage = lists:append(HBQ, [createErrorMessage(LastInDLQ, FirstInHBQ)]),
+          SortedHBQ = lists:keysort(2, HBQwithNewMessage)
+      end;
     false -> SortedHBQ = HBQ
   end,
 
