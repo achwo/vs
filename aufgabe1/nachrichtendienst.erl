@@ -27,7 +27,7 @@ loop(ID, DLQ, HBQ) ->
       ClientListNumber = clientlist:lastMessageID(Client, DLQ),
       if 
         % sonst hole kleinste nachricht
-        ClientListNumber == false -> Number = 1;
+        ClientListNumber == 0 -> Number = 1;
         % wenn bekannt, hole nachricht > letzter erhaltener
         true -> Number = ClientListNumber + 1
       end,
