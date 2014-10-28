@@ -1,6 +1,8 @@
 - module(nachrichtendienst).
 - import(werkzeug, [get_config_value/2]).
 - import(dlq, [get/2]).
+- import(hbq,[add/4]).
+- import(clientlist,[lastMessageID/2]).
 - export([start/0]).
 
 % TODO logging
@@ -19,12 +21,13 @@ loop(ID, DLQ, HBQ) ->
 	receive 
     {getmessages, Client} ->
       New_ID = ID,
-
+      New_HBQ = HBQ,
+      New_DLQ = DLQ,
       % pruefen, welche nachricht der client bekommen soll, falls er schon bekannt ist
-      ClientListNumber = client_list_number(Client),
+      ClientListNumber = clientlist:lastMessageID(Client, DLQ),
       if 
         % sonst hole kleinste nachricht
-        ClientListNumber == nil -> Number = 1;
+        ClientListNumber == false -> Number = 1;
         % wenn bekannt, hole nachricht > letzter erhaltener
         true -> Number = ClientListNumber + 1
       end,
@@ -35,33 +38,34 @@ loop(ID, DLQ, HBQ) ->
       Client ! {reply, ActualNumber, Message, Terminated};
    
     {getmsgid,Client} ->
-      New_ID = get_next_id(ID), 
+      New_ID = get_next_id(ID),
+      New_HBQ = HBQ,
+      New_DLQ = DLQ,
       Client ! {nid, New_ID};
 
     {dropmessage, {Message, Number}} -> 
       % TODO dropmessage: falsche nummern abfangen
       New_ID = ID,
-      {New_HBQ, New_DLQ} = dropmessage(Message, Number, HBQ, DLQ);
+      {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ);
 
     {shutdown} ->
       New_ID = ID,
+      New_HBQ = HBQ,
+      New_DLQ = DLQ,
       todo;
 
     {ping} ->
       New_ID = ID,
+      New_HBQ = HBQ,
+      New_DLQ = DLQ,
       todo
   end,
 
-loop(New_ID, DLQ, HBQ).
-
-% returns last received number for Client
-client_list_number(Client) ->
-todo,
-  nil.
+loop(New_ID, New_DLQ, New_HBQ).
 
 get_next_id(ID) ->
 	ID + 1.
 
-dropmessage(Message, Number, HBQ, DLQ) -> 
-  todo.
+
+
 	
