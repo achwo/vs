@@ -113,6 +113,5 @@ test_close_multiple_elements() ->
 
    ?_assertEqual({[{{"1",1},1}, {{"msg",2},2}, {{"msg",4},4}], [{{"msg", 0}, 0}]}, 
     hbq:close_holes_if_necessary([{{"msg",2},2}, {{"msg",4},4}], [{{"msg", 0}, 0}]))
-  
   ].
 
