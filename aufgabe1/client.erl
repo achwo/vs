@@ -17,6 +17,7 @@ start(Hostadress) ->
   
   
   {ok, LifeTime} = get_config_value(lifetime, ConfigListe),
+  {ok, Clients} = get_config_value(clients, ConfigListe),
   OwnMessages = [],
   %timer:kill_after(LifeTime * 1000 / 45), % das 45 muss weg, ist nur wegen der warning
   timer:kill_after(3000),
@@ -24,7 +25,7 @@ start(Hostadress) ->
   loop(PID, OwnMessages, Logfile).
 
   %Uid = get_unique_id(PID),
-  %io:fwrite ("Uid ~p~n", [Uid]),
+  
   %Message_text = message_builder(Uid, Logfile),
   %dropmessage(Servername, Message_text, Uid). 
   %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
@@ -41,6 +42,7 @@ loop(PID, OwnMessages, Logfile) ->
 redakteur(0, PID, _, Logfile) ->
   % vergesse, nachricht zu senden 
   Number = get_unique_id(PID),
+  io:fwrite ("Uid ~p~n", [Number]),
   logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******"]));
 
 redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
@@ -48,6 +50,7 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   timer:sleep(500),
   % hole nachrichtennummer
   Number = get_unique_id(PID),
+  io:fwrite ("Uid ~p~n", [Number]),
   % adde nummer zur liste selbstgeschickter nachrichten
   OwnMessagesNew = lists:append(OwnMessages, [Number]),
   % generiere nachricht
@@ -77,6 +80,8 @@ leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false ->
   logging(Logfile, TextMessage),
   %rekursiver Aufruf
   leser(TerminatedFlag,OwnMessages,PID,Logfile).
+
+
 
 receive_message(Server) ->
   % fragen Server nach Nachrichten
