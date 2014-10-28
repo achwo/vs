@@ -18,7 +18,7 @@ update(CurrentTime, Queue) ->
   todo.
 
 setTime(ID, CurrentTime, Queue) ->
-% TODO setTime(ID, CurrentTime, Queue) -> ClientList
+
   case exists(ID, Queue) == true of 
   	true -> {GetID, Number, TimeStamp} = getMessage(ID, Queue),
   			NewList = lists:delete({GetID, Number, TimeStamp}, Queue),
@@ -39,8 +39,9 @@ lastMessageID(ID, Queue) ->
 
 
 setLastMessageID(ID, NewMessageID, Queue) ->
-% TODO setLastMessageID(ID, NewMessageID, Queue) -> clientlist
-  Message = getMessage(ID, Queue),
-  NewList = lists:delete()
+  
+  {NewID, Number, TimeStamp} = getMessage(ID, Queue),
+  NewList = lists:delete({NewID, Number, TimeStamp}, Queue),
+  add(NewID, NewMessageID, NewList).
 
 
