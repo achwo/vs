@@ -69,7 +69,9 @@ leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false ->
   %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
   %überprüft ob die Nachricht von Ihm ist
   {Number,TextMessage} = Message,
+  io:fwrite ("Number: ~p", [Number]), io:fwrite ("TextMessage: ~p~n", [TextMessage]),
   IsOwn = lists:any(Number,OwnMessages),
+  io:fwrite ("IsOwn: ~p~n", [IsOwn]),
   if IsOwn == true -> nix;
     %Schreibe Log mit "own Message"
     false -> nix

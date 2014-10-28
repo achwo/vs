@@ -12,7 +12,7 @@
 start() ->
 	{ok, ConfigListe} = file:consult("server.cfg"),
 	{ok, Servername} = get_config_value(servername, ConfigListe),
-	ID = 1,
+	ID = 0,
 	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew()) end),
 	register(Servername, PID),
 	PID.
