@@ -1,6 +1,6 @@
 - module(clientlist).
-- import(werkzeug, [findSL/2]).
-- export([createNew/0, add/3, exists/2, update/2, setTime/3, lastMessageID/2, setLastMessageID/3]).
+- import(werkzeug, [findSL/2, timeMilliSecond/0]).
+- export([createNew/0, add/3, exists/2, update/2, setTime/3, lastMessageID/2, setLastMessageID/3, getMessage/2]).
 
 % format: [{ClientID, LastNumber, TimeStamp}]
 
@@ -14,17 +14,45 @@ exists(ID, [{CurrentElement, _, _}|Rest]) when ID /= CurrentElement -> exists(ID
 exists(ID, [{CurrentElement, _, _}|_]) when ID == CurrentElement -> true.
 
 update(CurrentTime, Queue) -> 
-% TODO update(CurrentTime, Queue) -> ClientList: laeuft durch die liste und loescht alte clients (anhand timestamp und config value)
-  todo.
+%{_, Lifetime} = application:get_env(lifetime, clientlifetime),
+Lifetime = 2,
+update(CurrentTime, Queue, [], Lifetime).
+  
+update(_, [], ClientList, _) -> ClientList;
+
+update(CurrentTime, [{_,_,TimeStamp}|Rest], ClientList,Lifetime) when (CurrentTime - TimeStamp) > (Lifetime*1000) ->
+	update(CurrentTime, Rest, ClientList, Lifetime);
+
+update(CurrentTime, [{ClientID,LastNumber,TimeStamp}|Rest], ClientList, Lifetime) when (CurrentTime - TimeStamp) =< (Lifetime*1000) ->
+ 	NewList = lists:append([{ClientID,LastNumber,TimeStamp}], ClientList),
+ 	update(CurrentTime, Rest, NewList, Lifetime).
+
 
 setTime(ID, CurrentTime, Queue) ->
-% TODO setTime(ID, CurrentTime, Queue) -> ClientList
-  todo.
 
-lastMessageID(ID, Queue) ->
-% TODO lastMessageID(ID, Queue) -> Number
-  todo.
+  case exists(ID, Queue) of 
+  	true -> {GetID, Number, TimeStamp} = getMessage(ID, Queue),
+  			NewList = lists:delete({GetID, Number, TimeStamp}, Queue),
+  			lists:append(NewList,[{GetID,CurrentTime, NewList}]);
+  	false -> Queue
+end.
+
+
+getMessage(_, []) -> false;
+getMessage(ID, [{NewID, _, _}|Rest]) when ID /= NewID -> getMessage(ID, Rest);
+getMessage(ID, [{ID, Number, TimeStamp}|_]) -> {ID, Number, TimeStamp}. 
+
+
+lastMessageID(ID, Queue) -> 
+	{_,Number,_} = getMessage(ID, Queue),
+	Number.
+
 
 setLastMessageID(ID, NewMessageID, Queue) ->
-% TODO setLastMessageID(ID, NewMessageID, Queue) -> clientlist
-  todo.
+  
+  {NewID, Number, TimeStamp} = getMessage(ID, Queue),
+  NewList = lists:delete({NewID, Number, TimeStamp}, Queue),
+  lists:append(NewList,[{NewID,NewMessageID,TimeStamp}]).
+  
+
+

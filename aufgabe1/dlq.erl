@@ -20,7 +20,6 @@ get(_, [{Message, NewNumber}|Rest]) when Rest /= [] -> {Message, NewNumber, true
 get(_, [{Message, NewNumber}|_]) -> {Message, NewNumber, false}.
 
 
-
 getLastMsgNr(Queue) -> 
 	lists:last(Queue).
 
