@@ -52,3 +52,28 @@ test_larger_holes() ->
     ?_assertEqual({{"2 bis 4", 4}, 4}, hbq:createErrorMessage(1, 5))
   ].
 
+push_messages_to_dlq_test_() ->
+  application:set_env(server, dlq_max_size, 10),
+  [test_push_one_element(),
+   test_push_multiple_elements()
+  ].
+
+test_push_one_element() ->
+  [?_assertEqual({[],[{{"msg",1},1}]}, hbq:push_messages_to_dlq([{{"msg",1},1}],[])),
+   ?_assertEqual({[{{"msg",2},2}], []}, hbq:push_messages_to_dlq([{{"msg",2},2}],[])),
+   ?_assertEqual({[], [{{"msg",1},1}, {{"msg",2},2}]}, hbq:push_messages_to_dlq([{{"msg",2},2}],[{{"msg", 1}, 1}]))
+  ].
+
+test_push_multiple_elements() ->
+  [?_assertEqual({[], [{{"msg",1},1}, {{"msg",2},2}]}, 
+    hbq:push_messages_to_dlq([{{"msg", 1}, 1}, {{"msg",2},2}],[])),
+
+   ?_assertEqual({[{{"msg",3},3}], [{{"msg",1},1}]}, 
+    hbq:push_messages_to_dlq([{{"msg",1},1}, {{"msg",3},3}],[]))
+  ].
+
+
+
+
+
+
