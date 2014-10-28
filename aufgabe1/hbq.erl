@@ -1,6 +1,8 @@
 -module(hbq).
 -import(dlq, [get_max_number/1, add/3]).
 -export([createNew/0, add/4]).
+-export([pop/2]).
+
 
 % listenformat [{Nachricht, Nr}]
 
@@ -68,6 +70,7 @@ push_messages_to_dlq(Number, HBQ, DLQ) ->
       push_messages_to_dlq(ElementNumber, RestHBQ, NewDLQ)
   end.
 
+% pops messages from list, stopping at holes
 pop(_, []) -> 
   {{nothing, nil}, []};
 pop(LastElement, [{Message, Number}|Rest]) when LastElement + 1 == Number -> 
