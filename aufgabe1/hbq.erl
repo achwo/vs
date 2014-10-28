@@ -2,7 +2,7 @@
 -import(dlq, [get_max_number/1, add/3]).
 -import(werkzeug, [to_String/1]).
 -export([createNew/0, add/4]).
--export([pop/2, createErrorMessage/2]).
+-export([pop/2, createErrorMessage/2, push_messages_to_dlq/2]).
 
 
 % listenformat [{Nachricht, Nr}]
