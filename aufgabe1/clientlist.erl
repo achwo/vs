@@ -14,17 +14,27 @@ exists(ID, [{CurrentElement, _, _}|Rest]) when ID /= CurrentElement -> exists(ID
 exists(ID, [{CurrentElement, _, _}|_]) when ID == CurrentElement -> true.
 
 update(CurrentTime, Queue) -> 
-% TODO update(CurrentTime, Queue) -> ClientList: laeuft durch die liste und loescht alte clients (anhand timestamp und config value)
-  todo.
+%{_, Lifetime} = application:get_env(lifetime, clientlifetime),
+Lifetime = 2,
+update(CurrentTime, Queue, [], Lifetime).
+  
+update(_, [], ClientList, _) -> ClientList;
+
+update(CurrentTime, [{_,_,TimeStamp}|Rest], ClientList,Lifetime) when (CurrentTime - TimeStamp) > (Lifetime*1000) ->
+	update(CurrentTime, Rest, ClientList, Lifetime);
+
+update(CurrentTime, [{ClientID,LastNumber,TimeStamp}|Rest], ClientList, Lifetime) when (CurrentTime - TimeStamp) =< (Lifetime*1000) ->
+ 	NewList = lists:append([{ClientID,LastNumber,TimeStamp}], ClientList),
+ 	update(CurrentTime, Rest, NewList, Lifetime).
+
 
 setTime(ID, CurrentTime, Queue) ->
 
-  case exists(ID, Queue) == true of 
+  case exists(ID, Queue) of 
   	true -> {GetID, Number, TimeStamp} = getMessage(ID, Queue),
   			NewList = lists:delete({GetID, Number, TimeStamp}, Queue),
-  			add(GetID, CurrentTime, NewList);
-
-  	   _ -> Queue
+  			lists:append(NewList,[{GetID,CurrentTime, NewList}]);
+  	false -> Queue
 end.
 
 
@@ -42,6 +52,7 @@ setLastMessageID(ID, NewMessageID, Queue) ->
   
   {NewID, Number, TimeStamp} = getMessage(ID, Queue),
   NewList = lists:delete({NewID, Number, TimeStamp}, Queue),
-  add(NewID, NewMessageID, NewList).
+  lists:append(NewList,[{NewID,NewMessageID,TimeStamp}]).
+  
 
 
