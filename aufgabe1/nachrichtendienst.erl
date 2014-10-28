@@ -32,7 +32,13 @@ loop(ID, DLQ, HBQ) ->
         true -> Number = ClientListNumber + 1
       end,
 
-      {{ActualNumber, Message}, Terminated} = dlq:get(Number, DLQ),
+      DlqMessage = dlq:get(Number, DLQ),
+      case DlqMessage of
+      false -> 
+      {{ActualNumber, Message},_,Terminated} = {{-1, "empty list"},-1,false};
+
+      _ -> {{ActualNumber, Message},_,Terminated} = DlqMessage
+    end,
 
       % todo: what if there is an error? currently: message {reply, nil, nok, true}      
       Client ! {reply, ActualNumber, Message, Terminated};
