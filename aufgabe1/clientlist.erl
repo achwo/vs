@@ -15,7 +15,7 @@ exists(ID, [{CurrentElement, _, _}|_]) when ID == CurrentElement -> true.
 
 update(CurrentTime, Queue) -> 
 %{_, Lifetime} = application:get_env(lifetime, clientlifetime),
-Lifetime = 2,
+Lifetime = 2, %TODO nicht mehr hard codieren!!!!
 update(CurrentTime, Queue, [], Lifetime).
   
 update(_, [], ClientList, _) -> ClientList;
@@ -38,7 +38,7 @@ setTime(ID, CurrentTime, Queue) ->
 end.
 
 
-getMessage(_, []) -> false;
+getMessage(_, []) -> {0,0,0};
 getMessage(ID, [{NewID, _, _}|Rest]) when ID /= NewID -> getMessage(ID, Rest);
 getMessage(ID, [{ID, Number, TimeStamp}|_]) -> {ID, Number, TimeStamp}. 
 
@@ -49,7 +49,6 @@ lastMessageID(ID, Queue) ->
 
 
 setLastMessageID(ID, NewMessageID, Queue) ->
-  
   {NewID, Number, TimeStamp} = getMessage(ID, Queue),
   NewList = lists:delete({NewID, Number, TimeStamp}, Queue),
   lists:append(NewList,[{NewID,NewMessageID,TimeStamp}]).
