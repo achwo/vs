@@ -10,9 +10,11 @@
 createNew() -> [].
 
 add(Message, Number, HBQ, DLQ) -> 
-
+  
   % Nachricht und Nummer werden in die Holdbackqueue geschrieben.
   HBQwithNewMessage = lists:append(HBQ, [{Message, Number}]), 
+
+  io:fwrite("HBQwithNewMessage: ~p",[HBQwithNewMessage]),
 
   %sortieren
   SortedHBQ = lists:keysort(2, HBQwithNewMessage),
