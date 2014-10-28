@@ -38,7 +38,7 @@ setTime(ID, CurrentTime, Queue) ->
 end.
 
 
-getMessage(_, []) -> 0;
+getMessage(_, []) -> {0,0,0};
 getMessage(ID, [{NewID, _, _}|Rest]) when ID /= NewID -> getMessage(ID, Rest);
 getMessage(ID, [{ID, Number, TimeStamp}|_]) -> {ID, Number, TimeStamp}. 
 
