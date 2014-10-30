@@ -8,10 +8,10 @@ start() ->
   load_config(),
   {_, ServerName} = application:get_env(server, servername),
 	Logfile = lists:concat(["nachrichtendienst_", to_String(node()), ".log"]),
-  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),"."]),
+  Startlog = lists:concat(["nachrichtendienst startet " , " Start: ", timeMilliSecond(),"."]),
   logging(Logfile, Startlog),
   ID = 0,
-	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew()), Logfile end),
+	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew(), Logfile) end),
 	register(ServerName, PID),
 	PID.
 
