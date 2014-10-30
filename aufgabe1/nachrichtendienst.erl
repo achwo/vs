@@ -1,5 +1,5 @@
 - module(nachrichtendienst).
-- import(werkzeug, [get_config_value/2, timeMilliSecond/0]).
+- import(werkzeug, [get_config_value/2, timeMilliSecond/0, to_String/1, logging/2]).
 - export([start/0]).
 
 % TODO logging
@@ -46,12 +46,13 @@ loop(ID, DLQ, HBQ, Clientlist) ->
       end,
 
       DlqMessage = dlq:get(Number, DLQ),
-      case DlqMessage of
-      false -> 
-      {{ActualNumber, Message},_,Terminated} = {{-1, "empty list"},-1,false};
 
-      _ -> {{ActualNumber, Message},_,Terminated} = DlqMessage
-    end,
+      case DlqMessage of
+        false -> 
+        {{ActualNumber, Message},_,Terminated} = {{-1, "empty list"},-1,false};
+
+        _ -> {{ActualNumber, Message},_,Terminated} = DlqMessage
+      end,
 
       % todo: what if there is an error? currently: message {reply, nil, nok, true}      
       Client ! {reply, ActualNumber, Message, Terminated};

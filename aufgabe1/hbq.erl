@@ -14,7 +14,7 @@ add(Message, Number, HBQ, DLQ) ->
   SortedHBQ = lists:keysort(2, HBQwithNewMessage),
 
   % Danach wird geprueft, ob Luecken geschlossen werden muessen.
-  {_, DLQ_max_size} = application:get_env(server, dlq_max_size),
+  {_, DLQ_max_size} = application:get_env(server, dlqlimit),
   % luecken muessen geschlossen werden, wenn mehr als maxsize(dlq) / 2
   case (length(SortedHBQ) > DLQ_max_size/2) of
     true -> {New_HBQ, New_DLQ} = close_holes_if_necessary(SortedHBQ, DLQ);

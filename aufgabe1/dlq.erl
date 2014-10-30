@@ -23,7 +23,7 @@ getLastMsgNr(Queue) ->
 	lists:last(Queue).
 
 is_full(Queue) -> 
-	{_, DLQ_max_size} = application:get_env(server, dlq_max_size),
+	{_, DLQ_max_size} = application:get_env(server, dlqlimit),
 	DLQ_max_size == length(Queue).
 
 delete_lowest_id([_|Rest]) -> Rest.
