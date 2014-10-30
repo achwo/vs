@@ -8,12 +8,13 @@ start() ->
   load_config(),
   {_, ServerName} = application:get_env(server, servername),
 	Logfile = lists:concat(["nachrichtendienst_", to_String(node()), ".log"]),
-  Startlog = lists:concat(["nachrichtendienst startet " , " Start: ", timeMilliSecond(),"."]),
+  Startlog = lists:concat(["Server Startzeit: ", timeMilliSecond(),"mit PID ", to_String(node())]),
   logging(Logfile, Startlog),
   ID = 0,
 	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew(), Logfile) end),
 	register(ServerName, PID),
 	PID.
+
 
 
 load_config() ->
@@ -58,22 +59,26 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
       end,
 
       % todo: what if there is an error? currently: message {reply, nil, nok, true}      
-      Client ! {reply, ActualNumber, Message, Terminated};
-   
+      Client ! {reply, ActualNumber, Message, Terminated},
+      MsgToServerLog = lists:concat(["Server: Nachrichtennummer ", ActualNumber, " an ", Client, " gesendet"]),
+      logging(Logfile, MsgToServerLog);
+
     {getmsgid,Client} ->
       New_ID = get_next_id(ID),
       New_HBQ = HBQ,
       New_DLQ = DLQ,
       Client ! {nid, New_ID},
-      GetMsgIDLog = lists:concat(["GetMsgID: ", New_ID]),
+      GetMsgIDLog = lists:concat(["Client bekommt folgende Nummer: ", New_ID]), 
       logging(Logfile, GetMsgIDLog);
 
     {dropmessage, {Message, Number}} -> 
       % TODO dropmessage: falsche nummern abfangen
-      DropmessageLog = lists:concat(["---------------------Aufruf von dropmessage---------------------"]),
+      DropmessageLog = lists:concat(["---------------------Aufruf von dropmessage---------------------~n"]),
       logging(Logfile, DropmessageLog),
       New_ID = ID,
-      {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ);
+      {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ),
+      MessageLog = lists:concat(["Nachricht ", {Message, Number}, " in HBQ gespeichert"]),
+      logging(Logfile, MessageLog);
 
     {shutdown} ->
       New_ID = ID,
