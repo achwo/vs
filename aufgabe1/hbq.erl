@@ -1,9 +1,7 @@
 -module(hbq).
--import(dlq, [get_max_number/1, add/3]).
 -import(werkzeug, [to_String/1]).
 -export([createNew/0, add/4]).
 -export([pop/2, createErrorMessage/2, push_messages_to_dlq/2, close_holes_if_necessary/2]).
-
 
 % listenformat [{Nachricht, Nr}]
 
@@ -13,20 +11,16 @@ add(Message, Number, HBQ, DLQ) ->
   
   % Nachricht und Nummer werden in die Holdbackqueue geschrieben.
   HBQwithNewMessage = lists:append(HBQ, [{Message, Number}]), 
-
-  io:fwrite("HBQwithNewMessage: ~p",[HBQwithNewMessage]),
-
-  %sortieren
   SortedHBQ = lists:keysort(2, HBQwithNewMessage),
 
-  % Danach wird geprüft, ob Lücken geschlossen werden müssen.
+  % Danach wird geprueft, ob Luecken geschlossen werden muessen.
   {_, DLQ_max_size} = application:get_env(server, dlq_max_size),
   % luecken muessen geschlossen werden, wenn mehr als maxsize(dlq) / 2
   case (length(SortedHBQ) > DLQ_max_size/2) of
     true -> {New_HBQ, New_DLQ} = close_holes_if_necessary(SortedHBQ, DLQ);
     false -> {New_HBQ, New_DLQ} = {SortedHBQ, DLQ}
   end,
-  % Nach der Überprüfung, werden die Nachrichten bis zur nächsten Lücke in die DLQ geschoben
+  % Nach der Ueberpruefung, werden die Nachrichten bis zur nächsten Luecke in die DLQ geschoben
   push_messages_to_dlq(New_HBQ, New_DLQ).
 
 
@@ -47,7 +41,7 @@ close_holes_if_necessary(HBQ, DLQ) ->
       DLQwithErrorMessage = dlq:add(ErrorMessage, ErrorNumber, DLQ)
   end,
 
-  % Rückgabe
+  % Rueckgabe
   {HBQ, DLQwithErrorMessage}.
 
 push_messages_to_dlq(HBQ, DLQ) -> 

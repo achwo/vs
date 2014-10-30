@@ -1,19 +1,33 @@
 - module(nachrichtendienst).
-- import(werkzeug, [get_config_value/2]).
-- import(werkzeug,[timeMilliSecond/0]).
+- import(werkzeug, [get_config_value/2, timeMilliSecond/0]).
 - export([start/0]).
 
 % TODO logging
-% TODO config as global: application:set_env(server, dlq_max_size, 10).
-
 
 start() ->
-	{ok, ConfigListe} = file:consult("server.cfg"),
-	{ok, Servername} = get_config_value(servername, ConfigListe),
+  load_config(),
+  {_, ServerName} = application:get_env(server, servername),
 	ID = 0,
 	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew()) end),
-	register(Servername, PID),
+	register(ServerName, PID),
 	PID.
+
+
+load_config() ->
+  {ok, ConfigFile} = file:consult("server.cfg"),
+  
+  {ok, Latency} = get_config_value(latency, ConfigFile),
+  application:set_env(server, latency, Latency),
+  
+  {ok, ClientLifeTime} = get_config_value(clientlifetime, ConfigFile),
+  application:set_env(server, clientlifetime, ClientLifeTime),
+
+  {ok, ServerName} = get_config_value(servername, ConfigFile),
+  application:set_env(server, servername, ServerName),
+
+  {ok, DLQLimit} = get_config_value(dlqlimit, ConfigFile),
+  application:set_env(server, dlqlimit, DLQLimit).
+
 
 loop(ID, DLQ, HBQ, Clientlist) ->
 	receive 

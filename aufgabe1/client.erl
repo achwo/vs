@@ -5,9 +5,9 @@
 
 
 start(Hostadress) ->
-  {ok, ConfigListe} = file:consult("client.cfg"),
-  {ok, Servername} = get_config_value(servername, ConfigListe),
-  PID = get_PID(Servername, Hostadress),
+  load_config(),
+  ServerName = config(servername),
+  PID = get_PID(ServerName, Hostadress),
   
 
   %TODO: CLIENTNR in LOG-Name ergänzen
@@ -15,9 +15,9 @@ start(Hostadress) ->
   Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),"."]),
   logging(Logfile, Startlog),
   
+  LifeTime = config(lifetime),
+  Clients = config(clients),
   
-  {ok, LifeTime} = get_config_value(lifetime, ConfigListe),
-  {ok, Clients} = get_config_value(clients, ConfigListe),
   OwnMessages = [],
   %timer:kill_after(LifeTime * 1000 / 45), % das 45 muss weg, ist nur wegen der warning
   timer:kill_after(3000),
@@ -27,9 +27,28 @@ start(Hostadress) ->
   %Uid = get_unique_id(PID),
   
   %Message_text = message_builder(Uid, Logfile),
-  %dropmessage(Servername, Message_text, Uid). 
+  %dropmessage(ServerName, Message_text, Uid). 
   %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
  % dropmessage(PID, Msg, Number).
+
+load_config() ->
+  {ok, ConfigFile} = file:consult("client.cfg"),
+  
+  {ok, Clients} = get_config_value(clients, ConfigFile),
+  application:set_env(server, clients, Clients),
+  
+  {ok, LifeTime} = get_config_value(lifetime, ConfigFile),
+  application:set_env(server, lifetime, LifeTime),
+
+  {ok, ServerName} = get_config_value(servername, ConfigFile),
+  application:set_env(server, servername, ServerName),
+
+  {ok, Sendeinterval} = get_config_value(sendeinterval, ConfigFile),
+  application:set_env(server, sendeinterval, Sendeinterval).
+
+config(Key) ->
+  {_, Value} = application:get_env(client, Key),
+  Value.
 
 name() -> lists:concat([to_String(node()), to_String(self())]).
 

@@ -1,5 +1,4 @@
 - module(clientlist).
-- import(werkzeug, [findSL/2, timeMilliSecond/0]).
 - export([createNew/0, add/3, exists/2, update/2, setTime/3, lastMessageID/2, setLastMessageID/3, getMessage/2]).
 
 % format: [{ClientID, LastNumber, TimeStamp}]

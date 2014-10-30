@@ -1,5 +1,4 @@
 -module(dlq).
--import(werkzeug, [findneSL/2]).
 -export([createNew/0, add/3, get/2, getLastMsgNr/1]).
 
 %nachrichtenformat: [{Nachricht, NewNumber}]
