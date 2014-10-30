@@ -41,18 +41,17 @@ close_holes_if_necessary(HBQ, DLQ) ->
       end,
 
       case FirstInHBQ - LastInDLQ of 
-        1 -> SortedHBQ = HBQ;
+        1 -> DLQwithErrorMessage = DLQ;
         _ -> 
           %   - fehlernachricht wird erzeugt und in hbq getan
-          HBQwithNewMessage = lists:append(HBQ, [createErrorMessage(LastInDLQ, FirstInHBQ)]),
-          SortedHBQ = lists:keysort(2, HBQwithNewMessage)
+          {ErrorMessage, ErrorNumber} = createErrorMessage(LastInDLQ, FirstInHBQ),
+          DLQwithErrorMessage = dlq:add(ErrorMessage, ErrorNumber, DLQ)
       end;
-      % todo push error messages to dlq instantly
-    false -> SortedHBQ = HBQ
+    false -> DLQwithErrorMessage = DLQ
   end,
 
   % Rückgabe
-  {SortedHBQ, DLQ}.
+  {HBQ, DLQwithErrorMessage}.
 
 push_messages_to_dlq(HBQ, DLQ) -> 
   case DLQ == [] of

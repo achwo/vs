@@ -93,15 +93,15 @@ test_close_empty_lists() ->
   ].
 
 test_close_one_element() ->
-  application:set_env(server, dlq_max_size, 1),
-  [?_assertEqual({[{{"msg",2},2}], [{{"msg",1},1}]}, 
-     hbq:close_holes_if_necessary([{{"msg",2},2}], [{{"msg",1},1}])),
+  application:set_env(server, dlq_max_size, 2),
+  [?_assertEqual({[{{"msg",2},2}], [{{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]}, 
+     hbq:close_holes_if_necessary([{{"msg",2},2}], [{{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}])),
 
-   ?_assertEqual({[{{"2", 2}, 2}, {{"msg",3},3}], [{{"msg",1},1}]}, 
-     hbq:close_holes_if_necessary([{{"msg",3},3}], [{{"msg",1},1}])),
+   ?_assertEqual({[{{"msg",3},3}], [{{"2", 2}, 2}, {{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]}, 
+     hbq:close_holes_if_necessary([{{"msg",3},3}], [{{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}])),
 
-   ?_assertEqual({[{{"1",1},1}, {{"msg",2},2}], [{{"msg", 0}, 0}]}, 
-     hbq:close_holes_if_necessary([{{"msg",2},2}], [{{"msg",0},0}]))%,
+   ?_assertEqual({[{{"1",1},1}, {{"msg",2},2}], [{{"msg", 0}, 0}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]}, 
+     hbq:close_holes_if_necessary([{{"msg",2},2}], [{{"msg",0},0}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]))
   ].  
 
 test_close_multiple_elements() ->
