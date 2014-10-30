@@ -7,8 +7,11 @@
 start() ->
   load_config(),
   {_, ServerName} = application:get_env(server, servername),
-	ID = 0,
-	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew()) end),
+	Logfile = lists:concat(["nachrichtendienst_", to_String(node()), ".log"]),
+  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),"."]),
+  logging(Logfile, Startlog),
+  ID = 0,
+	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew()), Logfile end),
 	register(ServerName, PID),
 	PID.
 
@@ -29,7 +32,7 @@ load_config() ->
   application:set_env(server, dlqlimit, DLQLimit).
 
 
-loop(ID, DLQ, HBQ, Clientlist) ->
+loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
 	receive 
     {getmessages, Client} ->
       New_ID = ID,
@@ -61,10 +64,14 @@ loop(ID, DLQ, HBQ, Clientlist) ->
       New_ID = get_next_id(ID),
       New_HBQ = HBQ,
       New_DLQ = DLQ,
-      Client ! {nid, New_ID};
+      Client ! {nid, New_ID},
+      GetMsgIDLog = lists:concat(["GetMsgID: ", New_ID]),
+      logging(Logfile, GetMsgIDLog);
 
     {dropmessage, {Message, Number}} -> 
       % TODO dropmessage: falsche nummern abfangen
+      DropmessageLog = lists:concat(["---------------------Aufruf von dropmessage---------------------"]),
+      logging(Logfile, DropmessageLog);
       New_ID = ID,
       {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ);
 
@@ -75,7 +82,7 @@ loop(ID, DLQ, HBQ, Clientlist) ->
       todo
   end,
 
-loop(New_ID, New_DLQ, New_HBQ, Clientlist).
+loop(New_ID, New_DLQ, New_HBQ, Clientlist, Logfile).
 
 get_next_id(ID) ->
 	ID + 1.
