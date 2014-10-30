@@ -82,36 +82,28 @@ close_holes_if_necessary_test_() ->
   ].
 
 test_close_empty_lists() ->
-  application:set_env(server, dlq_max_size, 8),
-  [?_assertEqual({[], []}, hbq:close_holes_if_necessary([], [])),
-
-   ?_assertEqual({[], [{{"msg",1},1}]}, 
-     hbq:close_holes_if_necessary([], [{{"msg",1},1}])),
-
-   ?_assertEqual({[{{"msg",1},1}], []}, 
-     hbq:close_holes_if_necessary([{{"msg",1},1}], []))
-  ].
+  ?_assertEqual({[{{"msg",1},1}], []}, 
+    hbq:close_holes_if_necessary([{{"msg",1},1}], [])).
 
 test_close_one_element() ->
-  application:set_env(server, dlq_max_size, 2),
-  [?_assertEqual({[{{"msg",2},2}], [{{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]}, 
-     hbq:close_holes_if_necessary([{{"msg",2},2}], [{{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}])),
+  [?_assertEqual({[{{"msg",2},2}], [{{"msg",1},1}]}, 
+     hbq:close_holes_if_necessary([{{"msg",2},2}], [{{"msg",1},1}])),
 
-   ?_assertEqual({[{{"msg",3},3}], [{{"2", 2}, 2}, {{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]}, 
-     hbq:close_holes_if_necessary([{{"msg",3},3}], [{{"msg",1},1}, {{"msg", 0}, 0}, {{"msg", 0}, 0}])),
+   ?_assertEqual({[{{"msg",3},3}], [{{"msg",1},1}, {{"2", 2}, 2}]}, 
+     hbq:close_holes_if_necessary([{{"msg",3},3}], [{{"msg",1},1}])),
 
-   ?_assertEqual({[{{"1",1},1}, {{"msg",2},2}], [{{"msg", 0}, 0}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]}, 
-     hbq:close_holes_if_necessary([{{"msg",2},2}], [{{"msg",0},0}, {{"msg", 0}, 0}, {{"msg", 0}, 0}]))
+   ?_assertEqual({[{{"msg",2},2}], [{{"1",1},1}]}, 
+     hbq:close_holes_if_necessary([{{"msg",2},2}], []))
   ].  
 
 test_close_multiple_elements() ->
-  [?_assertEqual({[{{"msg",1},1}, {{"msg",2},2}], [{{"msg", 0}, 0}]}, 
-    hbq:close_holes_if_necessary([{{"msg",1},1}, {{"msg",2},2}], [{{"msg", 0}, 0}])),
+  [?_assertEqual({[{{"msg",1},1}, {{"msg",2},2}], []}, 
+    hbq:close_holes_if_necessary([{{"msg",1},1}, {{"msg",2},2}], [])),
 
-   ?_assertEqual({[{{"1",1},1}, {{"msg",2},2}, {{"msg",3},3}], [{{"msg", 0}, 0}]}, 
-    hbq:close_holes_if_necessary([{{"msg",2},2}, {{"msg",3},3}], [{{"msg", 0}, 0}])),
+   ?_assertEqual({[{{"msg",2},2}, {{"msg",3},3}], [{{"1",1},1}]}, 
+    hbq:close_holes_if_necessary([{{"msg",2},2}, {{"msg",3},3}], [])),
 
-   ?_assertEqual({[{{"1",1},1}, {{"msg",2},2}, {{"msg",4},4}], [{{"msg", 0}, 0}]}, 
-    hbq:close_holes_if_necessary([{{"msg",2},2}, {{"msg",4},4}], [{{"msg", 0}, 0}]))
+   ?_assertEqual({[{{"msg",2},2}, {{"msg",4},4}], [{{"1",1},1}]}, 
+    hbq:close_holes_if_necessary([{{"msg",2},2}, {{"msg",4},4}], []))
   ].
 

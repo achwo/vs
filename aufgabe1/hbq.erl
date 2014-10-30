@@ -19,35 +19,32 @@ add(Message, Number, HBQ, DLQ) ->
   %sortieren
   SortedHBQ = lists:keysort(2, HBQwithNewMessage),
 
-  %% Danach wird geprüft, ob Lücken geschlossen werden müssen.
-  {New_HBQ, New_DLQ} = close_holes_if_necessary(SortedHBQ, DLQ),
-  % Nach der Überprüfung, werden die Nachrichten bis zur nächsten Lücke in die DeliveryQueue geschoben
-
+  % Danach wird geprüft, ob Lücken geschlossen werden müssen.
+  {_, DLQ_max_size} = application:get_env(server, dlq_max_size),
+  % luecken muessen geschlossen werden, wenn mehr als maxsize(dlq) / 2
+  case (length(SortedHBQ) > DLQ_max_size/2) of
+    true -> {New_HBQ, New_DLQ} = close_holes_if_necessary(SortedHBQ, DLQ);
+    false -> {New_HBQ, New_DLQ} = {SortedHBQ, DLQ}
+  end,
+  % Nach der Überprüfung, werden die Nachrichten bis zur nächsten Lücke in die DLQ geschoben
   push_messages_to_dlq(New_HBQ, New_DLQ).
 
 
 close_holes_if_necessary(HBQ, DLQ) -> 
-  %   - luecken muessen geschlossen werden, wenn mehr als maxsize(dlq) / 2; dann:
-  {_, DLQ_max_size} = application:get_env(server, dlq_max_size),
-  CloseHoles = length(HBQ) > DLQ_max_size/2,
-  case CloseHoles of
-    true ->
-      %   - kleinsten wert in hbq holen
-      FirstInHBQ = getFirstNumber(HBQ),
-      %   - groessten wert in dlq holen
-      case DLQ == [] of
-        true  -> LastInDLQ = 0; 
-        false -> {_, LastInDLQ} = dlq:getLastMsgNr(DLQ)
-      end,
+  %   - kleinsten wert in hbq holen
+  FirstInHBQ = getFirstNumber(HBQ),
+  %   - groessten wert in dlq holen
+  case DLQ == [] of
+    true  -> LastInDLQ = 0; 
+    false -> {_, LastInDLQ} = dlq:getLastMsgNr(DLQ)
+  end,
 
-      case FirstInHBQ - LastInDLQ of 
-        1 -> DLQwithErrorMessage = DLQ;
-        _ -> 
-          %   - fehlernachricht wird erzeugt und in hbq getan
-          {ErrorMessage, ErrorNumber} = createErrorMessage(LastInDLQ, FirstInHBQ),
-          DLQwithErrorMessage = dlq:add(ErrorMessage, ErrorNumber, DLQ)
-      end;
-    false -> DLQwithErrorMessage = DLQ
+  case FirstInHBQ - LastInDLQ of 
+    1 -> DLQwithErrorMessage = DLQ;
+    _ -> 
+      %   - fehlernachricht wird erzeugt und in hbq getan
+      {ErrorMessage, ErrorNumber} = createErrorMessage(LastInDLQ, FirstInHBQ),
+      DLQwithErrorMessage = dlq:add(ErrorMessage, ErrorNumber, DLQ)
   end,
 
   % Rückgabe
