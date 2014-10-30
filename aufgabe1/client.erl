@@ -55,16 +55,16 @@ name() -> lists:concat([to_String(node()), to_String(self())]).
 
 loop(PID, OwnMessages, Logfile) ->
   
-  redakteur(5, PID, OwnMessages, Logfile),
-  leser(false, OwnMessages, PID, Logfile),
-  loop(PID, OwnMessages, Logfile).
+  OwnMsgs = redakteur(5, PID, OwnMessages, Logfile),
+  leser(false, OwnMsgs, PID, Logfile),
+  loop(PID, OwnMsgs, Logfile).
 
-redakteur(0, PID, _, Logfile) ->
+redakteur(0, PID, OwnMessages, Logfile) ->
   % vergesse, nachricht zu senden 
   Number = get_unique_id(PID),
   io:fwrite ("Uid ~p~n", [Number]),
-  logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******"]));
-
+  logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******"])),
+  OwnMessages;
 redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   % warte n sekunden
   timer:sleep(500),
@@ -88,8 +88,9 @@ leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false ->
   {TerminatedFlag,Message} = receive_message(PID),
   %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
   %überprüft ob die Nachricht von Ihm ist
-  {Number,TextMessage} = Message,
+  {TextMessage,Number} = Message,
   io:fwrite ("Number: ~p", [Number]), io:fwrite ("TextMessage: ~p~n", [TextMessage]),
+  io:fwrite ("OwnMessages: ~p~n", [OwnMessages)),
   IsOwn = lists:any(Number,OwnMessages),
   io:fwrite ("IsOwn: ~p~n", [IsOwn]),
   if IsOwn == true -> nix;
@@ -110,9 +111,10 @@ receive_message(Server) ->
   Server ! {getmessages, self()},
   % hole Nachrichten vom Server ab
   receive
-    {reply, Number, Nachricht, Terminated} ->
+    {reply, Nachricht, Number, Terminated} ->
      % Speichere empfangene Nachrichten in Liste
-     NewMessage = {Number,Nachricht}
+     NewMessage = {Nachricht,Number},
+     io:fwrite ("NewMessage: ~p", [NewMessage])
   end,
   {Terminated, NewMessage}.
   
