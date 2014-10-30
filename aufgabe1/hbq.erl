@@ -47,6 +47,7 @@ close_holes_if_necessary(HBQ, DLQ) ->
           HBQwithNewMessage = lists:append(HBQ, [createErrorMessage(LastInDLQ, FirstInHBQ)]),
           SortedHBQ = lists:keysort(2, HBQwithNewMessage)
       end;
+      % todo push error messages to dlq instantly
     false -> SortedHBQ = HBQ
   end,
 
