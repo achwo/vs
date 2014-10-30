@@ -71,7 +71,7 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
     {dropmessage, {Message, Number}} -> 
       % TODO dropmessage: falsche nummern abfangen
       DropmessageLog = lists:concat(["---------------------Aufruf von dropmessage---------------------"]),
-      logging(Logfile, DropmessageLog);
+      logging(Logfile, DropmessageLog),
       New_ID = ID,
       {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ);
 
