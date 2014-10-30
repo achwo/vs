@@ -35,16 +35,16 @@ load_config() ->
   {ok, ConfigFile} = file:consult("client.cfg"),
   
   {ok, Clients} = get_config_value(clients, ConfigFile),
-  application:set_env(server, clients, Clients),
+  application:set_env(client, clients, Clients),
   
   {ok, LifeTime} = get_config_value(lifetime, ConfigFile),
-  application:set_env(server, lifetime, LifeTime),
+  application:set_env(client, lifetime, LifeTime),
 
   {ok, ServerName} = get_config_value(servername, ConfigFile),
-  application:set_env(server, servername, ServerName),
+  application:set_env(client, servername, ServerName),
 
-  {ok, Sendeinterval} = get_config_value(sendeinterval, ConfigFile),
-  application:set_env(server, sendeinterval, Sendeinterval).
+  {ok, Sendeintervall} = get_config_value(sendeintervall, ConfigFile),
+  application:set_env(client, sendeintervall, Sendeintervall).
 
 config(Key) ->
   {_, Value} = application:get_env(client, Key),

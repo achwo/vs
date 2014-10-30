@@ -71,12 +71,6 @@ loop(ID, DLQ, HBQ, Clientlist) ->
       New_ID = ID,
       New_HBQ = HBQ,
       New_DLQ = DLQ,
-      todo;
-
-    {ping} ->
-      New_ID = ID,
-      New_HBQ = HBQ,
-      New_DLQ = DLQ,
       todo
   end,
 
