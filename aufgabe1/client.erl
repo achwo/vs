@@ -54,6 +54,7 @@ name() -> lists:concat([to_String(node()), to_String(self())]).
 
 
 loop(PID, OwnMessages, Logfile) ->
+  
   redakteur(5, PID, OwnMessages, Logfile),
   leser(false, OwnMessages, PID, Logfile),
   loop(PID, OwnMessages, Logfile).
@@ -130,7 +131,7 @@ dropmessage(Server, Message, Number) ->
 	Server ! {dropmessage, {Message, Number}}.
 
 get_unique_id(Server) ->
-	io:fwrite ("Config ~p~n", [Server]),
+	io:fwrite ("Config: ~p~n", [Server]),
 	Server ! {getmsgid, self()},
 	io:fwrite ("\nSend Message"),
 	receive{nid, Number} ->
