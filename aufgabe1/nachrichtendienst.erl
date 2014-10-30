@@ -60,7 +60,7 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
 
       % todo: what if there is an error? currently: message {reply, nil, nok, true}      
       Client ! {reply, ActualNumber, Message, Terminated},
-      MsgToServerLog = lists:concat(["Server: Nachrichtennummer ", ActualNumber, " an ", Client, " gesendet"]),
+      MsgToServerLog = lists:concat(["Server: Nachrichtennummer ", ActualNumber, " an ", Client, " gesendet~n"]),
       logging(Logfile, MsgToServerLog);
 
     {getmsgid,Client} ->
@@ -77,7 +77,7 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
       logging(Logfile, DropmessageLog),
       New_ID = ID,
       {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ),
-      MessageLog = lists:concat(["Nachricht ", {Message, Number}, " in HBQ gespeichert"]),
+      MessageLog = lists:concat(["Nachricht ", Message , " ", Number, " in HBQ gespeichert~n"]),
       logging(Logfile, MessageLog);
 
     {shutdown} ->
