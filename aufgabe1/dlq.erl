@@ -8,10 +8,11 @@ createNew() -> [].
 % speichert die Nachtricht in die dql
 add(Message, Number, Queue) ->
 	%Eingang in die dlq wird dokumentiert
+	New_Message = lists:concat([Message, "; DLQ In: ",werkzeug:timeMilliSecond()]),
 
 	case is_full(Queue) of 
-		true 	-> NewQueue = lists:append(delete_lowest_id(Queue), [{Message, Number}]);
-		false -> NewQueue = lists:append(Queue, [{Message, Number}])
+		true 	-> NewQueue = lists:append(delete_lowest_id(Queue), [{New_Message, Number}]);
+		false -> NewQueue = lists:append(Queue, [{New_Message, Number}])
 	end,
 	lists:keysort(2, NewQueue).
 

@@ -50,7 +50,6 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
       end,
 
       DlqMessage = dlq:get(Number, DLQ),
-      io:fwrite ("#########DlqMessage######## ~p~n", [DlqMessage]),
 
       case DlqMessage of
         false -> 
