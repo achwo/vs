@@ -72,14 +72,22 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
       loop(New_ID, DLQ, HBQ, Clientlist, Logfile, Timer);
 
     {dropmessage, {Message, Number}} -> 
-      {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ),
+      {New_HBQ, New_DLQ, TransferedNumbers} = hbq:add(Message, Number, HBQ, DLQ),
       MessageLog = lists:concat(["Nachricht ", Message , " ", Number, " in HBQ gespeichert\n"]),
       logging(Logfile, MessageLog),
+
+      case TransferedNumbers == [] of
+        false ->
+          TransferLog = lists:concat(["QVerwaltung>>> Nachrichten ", to_String(TransferedNumbers), " von HBQ in DLQ transferiert.\n"]),
+          logging(Logfile, TransferLog);
+        _ -> nothing
+      end,  
       loop(ID, New_DLQ, New_HBQ, Clientlist, Logfile, Timer);
 
     {shutdown} ->
       io:fwrite("#################SERVER WIRD HERUNTERGEFAHREN#################\n"),
-      MessageLog = lists:concat(["Downtime ", timeMilliSecond(), " vom Nachrichtenserver ", to_String(self()), "; Anzahl der Restnachrichten in der HBQ:",to_String(length(HBQ)), "\n"]),
+      MessageLog = lists:concat(["Downtime ", timeMilliSecond(), " vom Nachrichtenserver ", to_String(self()), 
+        "; Anzahl der Restnachrichten in der HBQ:",to_String(length(HBQ)), "\n"]),
       logging(Logfile, MessageLog)
   end,
   init:stop(1).

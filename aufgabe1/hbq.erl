@@ -54,19 +54,20 @@ push_messages_to_dlq(HBQ, DLQ) ->
   FirstInHBQ = getFirstNumber(HBQ),
 
   case FirstInHBQ - LastInDLQ of 
-    1 -> push_messages_to_dlq(FirstInHBQ-1, HBQ, DLQ);
-    _ -> {HBQ, DLQ}
+    1 -> push_messages_to_dlq(FirstInHBQ-1, HBQ, DLQ, []);
+    _ -> {HBQ, DLQ, []}
   end.
 
-push_messages_to_dlq(Number, HBQ, DLQ) ->
+push_messages_to_dlq(Number, HBQ, DLQ, TransferedNumbers) ->
   {Element, RestHBQ} = pop(Number, HBQ),
 
   case Element of
     {_, nil}  -> 
-      {RestHBQ, DLQ};
+      {RestHBQ, DLQ, TransferedNumbers};
     {Message, ElementNumber} -> 
+      NewTransferedNumbers = lists:concat([TransferedNumbers, [ElementNumber]]),
       NewDLQ = dlq:add(Message, ElementNumber, DLQ),
-      push_messages_to_dlq(ElementNumber, RestHBQ, NewDLQ)
+      push_messages_to_dlq(ElementNumber, RestHBQ, NewDLQ, NewTransferedNumbers)
   end.
 
 % pops one message from list, stopping at holes

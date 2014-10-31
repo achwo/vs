@@ -3,6 +3,8 @@
 - export([start/1]).
 - compile(export_all).
 
+% TODO random zeit zwischen senden.. mit komischer berechnung
+
 
 start(Hostadress) ->
   load_config(),
@@ -17,17 +19,8 @@ start(Hostadress) ->
   Clients = config(clients),
   
   OwnMessages = [],
-  %timer:kill_after(LifeTime * 1000 / 45), % das 45 muss weg, ist nur wegen der warning
   timer:kill_after(LifeTime),
-  %redakteur(1, PID, OwnMessages, Logfile),
   loop(PID, OwnMessages, Logfile).
-
-  %Uid = get_unique_id(PID),
-  
-  %Message_text = message_builder(Uid, Logfile),
-  %dropmessage(ServerName, Message_text, Uid). 
-  %TODO: wie komme ich am besten an die Number? Bekomme ich so die MSG?
- % dropmessage(PID, Msg, Number).
 
 load_config() ->
   {ok, ConfigFile} = file:consult("client.cfg"),
@@ -99,11 +92,6 @@ leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true ->
       logging(Logfile, MessageForeign)
     
   end,
-  % generiere ausgabe
-  % ausgeben
-  
-  
-  %rekursiver Aufruf
   leser(MoreMessagesFlag,OwnMessages,PID,Logfile).
 
 
