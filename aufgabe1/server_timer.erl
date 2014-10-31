@@ -9,8 +9,6 @@ prepare(WaitingTimeInMS) ->
   end.
 
 start(Server, WaitingTimeInMS) ->
-  Logfile = lists:concat(["timer.log"]),
-  Startlog = lists:concat(["Startzeit: ", timeMilliSecond()]),
   logging(Logfile, Startlog),
   receive
     {ping} -> start(Server, WaitingTimeInMS)
