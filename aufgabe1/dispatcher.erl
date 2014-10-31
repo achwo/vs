@@ -1,17 +1,17 @@
 - module(dispatcher).
 - import(werkzeug, [get_config_value/2, timeMilliSecond/0, to_String/1, logging/2]).
-- export([start/0]).
+- export([start/1]).
 
 % TODO logging
 
-start() ->
+start(Timer) ->
   load_config(),
   {_, ServerName} = application:get_env(server, servername),
 	Logfile = lists:concat(["dispatcher_", to_String(node()), ".log"]),
   Startlog = lists:concat(["Server Startzeit: ", timeMilliSecond(),"mit PID ", to_String(node())]),
   logging(Logfile, Startlog),
   ID = 0,
-	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew(), Logfile) end),
+	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew(), Logfile, Timer) end),
 	register(ServerName, PID),
 	PID.
 
@@ -33,7 +33,7 @@ load_config() ->
   application:set_env(server, dlqlimit, DLQLimit).
 
 
-loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
+loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
 	receive 
     {getmessages, Client} ->
       New_ID = ID,
@@ -82,13 +82,15 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
       logging(Logfile, MessageLog);
 
     {shutdown} ->
+      io:fwrite("#################SERVER WIRD HERUNTERGEFAHREN#################"),
+      init:stop(1),
       New_ID = ID,
       New_HBQ = HBQ,
-      New_DLQ = DLQ,
-      todo
+      New_DLQ = DLQ
   end,
 
-loop(New_ID, New_DLQ, New_HBQ, Clientlist, Logfile).
+Timer ! {ping},
+loop(New_ID, New_DLQ, New_HBQ, Clientlist, Logfile, Timer).
 
 get_next_id(ID) ->
 	ID + 1.

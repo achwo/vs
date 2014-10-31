@@ -54,7 +54,7 @@ test_larger_holes() ->
 
 
 push_messages_to_dlq_test_() ->
-  application:set_env(server, dlq_max_size, 10),
+  application:set_env(server, dlqlimit, 10),
   [test_push_one_element(),
    test_push_multiple_elements()
   ].

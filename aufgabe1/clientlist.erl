@@ -14,18 +14,16 @@ exists(ID, [{CurrentElement, _, _}|Rest]) when ID /= CurrentElement -> exists(ID
 exists(ID, [{CurrentElement, _, _}|_]) when ID == CurrentElement -> true.
 
 update(CurrentTime, Queue) -> 
-%{_, Lifetime} = application:get_env(lifetime, clientlifetime),
-Lifetime = 2, %TODO nicht mehr hard codieren!!!!
-update(CurrentTime, Queue, [], Lifetime).
+{_, LifetimeInS} = application:get_env(server, clientlifetime), 
+update(CurrentTime, Queue, [], LifetimeInS).
   
+
 update(_, [], ClientList, _) -> ClientList;
-
-update(CurrentTime, [{_,_,TimeStamp}|Rest], ClientList,Lifetime) when (CurrentTime - TimeStamp) > (Lifetime*1000) ->
-	update(CurrentTime, Rest, ClientList, Lifetime);
-
-update(CurrentTime, [{ClientID,LastNumber,TimeStamp}|Rest], ClientList, Lifetime) when (CurrentTime - TimeStamp) =< (Lifetime*1000) ->
+update(CurrentTime, [{_,_,TimeStamp}|Rest], ClientList,LifetimeInS) when (CurrentTime - TimeStamp) > (LifetimeInS*1000) ->
+	update(CurrentTime, Rest, ClientList, LifetimeInS);
+update(CurrentTime, [{ClientID,LastNumber,TimeStamp}|Rest], ClientList, LifetimeInS) when (CurrentTime - TimeStamp) =< (LifetimeInS*1000) ->
  	NewList = lists:append([{ClientID,LastNumber,TimeStamp}], ClientList),
- 	update(CurrentTime, Rest, NewList, Lifetime).
+ 	update(CurrentTime, Rest, NewList, LifetimeInS).
 
 
 setTime(ID, CurrentTime, Queue) ->
