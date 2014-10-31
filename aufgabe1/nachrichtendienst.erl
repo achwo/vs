@@ -50,18 +50,19 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile) ->
       end,
 
       DlqMessage = dlq:get(Number, DLQ),
+      io:fwrite ("#########DlqMessage######## ~p~n", [DlqMessage]),
 
       case DlqMessage of
         false -> 
-        {{ActualNumber, Message},_,Terminated} = {{-1, "empty list"},-1,false};
+        {Message, ActualNumber, Terminated} = {"empty list",-1,false};
 
-        _ -> {{ActualNumber, Message},_,Terminated} = DlqMessage
+        _ -> {Message, ActualNumber, Terminated} = DlqMessage
       end,
 
       % todo: what if there is an error? currently: message {reply, nil, nok, true}      
-      Client ! {reply, ActualNumber, Message, Terminated},
-      MsgToServerLog = lists:concat(["Server: Nachrichtennummer ", ActualNumber, " an ", Client, " gesendet~n"]),
-      logging(Logfile, MsgToServerLog);
+      Client ! {reply, ActualNumber, Message, Terminated};
+      %MsgToServerLog = lists:concat(["Server: Nachrichtennummer ", ActualNumber, " an ", Client, " gesendet~n"]),
+      %logging(Logfile, MsgToServerLog);
 
     {getmsgid,Client} ->
       New_ID = get_next_id(ID),

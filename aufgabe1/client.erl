@@ -15,12 +15,12 @@ start(Hostadress) ->
   Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),"."]),
   logging(Logfile, Startlog),
   
-  LifeTime = config(lifetime),
+  LifeTime = config(lifetime) * 1000,
   Clients = config(clients),
   
   OwnMessages = [],
   %timer:kill_after(LifeTime * 1000 / 45), % das 45 muss weg, ist nur wegen der warning
-  timer:kill_after(3000),
+  timer:kill_after(LifeTime),
   %redakteur(1, PID, OwnMessages, Logfile),
   loop(PID, OwnMessages, Logfile).
 
@@ -73,6 +73,7 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   io:fwrite ("Uid ~p~n", [Number]),
   % adde nummer zur liste selbstgeschickter nachrichten
   OwnMessagesNew = lists:append(OwnMessages, [Number]),
+  io:fwrite ("OwnMessages im Redakteur ~p~n", [OwnMessagesNew]),
   % generiere nachricht
   Message = message_builder(Number),
   % sende nachricht
@@ -81,26 +82,30 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   
   redakteur(HowOften-1, PID, OwnMessagesNew, Logfile).
 
-leser(true, OwnMessages, PID, Logfile) -> nix;
+leser(false, OwnMessages, PID, Logfile) -> redakteur(5, PID, OwnMessages, Logfile);
 
 leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false -> 
   % hole nachricht
   {TerminatedFlag,Message} = receive_message(PID),
   %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
   %überprüft ob die Nachricht von Ihm ist
-  {TextMessage,Number} = Message,
-  io:fwrite ("Number: ~p", [Number]), io:fwrite ("TextMessage: ~p~n", [TextMessage]),
-  io:fwrite ("OwnMessages: ~p~n", [OwnMessages)),
-  IsOwn = lists:any(Number,OwnMessages),
+  {Number, TextMessage} = Message,
+  io:fwrite ("Number: ~p", [Number]), io:fwrite (" TextMessage: ~p~n", [TextMessage]),
+  io:fwrite ("OwnMessages: ~p~n", [OwnMessages]),
+  TestFunction = fun(X) -> X =:= Number end,
+  IsOwn = lists:any(TestFunction,OwnMessages),
   io:fwrite ("IsOwn: ~p~n", [IsOwn]),
-  if IsOwn == true -> nix;
+  if IsOwn == true -> 
+    io:fwrite ("EIGENE Nachricht erhalten: ~p~n", [TextMessage]);
     %Schreibe Log mit "own Message"
-    false -> nix
-    %schreibe Log ohne "own Message"
+    false -> 
+    io:fwrite ("War keine eigene Nachricht: ~p~n", [TextMessage])
+    
   end,
   % generiere ausgabe
   % ausgeben
   logging(Logfile, TextMessage),
+  io:fwrite ("Kommt noch eine Nachricht?: ~p~n", [TerminatedFlag]),
   %rekursiver Aufruf
   leser(TerminatedFlag,OwnMessages,PID,Logfile).
 
