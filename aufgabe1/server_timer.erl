@@ -9,7 +9,6 @@ prepare(WaitingTimeInMS) ->
   end.
 
 start(Server, WaitingTimeInMS) ->
-  logging(Logfile, Startlog),
   receive
     {ping} -> start(Server, WaitingTimeInMS)
   after WaitingTimeInMS ->
