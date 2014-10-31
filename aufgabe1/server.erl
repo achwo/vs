@@ -2,5 +2,7 @@
 -export([start/0]).
 
 start() ->
+  Timer = spawn_link(fun() -> server_timer:prepare(10000) end),
   Server = nachrichtendienst:start(),
-  server_timer:start(Server, 1000).
+  Timer ! {Server}.
+  
