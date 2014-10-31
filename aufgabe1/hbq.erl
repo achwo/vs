@@ -9,8 +9,10 @@ createNew() -> [].
 
 add(Message, Number, HBQ, DLQ) -> 
   
+  %Eingang in die hbq wird dokumentiert
+  New_Message = lists:concat([Message, "; HBQ In: ",werkzeug:timeMilliSecond()]),
   % Nachricht und Nummer werden in die Holdbackqueue geschrieben.
-  HBQwithNewMessage = lists:append(HBQ, [{Message, Number}]), 
+  HBQwithNewMessage = lists:append(HBQ, [{New_Message, Number}]), 
   SortedHBQ = lists:keysort(2, HBQwithNewMessage),
 
   % Danach wird geprueft, ob Luecken geschlossen werden muessen.
