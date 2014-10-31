@@ -83,10 +83,10 @@ getFirstNumber([{_,HBQNumber}|_]) -> HBQNumber.
 createErrorMessage(LastInDLQ, FirstInHBQ) when FirstInHBQ - LastInDLQ == 2 ->
   HoleNumber = FirstInHBQ - 1,
   MessageText = to_String(HoleNumber),
-  {{MessageText, HoleNumber}, HoleNumber};
+  {MessageText, HoleNumber};
 createErrorMessage(LastInDLQ, FirstInHBQ) -> 
   FirstMissing = LastInDLQ + 1,
   LastMissing = FirstInHBQ - 1, 
   MessageText = lists:concat([to_String(FirstMissing), " bis ", to_String(LastMissing)]),
-  {{MessageText, LastMissing}, LastMissing}. 
+  {MessageText, LastMissing}. 
 

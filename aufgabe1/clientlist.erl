@@ -36,7 +36,7 @@ setTime(ClientID, CurrentTime, Queue) ->
   case exists(ClientID, Queue) of 
   	true -> {GetID, Number, TimeStamp} = getMessage(ClientID, Queue),
   			NewList = lists:delete({GetID, Number, TimeStamp}, Queue),
-  			lists:append(NewList,[{GetID,CurrentTime, NewList}]);
+  			lists:append(NewList,[{GetID, Number, CurrentTime}]);
   	false -> Queue
 end.
 
