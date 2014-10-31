@@ -3,6 +3,6 @@
 
 start() ->
   Timer = spawn_link(fun() -> server_timer:prepare(10000) end),
-  Server = dispatcher:start(),
+  Server = dispatcher:start(Timer),
   Timer ! {Server}.
   
