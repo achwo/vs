@@ -2,4 +2,4 @@
 
 erlc *.erl
 
-erl -name paul@$1 -setcookie kram -noshell -pa ebin -eval "client:start(\"bla@$1\")" 
+erl -name edgar@$1 -setcookie kram -noshell -pa ebin -eval "client:start(\"paul@$2\")" 

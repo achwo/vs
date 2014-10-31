@@ -34,13 +34,11 @@ load_config() ->
 
 
 loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
+  Timer ! {ping},
 	receive 
     {getmessages, Client} ->
-      New_ID = ID,
-      New_HBQ = HBQ,
-      New_DLQ = DLQ,
       % pruefen, welche nachricht der client bekommen soll, falls er schon bekannt ist
-      clientlist:add(ID,timeMilliSecond(),Clientlist),
+      ModifiedClientList = clientlist:add(Client,timeMilliSecond(),Clientlist),
       ClientListNumber = clientlist:lastMessageID(Client, Clientlist),
       if 
         % sonst hole kleinste nachricht
@@ -50,6 +48,8 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
       end,
 
       DlqMessage = dlq:get(Number, DLQ),
+      Getmessga = lists:concat(["######### ClientListNumber: ", to_String(ClientListNumber)," ~n"]),
+      logging(Logfile, Getmessga),
 
       case DlqMessage of
         false -> {Message, ActualNumber, MoreMessages} = {"empty list",-1,false};
@@ -57,37 +57,30 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
       end,
 
       % todo: what if there is an error? currently: message {reply, nil, nok, true}      
-      Client ! {reply, ActualNumber, Message, MoreMessages};
+      Client ! {reply, ActualNumber, Message, MoreMessages},
+      loop(ID, DLQ, HBQ, ModifiedClientList, Logfile, Timer);
       %MsgToServerLog = lists:concat(["Server: Nachrichtennummer ", ActualNumber, " an ", Client, " gesendet~n"]),
       %logging(Logfile, MsgToServerLog);
 
     {getmsgid,Client} ->
       New_ID = get_next_id(ID),
-      New_HBQ = HBQ,
-      New_DLQ = DLQ,
       Client ! {nid, New_ID},
       GetMsgIDLog = lists:concat(["Client bekommt folgende Nummer: ", New_ID]), 
-      logging(Logfile, GetMsgIDLog);
+      logging(Logfile, GetMsgIDLog),
+      loop(New_ID, DLQ, HBQ, Clientlist, Logfile, Timer);
 
     {dropmessage, {Message, Number}} -> 
       % TODO dropmessage: falsche nummern abfangen
       DropmessageLog = lists:concat(["---------------------Aufruf von dropmessage---------------------~n"]),
       logging(Logfile, DropmessageLog),
-      New_ID = ID,
       {New_HBQ, New_DLQ} = hbq:add(Message, Number, HBQ, DLQ),
       MessageLog = lists:concat(["Nachricht ", Message , " ", Number, " in HBQ gespeichert~n"]),
-      logging(Logfile, MessageLog);
+      logging(Logfile, MessageLog),
+      loop(ID, New_DLQ, New_HBQ, Clientlist, Logfile, Timer);
 
     {shutdown} ->
-      io:fwrite("#################SERVER WIRD HERUNTERGEFAHREN#################"),
-      init:stop(1),
-      New_ID = ID,
-      New_HBQ = HBQ,
-      New_DLQ = DLQ
-  end,
-
-Timer ! {ping},
-loop(New_ID, New_DLQ, New_HBQ, Clientlist, Logfile, Timer).
+      io:fwrite("#################SERVER WIRD HERUNTERGEFAHREN#################")
+  end.
 
 get_next_id(ID) ->
 	ID + 1.

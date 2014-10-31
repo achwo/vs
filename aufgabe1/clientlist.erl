@@ -5,16 +5,16 @@
 
 createNew() -> [].
 
-add(ID, CurrentTime, Queue) ->
-  case exists(ID, Queue) of
-    true -> setTime(ID, CurrentTime, Queue);
-    false -> lists:append(Queue, [{ID, 0, CurrentTime}])
+add(ClientID, CurrentTime, Queue) ->
+  case exists(ClientID, Queue) of
+    true -> setTime(ClientID, CurrentTime, Queue);
+    false -> lists:append(Queue, [{ClientID, 0, CurrentTime}])
   end.
 
 
 exists(_, []) -> false;
-exists(ID, [{CurrentElement, _, _}|Rest]) when ID /= CurrentElement -> exists(ID, Rest);
-exists(ID, [{CurrentElement, _, _}|_]) when ID == CurrentElement -> true.
+exists(ClientID, [{CurrentElement, _, _}|Rest]) when ClientID /= CurrentElement -> exists(ClientID, Rest);
+exists(ClientID, [{CurrentElement, _, _}|_]) when ClientID == CurrentElement -> true.
 
 update(CurrentTime, Queue) -> 
 {_, LifetimeInS} = application:get_env(server, clientlifetime), 
@@ -31,10 +31,10 @@ update(CurrentTime, [{ClientID,LastNumber,TimeStamp}|Rest], ClientList, Lifetime
  	update(CurrentTime, Rest, NewList, LifetimeInS).
 
 
-setTime(ID, CurrentTime, Queue) ->
+setTime(ClientID, CurrentTime, Queue) ->
 
-  case exists(ID, Queue) of 
-  	true -> {GetID, Number, TimeStamp} = getMessage(ID, Queue),
+  case exists(ClientID, Queue) of 
+  	true -> {GetID, Number, TimeStamp} = getMessage(ClientID, Queue),
   			NewList = lists:delete({GetID, Number, TimeStamp}, Queue),
   			lists:append(NewList,[{GetID,CurrentTime, NewList}]);
   	false -> Queue
@@ -42,17 +42,17 @@ end.
 
 
 getMessage(_, []) -> {0,0,0};
-getMessage(ID, [{NewID, _, _}|Rest]) when ID /= NewID -> getMessage(ID, Rest);
-getMessage(ID, [{ID, Number, TimeStamp}|_]) -> {ID, Number, TimeStamp}. 
+getMessage(ClientID, [{NewClientID, _, _}|Rest]) when ClientID /= NewClientID -> getMessage(ClientID, Rest);
+getMessage(ClientID, [{ClientID, Number, TimeStamp}|_]) -> {ClientID, Number, TimeStamp}. 
 
 
-lastMessageID(ID, Queue) -> 
-	{_,Number,_} = getMessage(ID, Queue),
+lastMessageID(ClientID, Queue) -> 
+	{_,Number,_} = getMessage(ClientID, Queue),
 	Number.
 
 
-setLastMessageID(ID, NewMessageID, Queue) ->
-  {NewID, Number, TimeStamp} = getMessage(ID, Queue),
+setLastMessageID(ClientID, NewMessageID, Queue) ->
+  {NewID, Number, TimeStamp} = getMessage(ClientID, Queue),
   NewList = lists:delete({NewID, Number, TimeStamp}, Queue),
   lists:append(NewList,[{NewID,NewMessageID,TimeStamp}]).
   
