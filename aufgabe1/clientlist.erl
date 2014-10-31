@@ -6,8 +6,11 @@
 createNew() -> [].
 
 add(ID, CurrentTime, Queue) ->
-  lists:append(Queue, [{ID, 0, CurrentTime}]).
-  %TODO: if client already exist just update the timestamp otherwise add the client to the list 
+  case exists(ID, Queue) of
+    true -> setTime(ID, CurrentTime, Queue);
+    false -> lists:append(Queue, [{ID, 0, CurrentTime}])
+  end.
+
 
 exists(_, []) -> false;
 exists(ID, [{CurrentElement, _, _}|Rest]) when ID /= CurrentElement -> exists(ID, Rest);
@@ -19,8 +22,10 @@ update(CurrentTime, Queue, [], LifetimeInS).
   
 
 update(_, [], ClientList, _) -> ClientList;
+
 update(CurrentTime, [{_,_,TimeStamp}|Rest], ClientList,LifetimeInS) when (CurrentTime - TimeStamp) > (LifetimeInS*1000) ->
 	update(CurrentTime, Rest, ClientList, LifetimeInS);
+
 update(CurrentTime, [{ClientID,LastNumber,TimeStamp}|Rest], ClientList, LifetimeInS) when (CurrentTime - TimeStamp) =< (LifetimeInS*1000) ->
  	NewList = lists:append([{ClientID,LastNumber,TimeStamp}], ClientList),
  	update(CurrentTime, Rest, NewList, LifetimeInS).
