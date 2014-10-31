@@ -54,7 +54,7 @@ name() -> lists:concat([to_String(node()), to_String(self())]).
 loop(PID, OwnMessages, Logfile) ->
   
   OwnMsgs = redakteur(5, PID, OwnMessages, Logfile),
-  leser(false, OwnMsgs, PID, Logfile),
+  leser(true, OwnMsgs, PID, Logfile),
   loop(PID, OwnMsgs, Logfile).
 
 redakteur(0, PID, OwnMessages, Logfile) ->
@@ -80,9 +80,9 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
 
 leser(false, OwnMessages, PID, Logfile) -> redakteur(5, PID, OwnMessages, Logfile);
 
-leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false -> 
+leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true -> 
   % hole nachricht
-  {TerminatedFlag,Message} = receive_message(PID),
+  {MoreMessagesFlag,Message} = receive_message(PID),
   %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
   %überprüft ob die Nachricht von Ihm ist
   {Number, TextMessage} = Message,
