@@ -8,11 +8,9 @@ start(Hostadress) ->
   load_config(),
   ServerName = config(servername),
   PID = get_PID(ServerName, Hostadress),
-  
-
-  %TODO: CLIENTNR in LOG-Name ergänzen
+ 
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
-  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),"."]),
+  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),".\n"]),
   logging(Logfile, Startlog),
   
   LifeTime = config(lifetime) * 1000,
@@ -62,23 +60,21 @@ loop(PID, OwnMessages, Logfile) ->
 redakteur(0, PID, OwnMessages, Logfile) ->
   % vergesse, nachricht zu senden 
   Number = get_unique_id(PID),
-  io:fwrite ("Uid ~p~n", [Number]),
-  logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******"])),
+  logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******\n"])),
   OwnMessages;
 redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   % warte n sekunden
   timer:sleep(500),
   % hole nachrichtennummer
   Number = get_unique_id(PID),
-  io:fwrite ("Uid ~p~n", [Number]),
   % adde nummer zur liste selbstgeschickter nachrichten
   OwnMessagesNew = lists:append(OwnMessages, [Number]),
-  io:fwrite ("OwnMessages im Redakteur ~p~n", [OwnMessagesNew]),
   % generiere nachricht
   Message = message_builder(Number),
+  SendLog = lists:concat([name(), Number,"te_Nachricht. C Out: ", timeMilliSecond(), " gesendet\n"]),
   % sende nachricht
   dropmessage(PID, Message, Number),
-  logging(Logfile, Message),
+  logging(Logfile, SendLog),
   
   redakteur(HowOften-1, PID, OwnMessagesNew, Logfile).
 
@@ -90,22 +86,23 @@ leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false ->
   %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
   %überprüft ob die Nachricht von Ihm ist
   {Number, TextMessage} = Message,
-  io:fwrite ("Number: ~p", [Number]), io:fwrite (" TextMessage: ~p~n", [TextMessage]),
-  io:fwrite ("OwnMessages: ~p~n", [OwnMessages]),
   TestFunction = fun(X) -> X =:= Number end,
   IsOwn = lists:any(TestFunction,OwnMessages),
-  io:fwrite ("IsOwn: ~p~n", [IsOwn]),
+  
   if IsOwn == true -> 
-    io:fwrite ("EIGENE Nachricht erhalten: ~p~n", [TextMessage]);
-    %Schreibe Log mit "own Message"
+    
+    MessageOwn = lists:concat([TextMessage, ",.own Message; C In: ", timeMilliSecond(),"\n"]),
+    logging(Logfile, MessageOwn);
+    
     false -> 
-    io:fwrite ("War keine eigene Nachricht: ~p~n", [TextMessage])
+    MessageForeign = lists:concat([TextMessage, "; C In: ", timeMilliSecond(),"\n"]),
+    logging(Logfile, MessageForeign)
     
   end,
   % generiere ausgabe
   % ausgeben
-  logging(Logfile, TextMessage),
-  io:fwrite ("Kommt noch eine Nachricht?: ~p~n", [TerminatedFlag]),
+  
+  
   %rekursiver Aufruf
   leser(TerminatedFlag,OwnMessages,PID,Logfile).
 
@@ -118,8 +115,8 @@ receive_message(Server) ->
   receive
     {reply, Nachricht, Number, Terminated} ->
      % Speichere empfangene Nachrichten in Liste
-     NewMessage = {Nachricht,Number},
-     io:fwrite ("NewMessage: ~p", [NewMessage])
+     NewMessage = {Nachricht,Number}
+   
   end,
   {Terminated, NewMessage}.
   
@@ -138,11 +135,8 @@ dropmessage(Server, Message, Number) ->
 	Server ! {dropmessage, {Message, Number}}.
 
 get_unique_id(Server) ->
-	io:fwrite ("Config: ~p~n", [Server]),
 	Server ! {getmsgid, self()},
-	io:fwrite ("\nSend Message"),
 	receive{nid, Number} ->
-		io:fwrite ("Number: ~p~n", [Number]),
 		Number
 	end.
 
