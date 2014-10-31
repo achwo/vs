@@ -1,6 +1,8 @@
 -module(hbq_tests).
 -include_lib("eunit/include/eunit.hrl").
 
+%% DONT WORK BECAUSE STRING MANIPULATION
+
 pop_test_() ->
   [test_empty_list(), 
    test_one_element(), 
@@ -60,17 +62,18 @@ push_messages_to_dlq_test_() ->
   ].
 
 test_push_one_element() ->
-  [?_assertEqual({[],[{{"msg",1},1}]}, hbq:push_messages_to_dlq([{{"msg",1},1}],[])),
-   ?_assertEqual({[{{"msg",2},2}], []}, hbq:push_messages_to_dlq([{{"msg",2},2}],[])),
-   ?_assertEqual({[], [{{"msg",1},1}, {{"msg",2},2}]}, hbq:push_messages_to_dlq([{{"msg",2},2}],[{{"msg", 1}, 1}]))
+  [?_assertEqual({[],[{"msg",1}]}, hbq:push_messages_to_dlq([{"msg",1}],[])),
+   ?_assertEqual({[{"msg",2}], []}, hbq:push_messages_to_dlq([{"msg",2}],[])),
+   ?_assertEqual({[], [{"msg",1}, {"msg",2}]}, 
+    hbq:push_messages_to_dlq([{"msg",2}],[{"msg", 1}]))
   ].
 
 test_push_multiple_elements() ->
-  [?_assertEqual({[], [{{"msg",1},1}, {{"msg",2},2}]}, 
-    hbq:push_messages_to_dlq([{{"msg", 1}, 1}, {{"msg",2},2}],[])),
+  [?_assertEqual({[], [{"msg",1}, {"msg",2}]}, 
+    hbq:push_messages_to_dlq([{"msg", 1}, {"msg",2}],[])),
 
-   ?_assertEqual({[{{"msg",3},3}], [{{"msg",1},1}]}, 
-    hbq:push_messages_to_dlq([{{"msg",1},1}, {{"msg",3},3}],[]))
+   ?_assertEqual({[{"msg",3}], [{"msg",1}]}, 
+    hbq:push_messages_to_dlq([{"msg",1}, {"msg",3}],[]))
   ].
 
 
