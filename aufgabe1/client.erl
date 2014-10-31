@@ -53,7 +53,7 @@ loop(PID, OwnMessages, Logfile) ->
 redakteur(0, PID, OwnMessages, Logfile) ->
   % vergesse, nachricht zu senden 
   Number = get_unique_id(PID),
-  logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******\n"])),
+  logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******\n\n"])),
   OwnMessages;
 redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   % warte n sekunden
@@ -64,7 +64,7 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   OwnMessagesNew = lists:append(OwnMessages, [Number]),
   % generiere nachricht
   Message = message_builder(Number),
-  SendLog = lists:concat([name(), Number,"te_Nachricht. C Out: ", timeMilliSecond(), " gesendet\n"]),
+  SendLog = lists:concat(["\n",name(), Number,"te_Nachricht. C Out: ", timeMilliSecond(), " gesendet\n"]),
   % sende nachricht
   dropmessage(PID, Message, Number),
   logging(Logfile, SendLog),
@@ -76,25 +76,34 @@ leser(false, OwnMessages, PID, Logfile) -> redakteur(5, PID, OwnMessages, Logfil
 leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true -> 
   % hole nachricht
   {MoreMessagesFlag,Message} = receive_message(PID),
+  
   %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
   %überprüft ob die Nachricht von Ihm ist
-  {Number, TextMessage} = Message,
-  TestFunction = fun(X) -> X =:= Number end,
-  IsOwn = lists:any(TestFunction,OwnMessages),
   
-  case IsOwn of 
-    true -> 
-    MessageOwn = lists:concat([TextMessage, ",.own Message; C In: ", timeMilliSecond(),"\n"]),
-    logging(Logfile, MessageOwn);
-    
+  {Number, TextMessage} = Message,
+  case Number == -1 of
+    true -> leser(MoreMessagesFlag,OwnMessages,PID,Logfile);
     false -> 
-      MessageForeign = lists:concat([TextMessage, "; C In: ", timeMilliSecond(),"\n"]),
-      logging(Logfile, MessageForeign)
-    
-  end,
-  leser(MoreMessagesFlag,OwnMessages,PID,Logfile).
-
-
+      TestFunction = fun(X) -> X =:= Number end,
+      IsOwn = lists:any(TestFunction,OwnMessages),
+  
+      case IsOwn of 
+        true -> 
+        MessageOwn = lists:concat([TextMessage, ",.own Message; C In: ", timeMilliSecond(),"\n"]),
+        logging(Logfile, MessageOwn);
+        
+        false -> 
+          MessageForeign = lists:concat([TextMessage, "; C In: ", timeMilliSecond(),"\n"]),
+          logging(Logfile, MessageForeign)
+        
+      end,
+      % generiere ausgabe
+      % ausgeben
+      
+      
+      %rekursiver Aufruf
+      leser(MoreMessagesFlag,OwnMessages,PID,Logfile)
+end.
 
 receive_message(Server) ->
   % fragen Server nach Nachrichten
