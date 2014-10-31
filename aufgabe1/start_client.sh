@@ -1,6 +1,5 @@
-# erl -name edgar@141.22.70.220 -setcookie banane
+#!/bin/sh
 
-## c(werkzeug).
-## c(client).
+erlc *.erl
 
-## client:start("bla@141.22.90.254").
+erl -name paul@$1 -setcookie kram -noshell -pa ebin -eval "client:start(\"bla@$1\")" 

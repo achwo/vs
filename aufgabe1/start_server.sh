@@ -1,6 +1,5 @@
-# erl -name bla@141.22.90.254 -setcookie banane
+#!/bin/sh
 
-## c(werkzeug).
-## c(dispatcher).
+erlc *.erl
 
-## S = dispatcher:start().
+erl -name paul@$1 -setcookie kram -noshell -pa ebin -eval "server:start()" 
