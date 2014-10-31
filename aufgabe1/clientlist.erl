@@ -7,6 +7,7 @@ createNew() -> [].
 
 add(ID, CurrentTime, Queue) ->
   lists:append(Queue, [{ID, 0, CurrentTime}]).
+  %TODO: if client already exist just update the timestamp otherwise add the client to the list 
 
 exists(_, []) -> false;
 exists(ID, [{CurrentElement, _, _}|Rest]) when ID /= CurrentElement -> exists(ID, Rest);
