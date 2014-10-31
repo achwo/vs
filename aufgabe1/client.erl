@@ -89,14 +89,14 @@ leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true ->
   TestFunction = fun(X) -> X =:= Number end,
   IsOwn = lists:any(TestFunction,OwnMessages),
   
-  if IsOwn == true -> 
-    
+  case IsOwn of 
+    true -> 
     MessageOwn = lists:concat([TextMessage, ",.own Message; C In: ", timeMilliSecond(),"\n"]),
     logging(Logfile, MessageOwn);
     
     false -> 
-    MessageForeign = lists:concat([TextMessage, "; C In: ", timeMilliSecond(),"\n"]),
-    logging(Logfile, MessageForeign)
+      MessageForeign = lists:concat([TextMessage, "; C In: ", timeMilliSecond(),"\n"]),
+      logging(Logfile, MessageForeign)
     
   end,
   % generiere ausgabe
@@ -104,7 +104,7 @@ leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true ->
   
   
   %rekursiver Aufruf
-  leser(TerminatedFlag,OwnMessages,PID,Logfile).
+  leser(MoreMessagesFlag,OwnMessages,PID,Logfile).
 
 
 
@@ -113,12 +113,12 @@ receive_message(Server) ->
   Server ! {getmessages, self()},
   % hole Nachrichten vom Server ab
   receive
-    {reply, Nachricht, Number, Terminated} ->
+    {reply, Nachricht, Number, MoreMessagesFlag} ->
      % Speichere empfangene Nachrichten in Liste
      NewMessage = {Nachricht,Number}
    
   end,
-  {Terminated, NewMessage}.
+  {MoreMessagesFlag, NewMessage}.
   
 
 get_PID(Servername, Hostadress) ->
