@@ -1,4 +1,4 @@
-- module(nachrichtendienst).
+- module(dispatcher).
 - import(werkzeug, [get_config_value/2, timeMilliSecond/0, to_String/1, logging/2]).
 - export([start/0]).
 
@@ -7,7 +7,7 @@
 start() ->
   load_config(),
   {_, ServerName} = application:get_env(server, servername),
-	Logfile = lists:concat(["nachrichtendienst_", to_String(node()), ".log"]),
+	Logfile = lists:concat(["dispatcher_", to_String(node()), ".log"]),
   Startlog = lists:concat(["Server Startzeit: ", timeMilliSecond(),"mit PID ", to_String(node())]),
   logging(Logfile, Startlog),
   ID = 0,

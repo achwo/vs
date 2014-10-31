@@ -1,6 +1,6 @@
 # erl -name bla@141.22.90.254 -setcookie banane
 
 ## c(werkzeug).
-## c(nachrichtendienst).
+## c(dispatcher).
 
-## S = nachrichtendienst:start().
+## S = dispatcher:start().
