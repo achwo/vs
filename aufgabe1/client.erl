@@ -91,7 +91,7 @@ randomSleepTime(SleepTime) ->
     false -> 2000
   end.
 
-leser(false, _, _, _) -> nix;%redakteur(5, PID, OwnMessages, Logfile);
+leser(true, _, _, _) -> nix;%redakteur(5, PID, OwnMessages, Logfile);
 
 leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false -> 
   % hole nachricht
