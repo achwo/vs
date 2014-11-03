@@ -78,7 +78,9 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
 
       case TransferedNumbers == [] of
         false ->
-          TransferLog = lists:concat(["QVerwaltung>>> Nachrichten ", to_String(TransferedNumbers), " von HBQ in DLQ transferiert.\n"]),
+          IOList = io_lib:format("~w", [TransferedNumbers]),
+          FlatList = lists:flatten(IOList),
+          TransferLog = lists:concat(["QVerwaltung>>> Nachrichten ", FlatList, " von HBQ in DLQ transferiert.\n"]),
           logging(Logfile, TransferLog);
         _ -> nothing
       end,  
