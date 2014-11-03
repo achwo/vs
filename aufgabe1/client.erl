@@ -12,11 +12,11 @@ start(Hostadress) ->
   Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),".\n"]),
   logging(Logfile, Startlog),
   
-  LifeTime = config(lifetime) * 1000,
+  LifeTime = 3 * 1000, %LifeTime = config(lifetime) * 1000,
   %Clients = config(clients),
   
   OwnMessages = [],
-  timer:exit_after(LifeTime, 1),
+  timer:exit_after(LifeTime, normal),
   loop(PID, OwnMessages, 3000, Logfile).
 
 load_config() ->
@@ -48,8 +48,9 @@ loop(PID, OwnMessages, SleepTime, Logfile) ->
   NewSleeptime = randomSleepTime(SleepTime),
   io:fwrite("New SleepTime ~p~n", [NewSleeptime]),
   leser(true, OwnMsgs, PID, Logfile),
-
-  loop(PID, OwnMsgs, NewSleeptime, Logfile).
+  receive _ -> exit
+  after 0 -> loop(PID, OwnMsgs, NewSleeptime, Logfile)
+  end.
 
 redakteur(0, PID, OwnMessages, _, Logfile) ->
   % vergesse, nachricht zu senden 
