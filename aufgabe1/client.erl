@@ -46,8 +46,8 @@ loop(PID, OwnMessages, SleepTime, Logfile) ->
   OwnMsgs = redakteur(5, PID, OwnMessages, SleepTime, Logfile),
 
   NewSleeptime = randomSleepTime(SleepTime),
-  io:fwrite("New SleepTime ~p~n", [NewSleeptime]),
-  leser(true, OwnMsgs, PID, Logfile),
+  logging(Logfile, lists:concat(["New SleepTime ", NewSleeptime, "\n"])),
+  leser(false, OwnMsgs, PID, Logfile),
   receive _ -> exit
   after 0 -> loop(PID, OwnMsgs, NewSleeptime, Logfile)
   end.
