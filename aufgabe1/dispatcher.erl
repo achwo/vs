@@ -42,10 +42,13 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
       ClientListNumber = clientlist:lastMessageID(Client, Clientlist),
       if 
         % sonst hole kleinste nachricht
-        ClientListNumber == 0 -> Number = 1;
+        % todo: wenn in der dlq nummer 1 nicht mehr da ist, hole die niedrigste
+        ClientListNumber == 0 -> Number = dlq:getLowestMsgId(DLQ);
+
         % wenn bekannt, hole nachricht > letzter erhaltener
         true -> Number = ClientListNumber + 1
       end,
+      io:fwrite("ClientListNumber ~p~n", [ClientListNumber]),
 
       DlqMessage = dlq:get(Number, DLQ),
 

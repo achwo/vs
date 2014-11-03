@@ -1,5 +1,5 @@
 -module(dlq).
--export([createNew/0, add/3, get/2, getLastMsgNr/1]).
+-export([createNew/0, add/3, get/2, getLastMsgNr/1, getLowestMsgNr/1]).
 
 %nachrichtenformat: [{Nachricht, NewNumber}]
 
@@ -21,6 +21,7 @@ get(Number, [{_, NewNumber}|Rest]) when NewNumber /= Number -> get(Number, Rest)
 get(_, [{Message, NewNumber}|Rest]) when Rest /= [] -> {Message, NewNumber, true};
 get(_, [{Message, NewNumber}|_]) -> {Message, NewNumber, false}.
 
+getLowestMsgNr([{_, ID}|_]) -> ID.
 
 getLastMsgNr(Queue) -> 
 	lists:last(Queue).
