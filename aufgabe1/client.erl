@@ -3,9 +3,6 @@
 - export([start/1]).
 - compile(export_all).
 
-% TODO random zeit zwischen senden.. mit komischer berechnung
-
-
 start(Hostadress) ->
   load_config(),
   ServerName = config(servername),
@@ -16,11 +13,11 @@ start(Hostadress) ->
   logging(Logfile, Startlog),
   
   LifeTime = config(lifetime) * 1000,
-  Clients = config(clients),
+  %Clients = config(clients),
   
   OwnMessages = [],
-  timer:kill_after(LifeTime),
-  loop(PID, OwnMessages, Logfile).
+  timer:exit_after(LifeTime, 1),
+  loop(PID, OwnMessages, 3000, Logfile).
 
 load_config() ->
   {ok, ConfigFile} = file:consult("client.cfg"),
@@ -44,22 +41,27 @@ config(Key) ->
 name() -> lists:concat([to_String(node()), to_String(self())]).
 
 
-loop(PID, OwnMessages, Logfile) ->
+loop(PID, OwnMessages, SleepTime, Logfile) ->
   
-  OwnMsgs = redakteur(5, PID, OwnMessages, Logfile),
-  leser(true, OwnMsgs, PID, Logfile),
-  loop(PID, OwnMsgs, Logfile).
+  OwnMsgs = redakteur(5, PID, OwnMessages, SleepTime, Logfile),
 
-redakteur(0, PID, OwnMessages, Logfile) ->
+  NewSleeptime = randomSleepTime(SleepTime),
+  io:fwrite("New SleepTime ~p~n", [NewSleeptime]),
+  leser(true, OwnMsgs, PID, Logfile),
+
+  loop(PID, OwnMsgs, NewSleeptime, Logfile).
+
+redakteur(0, PID, OwnMessages, _, Logfile) ->
   % vergesse, nachricht zu senden 
   Number = get_unique_id(PID),
   logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******\n\n"])),
   OwnMessages;
-redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
-  % warte n sekunden
-  timer:sleep(500),
+redakteur(HowOften, PID, OwnMessages, SleepTime, Logfile) when HowOften > 0 ->
   % hole nachrichtennummer
   Number = get_unique_id(PID),
+  % warte n sekunden
+  timer:sleep(SleepTime),
+
   % adde nummer zur liste selbstgeschickter nachrichten
   OwnMessagesNew = lists:append(OwnMessages, [Number]),
   % generiere nachricht
@@ -69,17 +71,32 @@ redakteur(HowOften, PID, OwnMessages, Logfile) when HowOften > 0 ->
   dropmessage(PID, Message, Number),
   logging(Logfile, SendLog),
   
-  redakteur(HowOften-1, PID, OwnMessagesNew, Logfile).
+  redakteur(HowOften-1, PID, OwnMessagesNew, SleepTime, Logfile).
 
-leser(false, OwnMessages, PID, Logfile) -> redakteur(5, PID, OwnMessages, Logfile);
+randomSleepTime(SleepTime) ->
+  HalfSleepTime = SleepTime * 0.5,
+  RandomBinary = trunc(random:uniform() * 2),
+  case RandomBinary of
+    0 -> RandomValue = -1;
+    1 -> RandomValue = 1
+  end,
+  case HalfSleepTime >= 1000 of
+    true -> Change = HalfSleepTime * RandomValue;
+    false -> Change = 1000 * RandomValue
+  end,
+  IntermediateSleepTime = SleepTime + Change,
+  case IntermediateSleepTime >= 2000 of
+    true -> trunc(IntermediateSleepTime);
+    false -> 2000
+  end.
+
+leser(false, _, _, _) -> nix;%redakteur(5, PID, OwnMessages, Logfile);
 
 leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true -> 
   % hole nachricht
   {MoreMessagesFlag,Message} = receive_message(PID),
   
-  %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
-  %überprüft ob die Nachricht von Ihm ist
-  
+  %überprüft ob die Nachricht von sich selbst ist
   {Number, TextMessage} = Message,
   case Number == -1 of
     true -> leser(MoreMessagesFlag,OwnMessages,PID,Logfile);
@@ -97,11 +114,6 @@ leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true ->
           logging(Logfile, MessageForeign)
         
       end,
-      % generiere ausgabe
-      % ausgeben
-      
-      
-      %rekursiver Aufruf
       leser(MoreMessagesFlag,OwnMessages,PID,Logfile)
 end.
 
