@@ -21,6 +21,7 @@ get(Number, [{_, NewNumber}|Rest]) when NewNumber /= Number -> get(Number, Rest)
 get(_, [{Message, NewNumber}|Rest]) when Rest /= [] -> {Message, NewNumber, true};
 get(_, [{Message, NewNumber}|_]) -> {Message, NewNumber, false}.
 
+getLowestMsgNr([]) -> 0;
 getLowestMsgNr([{_, ID}|_]) -> ID.
 
 getLastMsgNr(Queue) -> 
