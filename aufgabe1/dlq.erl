@@ -16,10 +16,13 @@ add(Message, Number, Queue) ->
 	end,
 	lists:keysort(2, NewQueue).
 
+% returns a tupel {Message, Number, Terminated}
+% with Terminated = true, if no more messages are available after this one
+% or true, if Number is not found
 get(_, []) -> false;
 get(Number, [{_, NewNumber}|Rest]) when NewNumber /= Number -> get(Number, Rest);
-get(_, [{Message, NewNumber}|Rest]) when Rest /= [] -> {Message, NewNumber, true};
-get(_, [{Message, NewNumber}|_]) -> {Message, NewNumber, false}.
+get(_, [{Message, NewNumber}|Rest]) when Rest /= [] -> {Message, NewNumber, false};
+get(_, [{Message, NewNumber}|_]) -> {Message, NewNumber, true}.
 
 getLowestMsgNr([]) -> 0;
 getLowestMsgNr([{_, ID}|_]) -> ID.

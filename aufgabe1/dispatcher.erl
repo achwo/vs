@@ -54,17 +54,17 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
 
       case DlqMessage of
         false -> 
-          {Message, ActualNumber, MoreMessages} = {"empty list",-1,false},
+          {Message, ActualNumber, Terminated} = {"empty list",-1,true},
           NewModifiedClientList = ModifiedClientList;
         _ -> 
-          {Message, ActualNumber, MoreMessages} = DlqMessage,
+          {Message, ActualNumber, Terminated} = DlqMessage,
           NewModifiedClientList = clientlist:setLastMessageID(Client, ActualNumber, ModifiedClientList)
       end,
 
-      GetmessagesLog = lists:concat([Message, "-getmessages von ", to_String(Client), "-", to_String(MoreMessages),"\n"]),
+      GetmessagesLog = lists:concat([Message, "-getmessages von ", to_String(Client), "-", to_String(Terminated),"\n"]),
       logging(Logfile, GetmessagesLog),
 
-      Client ! {reply, ActualNumber, Message, MoreMessages},
+      Client ! {reply, ActualNumber, Message, Terminated},
       loop(ID, DLQ, HBQ, NewModifiedClientList, Logfile, Timer);
 
     {getmsgid,Client} ->
