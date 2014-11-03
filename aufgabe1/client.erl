@@ -99,9 +99,7 @@ leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true ->
   % hole nachricht
   {MoreMessagesFlag,Message} = receive_message(PID),
   
-  %%TerminatedFlag = true, % nur, damit es nicht endlos laeuft im moment :)
-  %überprüft ob die Nachricht von Ihm ist
-  
+  %überprüft ob die Nachricht von sich selbst ist
   {Number, TextMessage} = Message,
   case Number == -1 of
     true -> leser(MoreMessagesFlag,OwnMessages,PID,Logfile);
@@ -119,11 +117,6 @@ leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true ->
           logging(Logfile, MessageForeign)
         
       end,
-      % generiere ausgabe
-      % ausgeben
-      
-      
-      %rekursiver Aufruf
       leser(MoreMessagesFlag,OwnMessages,PID,Logfile)
 end.
 
