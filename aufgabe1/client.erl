@@ -93,14 +93,14 @@ randomSleepTime(SleepTime) ->
 
 leser(false, _, _, _) -> nix;%redakteur(5, PID, OwnMessages, Logfile);
 
-leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true -> 
+leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false -> 
   % hole nachricht
-  {MoreMessagesFlag,Message} = receive_message(PID),
+  {TerminatedFlag,Message} = receive_message(PID),
   
   %überprüft ob die Nachricht von sich selbst ist
   {Number, TextMessage} = Message,
   case Number == -1 of
-    true -> leser(MoreMessagesFlag,OwnMessages,PID,Logfile);
+    true -> leser(TerminatedFlag,OwnMessages,PID,Logfile);
     false -> 
       TestFunction = fun(X) -> X =:= Number end,
       IsOwn = lists:any(TestFunction,OwnMessages),
@@ -115,7 +115,7 @@ leser(MoreMessages, OwnMessages, PID, Logfile) when MoreMessages == true ->
           logging(Logfile, MessageForeign)
         
       end,
-      leser(MoreMessagesFlag,OwnMessages,PID,Logfile)
+      leser(TerminatedFlag,OwnMessages,PID,Logfile)
 end.
 
 receive_message(Server) ->
@@ -123,12 +123,12 @@ receive_message(Server) ->
   Server ! {getmessages, self()},
   % hole Nachrichten vom Server ab
   receive
-    {reply, Nachricht, Number, MoreMessagesFlag} ->
+    {reply, Nachricht, Number, TerminatedFlag} ->
      % Speichere empfangene Nachrichten in Liste
      NewMessage = {Nachricht,Number}
    
   end,
-  {MoreMessagesFlag, NewMessage}.
+  {TerminatedFlag, NewMessage}.
   
 
 get_PID(Servername, Hostadress) ->
