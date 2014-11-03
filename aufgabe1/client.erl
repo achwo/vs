@@ -3,9 +3,6 @@
 - export([start/1]).
 - compile(export_all).
 
-% TODO random zeit zwischen senden.. mit komischer berechnung
-
-
 start(Hostadress) ->
   load_config(),
   ServerName = config(servername),
@@ -19,7 +16,7 @@ start(Hostadress) ->
   %Clients = config(clients),
   
   OwnMessages = [],
-  timer:kill_after(LifeTime),
+  timer:exit_after(LifeTime, 1),
   loop(PID, OwnMessages, 3000, Logfile).
 
 load_config() ->
