@@ -9,7 +9,7 @@ start(Hostadress) ->
   PID = get_PID(ServerName, Hostadress),
  
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
-  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),".\n"]),
+  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),".\n\n"]),
   logging(Logfile, Startlog),
   
   LifeTime = config(lifetime) * 1000,

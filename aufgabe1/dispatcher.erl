@@ -70,20 +70,20 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
     {getmsgid,Client} ->
       New_ID = get_next_id(ID),
       Client ! {nid, New_ID},
-      GetMsgIDLog = lists:concat(["Nachrichtennummer ", to_String(New_ID), " an ", to_String(Client), " gesendet\n"]), 
+      GetMsgIDLog = lists:concat(["Nachrichtennummer ", to_String(New_ID), " an ", to_String(Client), " gesendet\n\n"]), 
       logging(Logfile, GetMsgIDLog),
       loop(New_ID, DLQ, HBQ, Clientlist, Logfile, Timer);
 
     {dropmessage, {Message, Number}} -> 
       {New_HBQ, New_DLQ, TransferedNumbers} = hbq:add(Message, Number, HBQ, DLQ),
-      MessageLog = lists:concat(["Nachricht ", Message , " ", Number, " in HBQ gespeichert\n"]),
+      MessageLog = lists:concat(["Nachricht ", Message , " ", Number, " in HBQ gespeichert\n\n"]),
       logging(Logfile, MessageLog),
 
       case TransferedNumbers == [] of
         false ->
           IOList = io_lib:format("~w", [TransferedNumbers]),
           FlatList = lists:flatten(IOList),
-          TransferLog = lists:concat(["QVerwaltung>>> Nachrichten ", FlatList, " von HBQ in DLQ transferiert.\n"]),
+          TransferLog = lists:concat(["QVerwaltung>>> Nachrichten ", FlatList, " von HBQ in DLQ transferiert.\n\n"]),
           logging(Logfile, TransferLog);
         _ -> nothing
       end,  
