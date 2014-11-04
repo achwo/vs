@@ -7,8 +7,12 @@
 start(Timer) ->
   load_config(),
   {_, ServerName} = application:get_env(server, servername),
-	Logfile = lists:concat(["dispatcher_", to_String(node()), ".log"]),
+	
+  Logfile = lists:concat(["dispatcher_", to_String(node()), ".log"]),
   Startlog = lists:concat(["Server Startzeit: ", timeMilliSecond(),"mit PID ", to_String(node()), "\n"]),
+  
+  % Seite 8 6.1 -> Serverstart:
+  % Server Startzeit: 30.04 17:37:12,375| mit PID <0.870.0>
   logging(Logfile, Startlog),
   ID = 0,
 	PID = spawn_link(fun() -> loop(ID, dlq:createNew(), hbq:createNew(), clientlist:createNew(), Logfile, Timer) end),
@@ -62,6 +66,9 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
       end,
 
       GetmessagesLog = lists:concat([Message, "-getmessages von ", to_String(Client), "-", to_String(Terminated),"\n"]),
+      
+      % Seite 8 6.1 -> Client fragt Nachricht an:
+      % 2-client@Brummpa-<0.771.0>-KLC: 45te_Nachricht. C Out: 30.04 17:37:32,874|(45); HBQ In: 30.04 17:37:32,875| DLQ In:30.04 17:37:38,969|.(45)-getmessages von <9595.772.0>-false
       logging(Logfile, GetmessagesLog),
 
       Client ! {reply, ActualNumber, Message, Terminated},
@@ -71,6 +78,9 @@ loop(ID, DLQ, HBQ, Clientlist, Logfile, Timer) ->
       New_ID = get_next_id(ID),
       Client ! {nid, New_ID},
       GetMsgIDLog = lists:concat(["Nachrichtennummer ", to_String(New_ID), " an ", to_String(Client), " gesendet\n\n"]), 
+      
+      % Seite 8 6.1 -> Nachrichtennummer an Clienten verschickt:
+      % Server: Nachrichtennummer 5 an <9595.773.0> gesendet
       logging(Logfile, GetMsgIDLog),
       loop(New_ID, DLQ, HBQ, Clientlist, Logfile, Timer);
 
