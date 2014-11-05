@@ -7,14 +7,14 @@
 -export([start/1, startGGT/5]).
 
 start(Koordinator) -> 
-    %Koordinator ! {getsteeringval, self()},
-    %receive
-    %  {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> nix
-    %end,
-    Arbeitszeit = 5,
-    TermZeit = 5,
-    Koordinator = 4,
-    GGTProzessAnzahl = 5,
+    Koordinator ! {getsteeringval, self()},
+    receive
+      {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> nix
+    end,
+    % Arbeitszeit = 5,
+    % TermZeit = 5,
+    % Koordinator = 4,
+    % GGTProzessAnzahl = 5,
     load_config(),
     Nameservice = findNameService(),
     startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator).
