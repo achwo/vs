@@ -40,10 +40,10 @@ findNameService() ->
   global:whereis_name(nameservice).
 
 start() ->
-spawn_link(fun() -> koordinatorStart()).
+spawn_link(fun() -> koordinatorStart() end).
 
 koordinatorStart() ->
-  register(koordinator,self()),
+  global:register_name(koordinator,self()),
   load_config(),
  	
   Nameservice = findNameService(),
