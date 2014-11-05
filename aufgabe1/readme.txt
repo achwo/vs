@@ -1,13 +1,6 @@
-Entwurf:  10h
-Felix allein:     4h
-Felix & Jan gemeinsam: ca 22h -> 44h gesamt
-Felix, Jan & Jonny: 12h -> 36h
-
-Jan & Jonny gemeinsam:  ca 4h ->  8h
-Jan allein:   3h
-Jonny allein: 0h
-
-Gesamt: 105h
+Entwurf:         10h
+Implementation:  95h
+Gesamt:         105h
 
 --------------------
 Compilieren der Dateien:
