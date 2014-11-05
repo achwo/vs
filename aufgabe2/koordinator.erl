@@ -45,11 +45,11 @@ start() ->
  	
   Nameservice = findNameService().
  
-  %{Nameservice, nameservice} ! {self(),{bind,koordinator,node()}},
-  %receive ok -> io:format("..bind.done.\n");
-  %  in_use -> io:format("..schon gebunden.\n")
-  %end,
-  %loop(Nameservice).
+  {Nameservice, nameservice} ! {self(),{bind,koordinator,node()}},
+  receive ok -> io:format("..bind.done.\n");
+    in_use -> io:format("..schon gebunden.\n")
+  end,
+  loop(Nameservice).
 
 
 loop(Nameservice) ->
