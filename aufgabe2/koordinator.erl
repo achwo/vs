@@ -24,21 +24,20 @@ load_config() ->
   application:set_env(koordinator, termzeit, Termzeit),
 
   {ok, Ggtprozessnummer} = get_config_value(ggtprozessnummer, ConfigFile),
-  application:set_env(koordinator, ggtprozessnummer, Ggtprozessnummer).
+  application:set_env(koordinator, ggtprozessnummer, Ggtprozessnummer),
+
+  {ok, NameserviceName} = get_config_value(nameservicename, ConfigFile),
+  application:set_env(koordinator, nameservicename, NameserviceName).
 
  config(Key) ->
   {_, Value} = application:get_env(koordinator, Key),
   Value.
 
 findNameService() ->
-  NameserviceNode = 'ns@141.22.83.176',
+  NameserviceNode = config(nameservicename)
   Ping = net_adm:ping(NameserviceNode),
   timer:sleep(1000),
-  NS = global:whereis_name(nameservice),
-
-  io:fwrite("NS: ~p~n",[NS]),
-io:fwrite("Ping: ~p~n",[Ping]),
-  NS.
+  global:whereis_name(nameservice).
 
 start() ->
   register(koordinator,self()),
