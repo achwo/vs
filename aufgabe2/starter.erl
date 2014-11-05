@@ -45,7 +45,8 @@ fromConfig(nameservicenode, _) -> 'ns@141.22.83.176'.
 findNameService(Config) ->
   NameserviceNode = fromConfig(nameservicenode, Config),
   net_adm:ping(NameserviceNode),
-  NS = global:whereis_name(nameservice).
+  NS = global:whereis_name(nameservice),
+  io:fwrite("NS: ~p~n",[NS]).
 
 startGGT(0, _, _, _, _) -> nix;
 startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator) ->
