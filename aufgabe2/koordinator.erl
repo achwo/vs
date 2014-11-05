@@ -34,7 +34,7 @@ load_config() ->
   Value.
 
 findNameService() ->
-  NameserviceNode = config(nameservicename)
+  NameserviceNode = config(nameservicename),
   Ping = net_adm:ping(NameserviceNode),
   timer:sleep(1000),
   global:whereis_name(nameservice).
@@ -43,7 +43,7 @@ start() ->
   register(koordinator,self()),
   load_config(),
  	
-  Nameservice = findNameService().
+  Nameservice = findNameService(),
  
   {Nameservice, nameservice} ! {self(),{bind,koordinator,node()}},
   receive ok -> io:format("..bind.done.\n");

@@ -3,6 +3,7 @@
 %TermZeit ist die Wartezeit in Sekunden, bis eine Wahl für eine Terminierung initiiert wird 
 %und GGTProzessnummer ist die Anzahl der zu startenden ggT-Prozesse.
 -module(starter).
+-import(werkzeug, [get_config_value/2]).
 -export([start/1, startGGT/5]).
 
 start(Koordinator) -> 
@@ -15,7 +16,7 @@ start(Koordinator) ->
     Koordinator = 4,
     GGTProzessAnzahl = 5,
     load_config(),
-    Nameservice = findNameService(Config),
+    Nameservice = findNameService(),
     startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator).
 
 load_config() ->
@@ -28,10 +29,10 @@ load_config() ->
   application:set_env(ggt, teamnummer, Teamnummer),
 
   {ok, NameserviceNode} = get_config_value(nameservicenode, ConfigFile),
-  application:set_env(ggt, nameservicenode, ServerName),
+  application:set_env(ggt, nameservicenode, NameserviceNode),
 
   {ok, NameserviceName} = get_config_value(nameservicename, ConfigFile),
-  application:set_env(ggt, nameservicename, NameserviceName).
+  application:set_env(ggt, nameservicename, NameserviceName),
 
   {ok, Koordinatorname} = get_config_value(koordinatorname, ConfigFile),
   application:set_env(ggt, koordinatorname, Koordinatorname).
@@ -40,10 +41,8 @@ config(Key) ->
   {_, Value} = application:get_env(ggt, Key),
   Value.
 
-fromConfig(nameservicenode, _) -> 'ns@141.22.83.176'.
-
-findNameService(Config) ->
-  NameserviceNode = fromConfig(nameservicenode, Config),
+findNameService() ->
+  NameserviceNode = config(nameservicenode),
   net_adm:ping(NameserviceNode),
   timer:sleep(1000),
   NS = global:whereis_name(nameservice),
