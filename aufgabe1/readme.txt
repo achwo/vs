@@ -1,15 +1,13 @@
-Arbeitszeit Felix: 38h
-    - davon gemeinsam: 34h
-
+Entwurf:  10h
 Felix allein:     4h
-Felix & Jan gemeinsam: ca 22h -> 22h gesamt
+Felix & Jan gemeinsam: ca 22h -> 44h gesamt
 Felix, Jan & Jonny: 12h -> 36h
 
-Jan & Jonny gemeinsam:
-Jan allein:  
-Jonny allein: 
+Jan & Jonny gemeinsam:  ca 4h ->  8h
+Jan allein:   3h
+Jonny allein: 0h
 
-Gesamt
+Gesamt: 105h
 
 --------------------
 Compilieren der Dateien:
