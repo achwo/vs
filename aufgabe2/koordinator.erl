@@ -33,21 +33,24 @@ load_config() ->
 findNameService() ->
   NameserviceNode = 'ns@141.22.83.176',
   Ping = net_adm:ping(NameserviceNode),
+  timer:sleep(1000),
   NS = global:whereis_name(nameservice),
+
   io:fwrite("NS: ~p~n",[NS]),
-io:fwrite("Ping: ~p~n",[Ping]).
+io:fwrite("Ping: ~p~n",[Ping]),
+  NS.
 
 start() ->
   register(koordinator,self()),
   load_config(),
  	
-  Nameservice = findNameService(),
+  Nameservice = findNameService().
  
-  {Nameservice, nameservice} ! {self(),{bind,koordinator,node()}},
-  receive ok -> io:format("..bind.done.\n");
-    in_use -> io:format("..schon gebunden.\n")
-  end,
-  loop(Nameservice).
+  %{Nameservice, nameservice} ! {self(),{bind,koordinator,node()}},
+  %receive ok -> io:format("..bind.done.\n");
+  %  in_use -> io:format("..schon gebunden.\n")
+  %end,
+  %loop(Nameservice).
 
 
 loop(Nameservice) ->
