@@ -14,11 +14,31 @@ start(Koordinator) ->
     TermZeit = 5,
     Koordinator = 4,
     GGTProzessAnzahl = 5,
-    Config = readConfig(),
+    load_config(),
     Nameservice = findNameService(Config),
     startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator).
 
-readConfig() -> todo.
+load_config() ->
+  {ok, ConfigFile} = file:consult("ggt.cfg"),
+  
+  {ok, Praktikumsgruppe} = get_config_value(praktikumsgruppe, ConfigFile),
+  application:set_env(ggt, praktikumsgruppe, Praktikumsgruppe),
+  
+  {ok, Teamnummer} = get_config_value(teamnummer, ConfigFile),
+  application:set_env(ggt, teamnummer, Teamnummer),
+
+  {ok, NameserviceNode} = get_config_value(nameservicenode, ConfigFile),
+  application:set_env(ggt, nameservicenode, ServerName),
+
+  {ok, NameserviceName} = get_config_value(nameservicename, ConfigFile),
+  application:set_env(ggt, nameservicename, NameserviceName).
+
+  {ok, Koordinatorname} = get_config_value(koordinatorname, ConfigFile),
+  application:set_env(ggt, koordinatorname, Koordinatorname).
+
+config(Key) ->
+  {_, Value} = application:get_env(ggt, Key),
+  Value.
 
 fromConfig(nameservicenode, _) -> 'ns@141.22.83.176'.
 
