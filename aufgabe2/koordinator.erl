@@ -48,7 +48,7 @@ koordinatorStart() ->
  	
   Nameservice = findNameService(),
  
-  {Nameservice, nameservice} ! {self(),{bind,koordinator,node()}},
+  Nameservice ! {self(),{bind,koordinator,node()}},
   receive ok -> io:format("..bind.done.\n");
     in_use -> io:format("..schon gebunden.\n")
   end,
