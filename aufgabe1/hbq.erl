@@ -3,10 +3,14 @@
 -export([createNew/0, add/4]).
 -export([pop/2, createErrorMessage/2, push_messages_to_dlq/2, close_holes_if_necessary/2]).
 
-% listenformat [{Nachricht, Nr}]
-
+% Seite 5 3.4.2.1 -> createNew() :: void -> HBQ
+% Ein neues HBQ Objekt wird erstellt und zurückgegeben. Agiert wie ein Konstruktor.
 createNew() -> [].
 
+% Seite 5 3.4.2.1 -> add(Msg, Nr, HBQueue, DLQueue) :: Nachricht x Nummer x HBQ x DLQ -> HBQ x DLQ
+% Die Nachricht der Queue hinzugefügt und die Queue nach Nachrichtennummer aufsteigend sortiert. 
+% Wenn die Queue eine Größe erreicht die der Hälfte der Größe der DLQ entspricht werden Lücken 
+% zwangsweise geschlossen und die DLQ nachgefüllt.
 add(Message, Number, HBQ, DLQ) -> 
   
   %Eingang in die hbq wird dokumentiert
@@ -25,7 +29,7 @@ add(Message, Number, HBQ, DLQ) ->
   % Nach der Ueberpruefung, werden die Nachrichten bis zur nächsten Luecke in die DLQ geschoben
   push_messages_to_dlq(New_HBQ, New_DLQ).
 
-
+% close_holes_if_necessary(HBQueue, DLQueue) :: HBQ x DLQ -> {HBQ, DLQ}
 close_holes_if_necessary(HBQ, DLQ) -> 
   %   - kleinsten wert in hbq holen
   FirstInHBQ = getFirstNumber(HBQ),
@@ -46,6 +50,7 @@ close_holes_if_necessary(HBQ, DLQ) ->
   % Rueckgabe
   {HBQ, DLQwithErrorMessage}.
 
+% push_messages_to_dlq(HBQueue, DLQueue) :: HBQ x DLQ -> {HBQ , DLQ, List}
 push_messages_to_dlq(HBQ, DLQ) -> 
   case DLQ == [] of
     true  -> LastInDLQ = 0; 
@@ -58,6 +63,7 @@ push_messages_to_dlq(HBQ, DLQ) ->
     _ -> {HBQ, DLQ, []}
   end.
 
+% push_messages_to_dlq(Integer, HBQueue, DLQueue, Integer) :: MessageNumber x HBQ x DLQ x DeliveredNumbers -> {HBQ , DLQ, List}
 push_messages_to_dlq(Number, HBQ, DLQ, TransferedNumbers) ->
   {Element, RestHBQ} = pop(Number, HBQ),
 
@@ -70,6 +76,7 @@ push_messages_to_dlq(Number, HBQ, DLQ, TransferedNumbers) ->
       push_messages_to_dlq(ElementNumber, RestHBQ, NewDLQ, NewTransferedNumbers)
   end.
 
+% pop(Number, Queue) :: Integer x HBQ -> {{Message, Number}, HBQ}
 % pops one message from list, stopping at holes
 % LastElement = element number, after which should be popped
 pop(_, []) -> 
@@ -79,8 +86,10 @@ pop(LastElement, [{Message, Number}|Rest]) when LastElement + 1 == Number ->
 pop(_, List) -> 
   {{nothing, nil}, List}.
 
+% getFirstNumber(Queue) :: Queue -> Number
 getFirstNumber([{_,HBQNumber}|_]) -> HBQNumber.
 
+% createErrorMessage(LastInDLQNumber, FirstInHBQ) :: Integer x Integer -> {Text, Number} 
 createErrorMessage(LastInDLQ, FirstInHBQ) when FirstInHBQ - LastInDLQ == 2 ->
   HoleNumber = FirstInHBQ - 1,
   MessageText = to_String(HoleNumber),
@@ -88,6 +97,6 @@ createErrorMessage(LastInDLQ, FirstInHBQ) when FirstInHBQ - LastInDLQ == 2 ->
 createErrorMessage(LastInDLQ, FirstInHBQ) -> 
   FirstMissing = LastInDLQ + 1,
   LastMissing = FirstInHBQ - 1, 
-  MessageText = lists:concat([to_String(FirstMissing), " bis ", to_String(LastMissing)]),
+  MessageText = lists:concat(["**Fehlernachricht fuer Nachrichten ", to_String(FirstMissing), " bis ", to_String(LastMissing), "um ", werkzeug:timeMilliSecond()]),
   {MessageText, LastMissing}. 
 

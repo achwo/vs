@@ -9,7 +9,7 @@ start(Hostadress) ->
   PID = get_PID(ServerName, Hostadress),
  
   Logfile = lists:concat(["client_", to_String(node()), ".log"]),
-  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),".\n"]),
+  Startlog = lists:concat([name(), " Start: ", timeMilliSecond(),".\n\n"]),
   logging(Logfile, Startlog),
   
   LifeTime = config(lifetime) * 1000,
@@ -46,7 +46,9 @@ loop(PID, OwnMessages, SleepTime, Logfile) ->
   OwnMsgs = redakteur(5, PID, OwnMessages, SleepTime, Logfile),
 
   NewSleeptime = randomSleepTime(SleepTime),
-  logging(Logfile, lists:concat(["New SleepTime ", NewSleeptime, "\n"])),
+  
+  % Seite 10 6.1 -> Nachrichtensende Intervall ändert sich: Neues Sendeintervall: 2 Sekunden (3).
+  logging(Logfile, lists:concat(["Neuer Sendeintervall ", (NewSleeptime / 1000), " Sekunden\n"])),
   leser(false, OwnMsgs, PID, Logfile),
   receive _ -> exit
   after 0 -> loop(PID, OwnMsgs, NewSleeptime, Logfile)
@@ -55,6 +57,9 @@ loop(PID, OwnMessages, SleepTime, Logfile) ->
 redakteur(0, PID, OwnMessages, _, Logfile) ->
   % vergesse, nachricht zu senden 
   Number = get_unique_id(PID),
+  
+  % Seite 9 6.1 -> Nachricht vergessen zu senden
+  % 28te_Nachricht um 30.04 17:37:28,577| vergessen zu senden ******
   logging(Logfile, lists:concat([Number, "te Nachricht um ", timeMilliSecond(), " vergessen zu senden ******\n\n"])),
   OwnMessages;
 redakteur(HowOften, PID, OwnMessages, SleepTime, Logfile) when HowOften > 0 ->
@@ -70,6 +75,9 @@ redakteur(HowOften, PID, OwnMessages, SleepTime, Logfile) when HowOften > 0 ->
   SendLog = lists:concat(["\n",name(), Number,"te_Nachricht. C Out: ", timeMilliSecond(), " gesendet\n"]),
   % sende nachricht
   dropmessage(PID, Message, Number),
+  
+  % Seite 9 6.1 -> Nachricht senden:
+  % 2-client@Brummpa-<0.771.0>-KLC: 3te_Nachricht. C Out: 30.04 17:37:16,515| gesendet
   logging(Logfile, SendLog),
   
   redakteur(HowOften-1, PID, OwnMessagesNew, SleepTime, Logfile).
@@ -91,7 +99,11 @@ randomSleepTime(SleepTime) ->
     false -> 2000
   end.
 
-leser(true, _, _, _) -> nix;%redakteur(5, PID, OwnMessages, Logfile);
+leser(true, _, _, Logfile) -> 
+  
+  %Seite 10 6.2.2 -> Nachrichten abfragen beenden:
+  logging(Logfile, lists:concat(["..getmessages..Done...\n\n"])),
+  nix;
 
 leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false -> 
   % hole nachricht
@@ -108,10 +120,15 @@ leser(Terminated, OwnMessages, PID, Logfile) when Terminated == false ->
       case IsOwn of 
         true -> 
         MessageOwn = lists:concat([TextMessage, ",.own Message; C In: ", timeMilliSecond(),"\n"]),
+        
+        % Seite 10 6.2.2 -> Fremde Nachricht vom Server empfangen:
         logging(Logfile, MessageOwn);
         
         false -> 
           MessageForeign = lists:concat([TextMessage, "; C In: ", timeMilliSecond(),"\n"]),
+          
+          % Seite 10 6.2.2 -> Fremde Nachricht vom Server empfangen:
+          % 2-client@Brummpa-<0.771.0>-KLC: 3te_Nachricht. C Out: 30.04 17:37:16,515|(3); HBQ In: 30.04 17:37:16,516| DLQ In:30.04 17:37:19,531|.own Message; C In: 30.04 17:37:28,608|
           logging(Logfile, MessageForeign)
         
       end,
@@ -138,6 +155,7 @@ ping_server(Hostname, Adress) ->
 	net_adm:ping(erlang:list_to_atom(lists:concat([Hostname,"@", Adress]))).
 
 
+% Seite 4 3.3 -> String in dem die eigentliche Nachricht enthalten ist; 
 message_builder(MessageNumber) ->
 	lists:concat([to_String(node()), "-", to_String(self()), "-C-1-01:", MessageNumber,"te Nachricht. Sendezeit: ", timeMilliSecond(), "(", MessageNumber, ")\n"]).
 	
