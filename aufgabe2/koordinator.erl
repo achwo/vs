@@ -11,7 +11,7 @@
 %kill: Der Koordinator wird beendet und sendet allen ggT-Prozessen das kill-Kommando.
 
 -module(koordinator).
--import(werkzeug, [get_config_value/2]).
+-import(werkzeug, [get_config_value/2, logging/2, to_String/1, timeMilliSecond/0]).
 -export([start/0]).
 
 load_config() ->
@@ -40,7 +40,7 @@ findNameService() ->
   NameserviceName = config(nameservicenode),
   %io:fwrite("NameserviceName ~p~n", [NameserviceName]),
   Ping = net_adm:ping(NameserviceName),
-  timer:sleep(2000),
+  timer:sleep(1000),
   %io:fwrite("Ping ~p~n", [Ping]),
   global:whereis_name(nameservice).
 
@@ -48,27 +48,39 @@ start() ->
 spawn_link(fun() -> koordinatorStart() end).
 
 koordinatorStart() ->
-  global:register_name(koordinator,self()),
+  Logfile = lists:concat(["koordinator_", to_String(node()), ".log"]),
+  Startlog = lists:concat([to_String(node()), " Startzeit: ", timeMilliSecond()," mit PID ", to_String(self()), "\n"]),
+  logging(Logfile, Startlog),
   load_config(),
- 	
+  logging(Logfile, "koordinator.cfg gelesen...\n"),
   Nameservice = findNameService(),
-  %io:fwrite("NameserviceNode ~p~n", [Nameservice]),
- 
-  Nameservice ! {self(),{bind,koordinator,node()}},
-  receive ok -> io:format("..bind.done.\n");
-    in_use -> io:format("..schon gebunden.\n")
-  end,
-  loop(Nameservice).
 
+  case Nameservice of
+    undefined -> logging(Logfile, "Nameservice nicht gefunden...\n");
+    _ -> logging(Logfile, "Nameservice gebunden...\n"),
+      global:register_name(koordinator,self()),
+      logging(Logfile, "lokal registriert...\n"),
+      %io:fwrite("NameserviceNode ~p~n", [Nameservice]),
+     
+      Nameservice ! {self(),{bind,koordinator,node()}},
+      receive ok -> logging(Logfile, "beim Namensdienst registriert.\n");
+        in_use -> io:format("Fehler: Name schon gebunden.\n")
+      end,
+      logging(Logfile, "\n"),
+      loop(Nameservice, Logfile)
+  end.
 
-loop(Nameservice) ->
+loop(Nameservice, Logfile) ->
   receive 
     {getsteeringval,StarterName} -> 
+      % todo: was ist die (0)?
+      logging(Logfile, lists:concat(["getsteeringval: ", to_String(StarterName), " (0)."])),
+
     	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)};
    
 
     {kill} -> die(Nameservice);
-    _ -> loop(Nameservice)
+    _ -> loop(Nameservice, Logfile)
   end.
 
 
