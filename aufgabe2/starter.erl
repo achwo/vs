@@ -26,12 +26,12 @@ start(Koordinator) ->
     % Arbeitszeit = 5,
     % TermZeit = 5,
     % Koordinator = 4,
-    % GGTProzessAnzahl = 5,
+     GGTProzessAnzahl2 = 2,
     load_config(),
     Nameservice = findNameService(),
     RegisterNameserviceLog = lists:concat(["Registered at Nameservice: ", Nameservice,"\n"]),
     logging(LogFile, RegisterNameserviceLog),
-    startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
+    startGGT(GGTProzessAnzahl2, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
 
 load_config() ->
   {ok, ConfigFile} = file:consult("ggt.cfg"),

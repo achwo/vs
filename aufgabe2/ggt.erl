@@ -25,7 +25,7 @@ start(GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikum
   
 
   
-
+  % todo: geht nicht?
   Nameservice ! {self(),{bind,GgtName,node()}},
   receive ok -> io:format("..bind.done.\n");
     in_use -> io:format("..schon gebunden.\n")
