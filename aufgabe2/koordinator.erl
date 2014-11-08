@@ -78,15 +78,15 @@ loop(Nameservice, Logfile) ->
 
     	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)};
    
-
-    {kill} -> die(Nameservice);
+    {kill} -> die(Nameservice, Logfile);
     _ -> loop(Nameservice, Logfile)
-  end.
-
-
- die(Nameservice) ->
-  Nameservice ! {self(),{unbind,ggt}},
-  receive 
-    ok -> io:format("..unbind..done.\n")
   end,
-  unregister(ggt).
+  loop(Nameservice, Logfile).
+
+
+ die(Nameservice, Logfile) ->
+  Nameservice ! {self(),{unbind,koordinator}},
+  receive 
+    ok -> logging(Logfile, "unbound koordinator.\n")
+  end,
+  unregister(koordinator).
