@@ -5,7 +5,7 @@
 %und GGTProzessnummer ist die Anzahl der zu startenden ggT-Prozesse.
 -module(starter).
 -import(werkzeug, [get_config_value/2, logging/2, timeMilliSecond/0, to_String/1]).
--export([start/1, startGGT/5]).
+-export([start/1, startGGT/7]).
 
 start(Koordinator) -> 
     LogFile = lists:concat(["Starter_", to_String(node()), ".log"]),
@@ -31,7 +31,7 @@ start(Koordinator) ->
     Nameservice = findNameService(),
     RegisterNameserviceLog = lists:concat(["Registered at Nameservice: ", Nameservice,"\n"]),
     logging(LogFile, RegisterNameserviceLog),
-    startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator).
+    startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
 
 load_config() ->
   {ok, ConfigFile} = file:consult("ggt.cfg"),
@@ -62,7 +62,10 @@ findNameService() ->
   NS = global:whereis_name(nameservice),
   io:fwrite("NS: ~p~n",[NS]).
 
-startGGT(0, _, _, _, _) -> nix;
-startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator) ->
+startGGT(0, _, _, _, _, _, _) -> nix;
+startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->
   io:fwrite("startGGT(~p)~n", [GGTProzessAnzahl]),
-  startGGT(GGTProzessAnzahl-1, Arbeitszeit, TermZeit, Nameservice, Koordinator).
+  spawn_link(fun() -> ggt:start(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) end),
+  startGGT(GGTProzessAnzahl-1, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer).
+
+

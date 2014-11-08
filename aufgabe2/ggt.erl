@@ -1,5 +1,6 @@
 -module(ggt).
--export([start/1]).
+-import(werkzeug,[logging/2, to_String/1, get_config_value/2, timeMilliSecond/0]).
+-export([start/7]).
 
 %{setneighbors,LeftN,RightN}: die (lokal auf deren Node registrieten und im Namensdienst registriexrten) Namen des linken und rechten Nachbarn werden gesetzt.
 %{setpm,MiNeu}: die von diesem Prozess zu berabeitenden Zahl für eine neue Berechnung wird gesetzt.
@@ -8,26 +9,52 @@
 %{tellmi,From}: Sendet das aktuelle Mi an From: From ! {mi,Mi}. Wird vom Koordinator z.B. genutzt, um bei einem Berechnungsstillstand die Mi-Situation im Ring anzuzeigen.
 %{pingGGT,From}: Sendet ein pongGGT an From: From ! {pongGGT,GGTname}. Wird vom Koordinator z.B. genutzt, um auf manuelle Anforderung hin die Lebendigkeit des Rings zu prüfen.
 %kill: der ggT-Prozess wird beendet.
-start(Nameservice) ->
-  register(ggt,self()),
-  Nameservice ! {self(),{bind,ggt,node()}},
+
+start(GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->
+  
+  LogFile = lists:concat(["Ggt_", to_String(node()), ".log"]),
+  StartLog = lists:concat(["Started at: ", timeMilliSecond(), " \n"]),
+  logging(LogFile, StartLog),
+
+  GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl),
+  logging(LogFile, lists:concat(["Build Ggt-Name: ", to_String(GgtName)])),
+  register(GgtName,self()),
+  
+  Koordinator ! {hello, GgtName},
+  logging(LogFile, lists:concat(["Send to Koordinator:  ", to_String(Koordinator)])),
+  
+
+  
+
+  Nameservice ! {self(),{bind,GgtName,node()}},
   receive ok -> io:format("..bind.done.\n");
     in_use -> io:format("..schon gebunden.\n")
   end,
-  loop(Nameservice).
+
+loop(Nameservice, GgtName).
 
 
-loop(Nameservice) ->
+
+
+
+loop(Nameservice, GgtName) ->
   receive 
-    {kill} -> die(Nameservice);
-    _ -> loop(Nameservice)
+    {kill} -> die(Nameservice, GgtName);
+    _ -> loop(Nameservice, GgtName)
   end.
 
 
 
-die(Nameservice) ->
-  Nameservice ! {self(),{unbind,ggt}},
+die(Nameservice, GgtName) ->
+  Nameservice ! {self(),{unbind,GgtName}},
   receive 
     ok -> io:format("..unbind..done.\n")
   end,
-  unregister(ggt).
+  unregister(GgtName).
+
+buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl) ->
+ erlang:list_to_atom(lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, 1])).
+  
+
+
+
