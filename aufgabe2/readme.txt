@@ -1,3 +1,9 @@
+0. Configs anpassen (ip)
+1. nameservice
+2. koordinator
+3. starter
+
+
 --------------------
 Compilieren der Dateien:
 --------------------

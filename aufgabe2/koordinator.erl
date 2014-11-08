@@ -26,6 +26,9 @@ load_config() ->
   {ok, Ggtprozessnummer} = get_config_value(ggtprozessnummer, ConfigFile),
   application:set_env(koordinator, ggtprozessnummer, Ggtprozessnummer),
 
+  {ok, NameserviceNode} = get_config_value(nameservicenode, ConfigFile),
+  application:set_env(koordinator, nameservicenode, NameserviceNode),
+
   {ok, NameserviceName} = get_config_value(nameservicename, ConfigFile),
   application:set_env(koordinator, nameservicename, NameserviceName).
 
@@ -34,9 +37,11 @@ load_config() ->
   Value.
 
 findNameService() ->
-  NameserviceNode = config(nameservicename),
-  Ping = net_adm:ping(NameserviceNode),
-  timer:sleep(1000),
+  NameserviceName = config(nameservicenode),
+  %io:fwrite("NameserviceName ~p~n", [NameserviceName]),
+  Ping = net_adm:ping(NameserviceName),
+  timer:sleep(2000),
+  %io:fwrite("Ping ~p~n", [Ping]),
   global:whereis_name(nameservice).
 
 start() ->
@@ -47,8 +52,9 @@ koordinatorStart() ->
   load_config(),
  	
   Nameservice = findNameService(),
+  %io:fwrite("NameserviceNode ~p~n", [Nameservice]),
  
-  {Nameservice, nameservice} ! {self(),{bind,koordinator,node()}},
+  Nameservice ! {self(),{bind,koordinator,node()}},
   receive ok -> io:format("..bind.done.\n");
     in_use -> io:format("..schon gebunden.\n")
   end,
