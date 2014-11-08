@@ -14,7 +14,7 @@ start(Koordinator) ->
 
 
     Koordinator ! {getsteeringval, self()},
-    RegisterKoordinatorLog = lists:concat(["Register at Koordinator: ", Koordinator," \n"]),
+    RegisterKoordinatorLog = lists:concat(["Register at Koordinator: ", to_String(Koordinator)," \n"]),
     logging(LogFile, RegisterKoordinatorLog),
     
     receive
