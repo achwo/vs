@@ -67,26 +67,31 @@ koordinatorStart() ->
         in_use -> io:format("Fehler: Name schon gebunden.\n")
       end,
       logging(Logfile, "\n"),
-      loop(Nameservice, Logfile)
+      loop(Nameservice, [], Logfile)
   end.
 
-loop(Nameservice, Logfile) ->
+loop(Nameservice, GgtList, Logfile) ->
   receive 
     {getsteeringval,StarterName} -> 
       % todo: was ist die (0)?
       logging(Logfile, lists:concat(["getsteeringval: ", to_String(StarterName), " (0)."])),
+    	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)},
+      loop(Nameservice, GgtList, Logfile);
 
-    	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)};
+    {hello, GgtName} ->
+      % todo: was ist die (3)?
+      logging(Logfile, lists:concat(["hello: ", to_String(GgtName), " (3).\n"])),
+      % todo: kritisch, wenn name doppelt eingetragen wird?
+      GgtListNew = lists:append(GgtList, [GgtName]),
+      loop(Nameservice, GgtListNew, Logfile);
    
     {kill} -> die(Nameservice, Logfile);
-    _ -> loop(Nameservice, Logfile)
-  end,
-  loop(Nameservice, Logfile).
-
+    _ -> loop(Nameservice, GgtList, Logfile)
+  end.
 
  die(Nameservice, Logfile) ->
   Nameservice ! {self(),{unbind,koordinator}},
   receive 
-    ok -> logging(Logfile, "unbound koordinator.\n")
+    ok -> logging(Logfile, "unbound koordinator at nameservice.\n")
   end,
   unregister(koordinator).
