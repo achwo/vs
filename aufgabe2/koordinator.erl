@@ -1,5 +1,3 @@
-%{getsteeringval,self()}: Die Anfrage nach den steuernden Werten durch den Starter Prozess.
-%{hello,Clientname}: Ein ggT-Prozess meldet sich beim Koordinator mit Namen Clientname an (Name ist der lokal registrierte Name!).
 %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen Clientname informiert über sein neues Mi CMi um CZeit Uhr. 
 %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname und PID From informiert über über die Terminierung der Berechnung mit Ergebnis CMi um CZeit Uhr.
 %reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
@@ -8,7 +6,6 @@
 %nudge: Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT deren Lebenszustand ab und zeigt dies im log an.
 %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
 %{calc,WggT}: Der Koordinator startet eine neue ggT-Berechnung mit Wunsch-ggT WggT.
-%kill: Der Koordinator wird beendet und sendet allen ggT-Prozessen das kill-Kommando.
 
 -module(koordinator).
 -import(werkzeug, [get_config_value/2, logging/2, to_String/1, timeMilliSecond/0]).
@@ -67,26 +64,31 @@ koordinatorStart() ->
         in_use -> io:format("Fehler: Name schon gebunden.\n")
       end,
       logging(Logfile, "\n"),
-      loop(Nameservice, Logfile)
+      loop(Nameservice, [], Logfile)
   end.
 
-loop(Nameservice, Logfile) ->
+loop(Nameservice, GgtList, Logfile) ->
   receive 
     {getsteeringval,StarterName} -> 
       % todo: was ist die (0)?
       logging(Logfile, lists:concat(["getsteeringval: ", to_String(StarterName), " (0)."])),
+    	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)},
+      loop(Nameservice, GgtList, Logfile);
 
-    	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)};
+    {hello, GgtName} ->
+      % todo: was ist die (3)?
+      logging(Logfile, lists:concat(["hello: ", to_String(GgtName), " (3).\n"])),
+      % todo: kritisch, wenn name doppelt eingetragen wird?
+      GgtListNew = lists:append(GgtList, [GgtName]),
+      loop(Nameservice, GgtListNew, Logfile);
    
-
-    {kill} -> die(Nameservice);
-    _ -> loop(Nameservice, Logfile)
+    {kill} -> die(Nameservice, Logfile);
+    _ -> loop(Nameservice, GgtList, Logfile)
   end.
 
-
- die(Nameservice) ->
-  Nameservice ! {self(),{unbind,ggt}},
+ die(Nameservice, Logfile) ->
+  Nameservice ! {self(),{unbind,koordinator}},
   receive 
-    ok -> io:format("..unbind..done.\n")
+    ok -> logging(Logfile, "unbound koordinator at nameservice.\n")
   end,
-  unregister(ggt).
+  unregister(koordinator).
