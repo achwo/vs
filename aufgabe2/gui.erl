@@ -9,7 +9,7 @@ start() ->
   receive 
     {pin, {Name, Node}} -> 
       net_adm:ping(Node),
-      Koordinator = global:whereis_name(Name),
+      Koordinator = global:whereis_name(Name)
       % do stuff
       ; 
     _ -> kacke 
