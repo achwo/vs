@@ -4,14 +4,24 @@
 %TermZeit ist die Wartezeit in Sekunden, bis eine Wahl für eine Terminierung initiiert wird 
 %und GGTProzessnummer ist die Anzahl der zu startenden ggT-Prozesse.
 -module(starter).
--import(werkzeug, [get_config_value/2]).
+-import(werkzeug, [get_config_value/2, logging/2, timeMilliSecond/0, to_String/1]).
 -export([start/1, startGGT/5]).
 
 start(Koordinator) -> 
+    LogFile = lists:concat(["Starter_", to_String(node()), ".log"]),
+    StartLog = lists:concat(["Started at: ", timeMilliSecond(), " \n"]),
+    logging(LogFile, StartLog),
+
+
     Koordinator ! {getsteeringval, self()},
+    RegisterKoordinatorLog = lists:concat(["Register at Koordinator: ", Koordinator," \n"]),
+    logging(LogFile, RegisterKoordinatorLog),
     
     receive
-      {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> nix
+      {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> 
+      ReceiveSteeringValLog = lists:concat(["Steeringval: ", Arbeitszeit, ", ", TermZeit, ", ", GGTProzessAnzahl," \n"]),
+      logging(LogFile, ReceiveSteeringValLog),
+      nix
     end,
     % Arbeitszeit = 5,
     % TermZeit = 5,
@@ -19,6 +29,8 @@ start(Koordinator) ->
     % GGTProzessAnzahl = 5,
     load_config(),
     Nameservice = findNameService(),
+    RegisterNameserviceLog = lists:concat(["Registered at Nameservice: ", Nameservice,"\n"]),
+    logging(LogFile, RegisterNameserviceLog),
     startGGT(GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator).
 
 load_config() ->
