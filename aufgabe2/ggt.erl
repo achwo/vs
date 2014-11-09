@@ -1,6 +1,6 @@
 -module(ggt).
 -import(werkzeug,[logging/2, to_String/1, get_config_value/2, timeMilliSecond/0]).
--export([start/7]).
+-export([start/8]).
 
 %{setneighbors,LeftN,RightN}: die (lokal auf deren Node registrieten und im Namensdienst registriexrten) Namen des linken und rechten Nachbarn werden gesetzt.
 %{setpm,MiNeu}: die von diesem Prozess zu berabeitenden Zahl für eine neue Berechnung wird gesetzt.
@@ -10,10 +10,10 @@
 %{pingGGT,From}: Sendet ein pongGGT an From: From ! {pongGGT,GGTname}. Wird vom Koordinator z.B. genutzt, um auf manuelle Anforderung hin die Lebendigkeit des Rings zu prüfen.
 %kill: der ggT-Prozess wird beendet.
 
-start(GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->
+start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->
   
-  LogFile = lists:concat(["Ggt_", to_String(node()), ".log"]),
-  StartLog = lists:concat(["Started at: ", timeMilliSecond(), " \n"]),
+  LogFile = lists:concat(["GGTP_", to_String(node()), ".log"]),
+  StartLog = lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId, "Startzeit:", timeMilliSecond(), "mit ", to_String(node()), "auf ", to_String(self()), " \n"]),
   logging(LogFile, StartLog),
 
   GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl),
@@ -21,7 +21,7 @@ start(GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikum
   register(GgtName,self()),
   
   Koordinator ! {hello, GgtName},
-  logging(LogFile, lists:concat(["Send to Koordinator:  ", to_String(Koordinator)])),
+  logging(LogFile, lists:concat(["Beim Koordinator ", to_String(Koordinator), " gemeldet."])),
   
 
   
