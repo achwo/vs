@@ -49,17 +49,13 @@ start(UniqueID, Koordinator) ->
       logging(LogFile, ReceiveSteeringValLog),
       nix
     end,
-    % Arbeitszeit = 5,
-    % TermZeit = 5,
-    % Koordinator = 4,
-     GGTProzessAnzahl2 = 2,
     
     Nameservice = findNameService(),
     RegisterNameserviceLog = lists:concat(["Nameservice ", to_String(Nameservice), "gebunden...\n"]),
     logging(LogFile, RegisterNameserviceLog),
     
 
-    startGGT(UniqueID, GGTProzessAnzahl2, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
+    startGGT(UniqueID, GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
 
 
 
