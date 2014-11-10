@@ -13,12 +13,12 @@
 start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->
   
   LogFile = lists:concat(["GGTP_", to_String(node()), ".log"]),
-  StartLog = lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId, "Startzeit:", timeMilliSecond(), "mit ", to_String(node()), "auf ", to_String(self()), " \n"]),
+  StartLog = lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId, " Startzeit:", timeMilliSecond(), "mit ", to_String(node()), "auf ", to_String(self()), " \n"]),
   logging(LogFile, StartLog),
 
   GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl),
   logging(LogFile, lists:concat(["Build Ggt-Name: ", to_String(GgtName), "\n"])),
-  register(GgtName,self()),
+  global:register_name(GgtName,self()),
   
   Koordinator ! {hello, GgtName},
   logging(LogFile, lists:concat(["Beim Koordinator ", to_String(Koordinator), " gemeldet.\n"])),
@@ -56,7 +56,8 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
       {NewMi, CTime} = calculateMi(Y, Mi),
       case NewMi == Mi of
         false -> 
-          logging(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi), ")", "berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
+          logging(LogFile, 
+            lists:concat(["sendy: ", to_String(Y), " (", to_String(Mi), ") berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
           LeftN ! {sendy,NewMi},
           RightN ! {sendy,NewMi},
           io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi, "\n"])),
