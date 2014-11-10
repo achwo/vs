@@ -56,11 +56,6 @@ run() ->
   end.
 
 initialphase(Nameservice, GgtList, Logfile) ->
-% todo: step, reset
-%step: Der Koordinator beendet die Initialphase und bildet den Ring. Er wartet nun auf den Start einer ggT-Berechnung.
-%reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
-%toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
-
   receive 
     {getsteeringval,StarterName} -> 
       % todo: was ist die (0)?
@@ -74,12 +69,42 @@ initialphase(Nameservice, GgtList, Logfile) ->
       % todo: kritisch, wenn name doppelt eingetragen wird?
       GgtListNew = lists:append(GgtList, [GgtName]),
       initialphase(Nameservice, GgtListNew, Logfile);
+
+    {step} ->
+      step(Logfile),
+      arbeitsphase(Logfile);
+
+    {reset} ->
+    % reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt 
+    % sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
+      kill_all_ggt(GgtList, Logfile),
+      initialphase(Nameservice, [], Logfile);
+
+    {toggle} ->
+      %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
+
+      todo;
    
-    {kill} -> beendigungsphase(Nameservice, Logfile);
+    {kill} -> beendigungsphase(Nameservice, GgtList, Logfile);
     _ -> initialphase(Nameservice, GgtList, Logfile)
   end.
 
-arbeitsphase() ->
+step(Logfile) ->
+  logging(Logfile, "step()\n"),
+%step: Der Koordinator beendet die Initialphase und bildet den Ring. Er wartet nun auf den Start einer ggT-Berechnung.
+  % todo: logging:
+  % Anmeldefrist für ggT-Prozesse abgelaufen. Vermisst werden aktuell 0 ggT-Prozesse.
+  % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
+  % ...
+  % Alle ggT-Prozesse gebunden.
+  % Alle ggT-Prozesse über Nachbarn informiert.
+  % Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.
+  % ggT-Prozess 48832 (ggT@Brummpa) über linken (48813) und rechten (488312) Nachbarn informiert.
+  % …
+  todo.
+
+arbeitsphase(Logfile) ->
+  logging(Logfile, "arbeitsphase()\n"),
   %todo: kill, toggle, reset, nudge
   %reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
   %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
@@ -90,10 +115,13 @@ arbeitsphase() ->
   %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname und PID From informiert über über die Terminierung der Berechnung mit Ergebnis CMi um CZeit Uhr.
   todo.
 
-beendigungsphase(Nameservice, Logfile) ->
-  % todo: kill all ggts
+beendigungsphase(Nameservice, GgtList, Logfile) ->
+  kill_all_ggt(GgtList, Logfile),
   Nameservice ! {self(),{unbind,koordinator}},
   receive 
     ok -> logging(Logfile, "unbound koordinator at nameservice.\n")
   end,
   unregister(koordinator).
+
+kill_all_ggt(GgtList, Logfile) ->
+  todo.

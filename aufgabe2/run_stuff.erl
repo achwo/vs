@@ -4,4 +4,4 @@
 start() ->
   K = koordinator:start(),
   timer:sleep(6000),
-  starter:start(K).
+  starter:start(1, K).
