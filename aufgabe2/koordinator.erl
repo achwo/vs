@@ -59,7 +59,7 @@ initialphase(Nameservice, GgTSet, Logfile) ->
   receive 
     {getsteeringval,StarterName} -> 
       % todo: was ist die (0)?
-      logging(Logfile, lists:concat(["getsteeringval: ", to_String(StarterName), " (0)."])),
+      logging(Logfile, lists:concat(["getsteeringval: ", to_String(StarterName), " (0).\n"])),
     	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)},
       initialphase(Nameservice, GgTSet, Logfile);
 
@@ -89,7 +89,7 @@ step(GgTSet, Logfile) ->
   %todo: missing ggt berechnen
   Missing = missing_ggT(GgTSet),
   logging(Logfile, 
-    lists:concat(["Anmeldefrist für ggT-Prozesse abgelaufen. Vermisst werden aktuell ", Missing, " ggT-Prozesse."])),
+    lists:concat(["Anmeldefrist für ggT-Prozesse abgelaufen. Vermisst werden aktuell ", Missing, " ggT-Prozesse.\n"])),
   %todo: bind all ggt
   % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
   logging(Logfile, "Alle ggT-Prozesse gebunden.\n"),
@@ -97,7 +97,7 @@ step(GgTSet, Logfile) ->
   %todo ggts ueber nachbarn informieren
   % ggT-Prozess 48832 (ggT@Brummpa) über linken (48813) und rechten (488312) Nachbarn informiert.
   logging(Logfile, "Alle ggT-Prozesse über Nachbarn informiert.\n"),
-  logging(Logfile, "Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.").
+  logging(Logfile, "Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.\n").
 
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - length(GgTSet).
 
@@ -111,12 +111,12 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
       logging(Logfile, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, ".\n"])),
       %todo: implementation
       %todo: initiale Mis an ggTs senden
-      logging(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) initiales Mi 53444391 gesendet."])),
-      logging(Logfile, "Allen ggT-Prozessen ein initiales Mi gesendet."),
+      logging(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) initiales Mi 53444391 gesendet.\n"])),
+      logging(Logfile, "Allen ggT-Prozessen ein initiales Mi gesendet.\n"),
 
       %todo: wievielen ggTs startendes y senden? und anschliessend senden 
-      logging(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) startendes y 23154859 gesendet."])),
-      logging(Logfile, "Allen ausgewählten ggT-Prozessen ein y gesendet."),
+      logging(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) startendes y 23154859 gesendet.\n"])),
+      logging(Logfile, "Allen ausgewählten ggT-Prozessen ein y gesendet.\n"),
       todo;
 
     {reset} ->
