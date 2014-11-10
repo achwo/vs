@@ -27,20 +27,52 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator
   
   % todo: geht nicht?
   Nameservice ! {self(),{bind,GgtName,node()}},
-  receive ok -> io:format("..bind.done.\n");
+  receive 
+    ok -> io:format("..bind.done.\n");
     in_use -> io:format("..schon gebunden.\n")
   end,
 
-loop(Nameservice, GgtName).
+  receive
+  {setneighbors,LeftN,RightN} ->  
+      io:fwrite("Linker Nachbar: ~p~n",[LeftN]), io:fwrite("Rechter Nachbar: ~p~n",[RightN])
+  end,
 
 
+loop(Nameservice, Koordinator, GgtName, LeftN, RightN, 1, LogFile, Arbeitszeit, TermZeit, empty).
 
 
-
-loop(Nameservice, GgtName) ->
+loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer) ->
   receive 
-    {kill} -> die(Nameservice, GgtName);
-    _ -> loop(Nameservice, GgtName)
+    
+    {setpm, MiNeu} ->
+      logging(LogFile, lists:concat(["Setpm: ", MiNeu, "\n"])),
+      timer:cancel(Timer),
+      {ok,NewTimer} = timer:send_after(TermZeit*1000,term),
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, LogFile, Arbeitszeit, TermZeit, NewTimer);
+
+    {sendy,Y} -> 
+      
+      logging(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
+      timer:cancel(Timer),
+      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(),{term}),
+      timer:sleep(Arbeitszeit*1000),
+      {NewMi, CTime} = calculateMi(),
+      if NewMi /= Mi ->
+        logging(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi), ")", "berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
+        LeftN ! {sendy,NewMi},
+        RightN ! {sendy,NewMi},
+        io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi])),
+        
+        Koordinator ! {briefmi,{GgtName,NewMi,CTime}};
+        
+      true ->
+          logging(LogFile, lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  "Keine Berechnung\n"))
+      end;
+
+    {kill} -> 
+      die(Nameservice, GgtName);
+    _ -> 
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer)
   end.
 
 
@@ -56,5 +88,5 @@ buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl) ->
  erlang:list_to_atom(lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, 1])).
   
 
-
+calculateMi() -> {nix,nax}. 
 
