@@ -1,6 +1,6 @@
 -module(ggt).
 -import(werkzeug,[logging/2, to_String/1, get_config_value/2, timeMilliSecond/0]).
--export([start/8]).
+-export([start/8, calculateMi/2]).
 
 %{setneighbors,LeftN,RightN}: die (lokal auf deren Node registrieten und im Namensdienst registriexrten) Namen des linken und rechten Nachbarn werden gesetzt.
 %{setpm,MiNeu}: die von diesem Prozess zu berabeitenden Zahl für eine neue Berechnung wird gesetzt.
@@ -56,16 +56,17 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
       timer:cancel(Timer),
       {ok,NewTimer} = timer:send_after(TermZeit*1000, self(),{term}),
       timer:sleep(Arbeitszeit*1000),
-      {NewMi, CTime} = calculateMi(),
-      if NewMi /= Mi ->
-        logging(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi), ")", "berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
-        LeftN ! {sendy,NewMi},
-        RightN ! {sendy,NewMi},
-        io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi])),
+      {NewMi, CTime} = calculateMi(Y, Mi),
+      case NewMi == Mi of
+        false -> 
+          logging(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi), ")", "berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
+          LeftN ! {sendy,NewMi},
+          RightN ! {sendy,NewMi},
+          io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi])),
         
-        Koordinator ! {briefmi,{GgtName,NewMi,CTime}};
+          Koordinator ! {briefmi,{GgtName,NewMi,CTime}};
         
-      true ->
+        true ->
           logging(LogFile, lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  "Keine Berechnung\n"))
       end;
 
@@ -88,5 +89,13 @@ buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl) ->
  erlang:list_to_atom(lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, 1])).
   
 
-calculateMi() -> {nix,nax}. 
+calculateMi(Y, Mi) -> 
+  
+  case (Y < Mi) of
+    true -> NewMi = ((Mi-1) rem Y) +1,
+            {NewMi, timeMilliSecond()};
+    
+    false -> {Mi, timeMilliSecond()} 
+  end.       
+
 
