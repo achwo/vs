@@ -57,6 +57,8 @@ start(UniqueID, Koordinator) ->
     Nameservice = findNameService(),
     RegisterNameserviceLog = lists:concat(["Nameservice ", Nameservice, "gebunden...\n"]),
     logging(LogFile, RegisterNameserviceLog),
+    
+
     startGGT(UniqueID, GGTProzessAnzahl2, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
 
 
