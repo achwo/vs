@@ -77,7 +77,7 @@ initialphase(Nameservice, GgtList, Logfile) ->
     {reset} ->
     % reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt 
     % sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
-      kill_all_ggt(GgtList, Logfile),
+      kill_all_ggt(GgtList),
       initialphase(Nameservice, [], Logfile);
 
     {toggle} ->
@@ -129,7 +129,8 @@ arbeitsphase(Nameservice, GgtList, Logfile) ->
       todo;
 
     {reset} ->
-      kill_all_ggt(GgtList, Logfile),
+      kill_all_ggt(GgtList),
+      logging(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.\n"),
       initialphase(Nameservice, [], Logfile);
 
     {toggle} ->
@@ -159,20 +160,23 @@ arbeitsphase(Nameservice, GgtList, Logfile) ->
       %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname und PID From informiert über über die Terminierung der Berechnung mit Ergebnis CMi um CZeit Uhr.
       % 488211 meldet Terminierung mit ggT 525 um "01.12 15:50:26,560|" (01.12 15:50:26,560|).
       % 488112 meldet falsche Terminierung mit ggT 165165 um "01.12 15:50:26,560|" (01.12 15:50:26,560|,525).
-
       todo;
 
     _ -> arbeitsphase(Nameservice, GgtList, Logfile)
   end.
 
 beendigungsphase(Nameservice, GgtList, Logfile) ->
-  kill_all_ggt(GgtList, Logfile),
+  kill_all_ggt(GgtList),
+  logging(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.\n"),
   Nameservice ! {self(),{unbind,koordinator}},
   receive 
-    ok -> logging(Logfile, "unbound koordinator at nameservice.\n")
+    ok -> logging(Logfile, "Unbound koordinator at nameservice.\n")
   end,
-  unregister(koordinator).
+  unregister(koordinator),
+  logging(Logfile, 
+    lists:concat(["Downtime: ", timeMilliSecond(), " vom Koordinator ", config(koordinatorname), "\n"])).
 
-kill_all_ggt(GgtList, Logfile) ->
-  logging(Logfile, "kill all ggt\n"),
-  todo.
+kill_all_ggt([]) -> ok;
+kill_all_ggt([GGT|Rest]) ->
+  GGT ! {kill},
+  kill_all_ggt(Rest).
