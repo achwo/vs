@@ -17,16 +17,16 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator
   logging(LogFile, StartLog),
 
   GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl),
-  logging(LogFile, lists:concat(["Build Ggt-Name: ", to_String(GgtName)])),
+  logging(LogFile, lists:concat(["Build Ggt-Name: ", to_String(GgtName), "\n"])),
   register(GgtName,self()),
   
   Koordinator ! {hello, GgtName},
-  logging(LogFile, lists:concat(["Beim Koordinator ", to_String(Koordinator), " gemeldet."])),
+  logging(LogFile, lists:concat(["Beim Koordinator ", to_String(Koordinator), " gemeldet.\n"])),
 
   Nameservice ! {self(),{bind,GgtName,node()}},
   receive 
-    ok -> io:format("..bind.done.\n");
-    in_use -> io:format("..schon gebunden.\n")
+    ok -> logging(LogFile, lists:concat([to_String(self()), ",..bind.done.\n"]));
+    in_use ->logging(LogFile, lists:concat([to_String(self()), "..schon gebunden.\n"]))
   end,
 
   receive
@@ -49,7 +49,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
 
     {sendy,Y} -> 
       
-      logging(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
+      logging(LogFile, lists:concat(["sendy ", to_String(Y), "; \n"])),
       timer:cancel(Timer),
       {ok,NewTimer} = timer:send_after(TermZeit*1000, self(),{term}),
       timer:sleep(Arbeitszeit*1000),
@@ -59,7 +59,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
           logging(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi), ")", "berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
           LeftN ! {sendy,NewMi},
           RightN ! {sendy,NewMi},
-          io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi])),
+          io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi, "\n"])),
         
           Koordinator ! {briefmi,{GgtName,NewMi,CTime}};
         
