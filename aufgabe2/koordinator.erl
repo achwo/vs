@@ -72,17 +72,13 @@ initialphase(Nameservice, GgtList, Logfile) ->
 
     {step} ->
       step(GgtList, Logfile),
-      arbeitsphase(Nameservice, [], Logfile);
+      arbeitsphase(Nameservice, [], config(korrigieren), Logfile);
 
     {reset} ->
     % reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt 
     % sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
       kill_all_ggt(GgtList),
       initialphase(Nameservice, [], Logfile);
-
-    {toggle} ->
-      %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
-      todo;
    
     {kill} -> beendigungsphase(Nameservice, GgtList, Logfile);
     _ -> initialphase(Nameservice, GgtList, Logfile)
@@ -94,24 +90,18 @@ step(GgtList, Logfile) ->
   Missing = missing_ggT(GgtList),
   logging(Logfile, 
     lists:concat(["Anmeldefrist für ggT-Prozesse abgelaufen. Vermisst werden aktuell ", Missing, " ggT-Prozesse."])),
-
   %todo: bind all ggt
   % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
-  % ...
-
   logging(Logfile, "Alle ggT-Prozesse gebunden.\n"),
-
   %todo ring erstellen
-  
   %todo ggts ueber nachbarn informieren
   % ggT-Prozess 48832 (ggT@Brummpa) über linken (48813) und rechten (488312) Nachbarn informiert.
   logging(Logfile, "Alle ggT-Prozesse über Nachbarn informiert.\n"),
-
   logging(Logfile, "Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.").
 
-missing_ggT(GgtList) -> todo, 3.
+missing_ggT(GgtList) -> config(ggtprozessnummer) - length(GgtList).
 
-arbeitsphase(Nameservice, GgtList, Logfile) ->
+arbeitsphase(Nameservice, GgtList, Korrigieren, Logfile) ->
   logging(Logfile, "arbeitsphase()\n"), 
   receive
 
@@ -133,11 +123,15 @@ arbeitsphase(Nameservice, GgtList, Logfile) ->
       logging(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.\n"),
       initialphase(Nameservice, [], Logfile);
 
-    {toggle} ->
-      %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
-      % toggle des Koordinators um 01.12 15:50:14,779|:0 zu 1.
-      logging(Logfile, lists:concat(["toggle des Koordinators um 01.12 15:50:14,779|:0 zu 1.\n"])),
-      todo;
+    {toggle} ->  
+      case Korrigieren of
+        0 -> NewKorrigieren = 1;
+        1 -> NewKorrigieren = 0
+      end, 
+
+      logging(Logfile, 
+        lists:concat(["toggle des Koordinators um ", timeMilliSecond(), ":", Korrigieren, " zu ", NewKorrigieren, ".\n"])),
+      arbeitsphase(Nameservice, GgtList, NewKorrigieren, Logfile);
 
     {nudge} ->
       % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT deren Lebenszustand ab und zeigt dies im log an.
@@ -162,7 +156,7 @@ arbeitsphase(Nameservice, GgtList, Logfile) ->
       % 488112 meldet falsche Terminierung mit ggT 165165 um "01.12 15:50:26,560|" (01.12 15:50:26,560|,525).
       todo;
 
-    _ -> arbeitsphase(Nameservice, GgtList, Logfile)
+    _ -> arbeitsphase(Nameservice, GgtList, Korrigieren, Logfile)
   end.
 
 beendigungsphase(Nameservice, GgtList, Logfile) ->
