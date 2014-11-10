@@ -153,6 +153,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
     {briefterm, {Clientname, CMi, CZeit}, From} ->
       %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname 
       % und PID From informiert über über die Terminierung der Berechnung mit Ergebnis CMi um CZeit Uhr.
+      % todo: falsch berechnen
       Falsch = true,
       case Falsch of
         true -> 
