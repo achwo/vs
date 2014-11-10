@@ -67,7 +67,7 @@ initialphase(Nameservice, GgTSet, Logfile) ->
       % todo: was ist die (3)?
       logging(Logfile, lists:concat(["hello: ", to_String(GgtName), " (3).\n"])),
       % todo: kritisch, wenn name doppelt eingetragen wird?
-      GgTSetNew = lists:append(GgTSet, [GgtName]),
+      GgTSetNew = sets:add_element(GgtName, GgTSet),
       initialphase(Nameservice, GgTSetNew, Logfile);
 
     {step} ->

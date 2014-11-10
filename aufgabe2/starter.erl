@@ -55,7 +55,7 @@ start(UniqueID, Koordinator) ->
      GGTProzessAnzahl2 = 2,
     
     Nameservice = findNameService(),
-    RegisterNameserviceLog = lists:concat(["Nameservice ", Nameservice, "gebunden...\n"]),
+    RegisterNameserviceLog = lists:concat(["Nameservice ", to_String(Nameservice), "gebunden...\n"]),
     logging(LogFile, RegisterNameserviceLog),
     
 
@@ -67,8 +67,7 @@ findNameService() ->
   NameserviceNode = config(nameservicenode),
   net_adm:ping(NameserviceNode),
   timer:sleep(1000),
-  NS = global:whereis_name(nameservice),
-  io:fwrite("NS: ~p~n",[NS]).
+  NS = global:whereis_name(nameservice).
 
 startGGT(_, 0, _, _, _, _, _, _) -> nix;
 startGGT(UniqueID, GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->

@@ -22,10 +22,7 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator
   
   Koordinator ! {hello, GgtName},
   logging(LogFile, lists:concat(["Beim Koordinator ", to_String(Koordinator), " gemeldet."])),
-  
 
-  
-  % todo: geht nicht?
   Nameservice ! {self(),{bind,GgtName,node()}},
   receive 
     ok -> io:format("..bind.done.\n");
