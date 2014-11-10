@@ -26,7 +26,7 @@ load_config() ->
 
 findNameService() ->
   NameserviceName = config(nameservicenode),
-  Ping = net_adm:ping(NameserviceName),
+  net_adm:ping(NameserviceName),
   timer:sleep(1000),
   global:whereis_name(nameservice).
 
@@ -71,8 +71,8 @@ initialphase(Nameservice, GgtList, Logfile) ->
       initialphase(Nameservice, GgtListNew, Logfile);
 
     {step} ->
-      step(Logfile),
-      arbeitsphase(Logfile);
+      step(GgtList, Logfile),
+      arbeitsphase(Nameservice, [], Logfile);
 
     {reset} ->
     % reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt 
@@ -82,38 +82,88 @@ initialphase(Nameservice, GgtList, Logfile) ->
 
     {toggle} ->
       %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
-
       todo;
    
     {kill} -> beendigungsphase(Nameservice, GgtList, Logfile);
     _ -> initialphase(Nameservice, GgtList, Logfile)
   end.
 
-step(Logfile) ->
+step(GgtList, Logfile) ->
   logging(Logfile, "step()\n"),
-%step: Der Koordinator beendet die Initialphase und bildet den Ring. Er wartet nun auf den Start einer ggT-Berechnung.
-  % todo: logging:
-  % Anmeldefrist für ggT-Prozesse abgelaufen. Vermisst werden aktuell 0 ggT-Prozesse.
+  %todo: missing ggt berechnen
+  Missing = missing_ggT(GgtList),
+  logging(Logfile, 
+    lists:concat(["Anmeldefrist für ggT-Prozesse abgelaufen. Vermisst werden aktuell ", Missing, " ggT-Prozesse."])),
+
+  %todo: bind all ggt
   % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
   % ...
-  % Alle ggT-Prozesse gebunden.
-  % Alle ggT-Prozesse über Nachbarn informiert.
-  % Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.
-  % ggT-Prozess 48832 (ggT@Brummpa) über linken (48813) und rechten (488312) Nachbarn informiert.
-  % …
-  todo.
 
-arbeitsphase(Logfile) ->
-  logging(Logfile, "arbeitsphase()\n"),
-  %todo: kill, toggle, reset, nudge
-  %reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
-  %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
-  %nudge: Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT deren Lebenszustand ab und zeigt dies im log an.
-  %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per tellmi deren aktuelles Mi ab und zeigt dies im log an.
-  %{calc,WggT}: Der Koordinator startet eine neue ggT-Berechnung mit Wunsch-ggT WggT.
-  %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen Clientname informiert über sein neues Mi CMi um CZeit Uhr. 
-  %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname und PID From informiert über über die Terminierung der Berechnung mit Ergebnis CMi um CZeit Uhr.
-  todo.
+  logging(Logfile, "Alle ggT-Prozesse gebunden.\n"),
+
+  %todo ring erstellen
+  
+  %todo ggts ueber nachbarn informieren
+  % ggT-Prozess 48832 (ggT@Brummpa) über linken (48813) und rechten (488312) Nachbarn informiert.
+  logging(Logfile, "Alle ggT-Prozesse über Nachbarn informiert.\n"),
+
+  logging(Logfile, "Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.").
+
+missing_ggT(GgtList) -> todo, 3.
+
+arbeitsphase(Nameservice, GgtList, Logfile) ->
+  logging(Logfile, "arbeitsphase()\n"), 
+  receive
+
+    {calc, WggT} ->
+      %{calc,WggT}: Der Koordinator startet eine neue ggT-Berechnung mit Wunsch-ggT WggT.
+      logging(Logfile, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, ".\n"])),
+      %todo: implementation
+      %todo: initiale Mis an ggTs senden
+      logging(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) initiales Mi 53444391 gesendet."])),
+      logging(Logfile, "Allen ggT-Prozessen ein initiales Mi gesendet."),
+
+      %todo: wievielen ggTs startendes y senden? und anschliessend senden 
+      logging(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) startendes y 23154859 gesendet."])),
+      logging(Logfile, "Allen ausgewählten ggT-Prozessen ein y gesendet."),
+      todo;
+
+    {reset} ->
+      kill_all_ggt(GgtList, Logfile),
+      initialphase(Nameservice, [], Logfile);
+
+    {toggle} ->
+      %toggle: Der Koordinator verändert den Flag zur Korrektur bei falschen Terminierungsmeldungen.
+      % toggle des Koordinators um 01.12 15:50:14,779|:0 zu 1.
+      logging(Logfile, lists:concat(["toggle des Koordinators um 01.12 15:50:14,779|:0 zu 1.\n"])),
+      todo;
+
+    {nudge} ->
+      % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT deren Lebenszustand ab und zeigt dies im log an.
+      % ggT-Prozess 488312 ist lebendig (01.12 15:51:44,720|).
+      % Alle ggT-Prozesse auf Lebendigkeit geprüft.
+      todo;
+
+    {kill} -> beendigungsphase(Nameservice, GgtList, Logfile);
+
+    {prompt} ->
+      %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per tellmi deren aktuelles Mi ab und zeigt dies im log an.
+      todo;
+    
+    {briefmi, {Clientname, CMi, CZeit}} ->
+      %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen Clientname informiert über sein neues Mi CMi um CZeit Uhr.
+      % 488111 meldet neues Mi 280 um "01.12 15:50:28,720|" (01.12 15:50:28,720|).
+    todo;
+
+    {briefterm, {Clientname, CMi, CZeit}, From} ->
+      %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname und PID From informiert über über die Terminierung der Berechnung mit Ergebnis CMi um CZeit Uhr.
+      % 488211 meldet Terminierung mit ggT 525 um "01.12 15:50:26,560|" (01.12 15:50:26,560|).
+      % 488112 meldet falsche Terminierung mit ggT 165165 um "01.12 15:50:26,560|" (01.12 15:50:26,560|,525).
+
+      todo;
+
+    _ -> arbeitsphase(Nameservice, GgtList, Logfile)
+  end.
 
 beendigungsphase(Nameservice, GgtList, Logfile) ->
   kill_all_ggt(GgtList, Logfile),
@@ -124,4 +174,5 @@ beendigungsphase(Nameservice, GgtList, Logfile) ->
   unregister(koordinator).
 
 kill_all_ggt(GgtList, Logfile) ->
+  logging(Logfile, "kill all ggt\n"),
   todo.
