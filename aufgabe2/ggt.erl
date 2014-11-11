@@ -51,22 +51,8 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
       
       logging(LogFile, lists:concat(["sendy ", to_String(Y), "; \n"])),
       {{_,_,_},{_,_,Sec}} = erlang:localtime(),
-      
-      timer:sleep(Arbeitszeit*1000),
-      {NewMi, CTime} = calculateMi(Y, Mi),
-      case NewMi == Mi of
-        false -> 
-          logging(LogFile, 
-            lists:concat(["sendy: ", to_String(Y), " (", to_String(Mi), ") berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
-          LeftN ! {sendy,NewMi},
-          RightN ! {sendy,NewMi},
-          io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi, "\n"])),
-        
-          Koordinator ! {briefmi,{GgtName,NewMi,CTime}};
-        
-        true ->
-          logging(LogFile, lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  "Keine Berechnung\n"))
-      end;
+      spawn_link(fun() -> calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile. self(), Arbeitszeit) end)
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, LogFile, Arbeitszeit, TermZeit, NewTimer);
 
     {tellmi, From} -> 
       From ! {mi,Mi},
@@ -92,6 +78,9 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
           loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer)
       end;
 
+    {calcResult, NewMi} -> 
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, NewMi, LogFile, Arbeitszeit, TermZeit, Timer);
+
     {kill} -> 
       die(Nameservice, GgtName);
     _ -> 
@@ -112,12 +101,32 @@ buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl) ->
  erlang:list_to_atom(lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, 1])).
   
 
-calculateMi(Y, Mi) -> 
+calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess, Arbeitszeit) -> 
   case (Y < Mi) of
     true -> NewMi = ((Mi-1) rem Y) +1,
-            {NewMi, timeMilliSecond()};
-      
-    false -> {Mi, timeMilliSecond()} 
+            timer:sleep(Arbeitszeit*1000),
+        case NewMi == Mi of
+          false -> 
+            logging(LogFile, lists:concat(["sendy: ", to_String(Y), " (", to_String(Mi), ") berechnet als neues Mi: ", to_String(NewMi), " ", CTime, "\n"])),
+            LeftN ! {sendy,NewMi},
+            RightN ! {sendy,NewMi},
+            io:fwrite(lists:concat(["informed ", LeftN, "and ", RightN, " with new Mi: ", NewMi, "\n"])),
+          
+            Koordinator ! {briefmi,{GgtName,NewMi,CTime}},
+            GgtProcess ! {calcResult, NewMi};
+        
+          true ->
+            logging(LogFile, lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  "Zahl nach Berechnung gleich geblieben\n"))
+            GgtProcess ! {calcResult, Mi};
+        end;
+    
+    false -> 
+      logging(LogFile, lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  "Keine Berechnung\n")),
+      GgtProcess ! {calcResult, Mi};
+  
   end.       
+
+
+
 
 
