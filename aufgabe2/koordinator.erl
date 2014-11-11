@@ -36,7 +36,8 @@ start() ->
 
 run() ->
   Logfile = lists:concat(["koordinator_", to_String(node()), ".log"]),
-  Startlog = lists:concat([to_String(node()), " Startzeit: ", timeMilliSecond()," mit PID ", to_String(self()), "\n"]),
+  Startlog = lists:concat([to_String(node()), " Startzeit: ", 
+    timeMilliSecond()," mit PID ", to_String(self()), "\n"]),
   logging(Logfile, Startlog),
   load_config(),
   logging(Logfile, "koordinator.cfg gelesen...\n"),
@@ -60,8 +61,10 @@ initialphase(Nameservice, GgTSet, Logfile) ->
   receive 
     {getsteeringval,StarterName} -> 
       % todo: was ist die (0)?
-      logging(Logfile, lists:concat(["getsteeringval: ", to_String(StarterName), " (0).\n"])),
-    	StarterName ! {steeringval,config(arbeitszeit),config(termzeit),config(ggtprozessnummer)},
+      logging(Logfile, 
+        lists:concat(["getsteeringval: ", to_String(StarterName), " (0).\n"])),
+    	StarterName ! {steeringval, config(arbeitszeit),
+        config(termzeit), config(ggtprozessnummer)},
       initialphase(Nameservice, GgTSet, Logfile);
 
     {hello, GgtName} ->
@@ -89,12 +92,14 @@ step(GgTSet, Logfile) ->
   %todo: missing ggt berechnen
   Missing = missing_ggT(GgTSet),
   logging(Logfile, 
-    lists:concat(["Anmeldefrist für ggT-Prozesse abgelaufen. Vermisst werden aktuell ", Missing, " ggT-Prozesse.\n"])),
+    lists:concat(["Anmeldefrist für ggT-Prozesse abgelaufen. ", 
+      "Vermisst werden aktuell ", Missing, " ggT-Prozesse.\n"])),
   %todo: bind all ggt
   % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
   logging(Logfile, "Alle ggT-Prozesse gebunden.\n"),
   create_ring(GgTSet, Logfile),
-  logging(Logfile, "Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.\n").
+  logging(Logfile, "Ring wird/wurde erstellt, ", 
+    "Koordinator geht in den Zustand 'Bereit für Berechnung'.\n").
 
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - length(GgTSet).
 
@@ -103,16 +108,20 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
   receive
 
     {calc, WggT} ->
-      %{calc,WggT}: Der Koordinator startet eine neue ggT-Berechnung mit Wunsch-ggT WggT.
+      %{calc,WggT}: Der Koordinator startet eine neue ggT-Berechnung mit 
+      % Wunsch-ggT WggT.
       %todo: was bedeutet das? Ziel?
-      logging(Logfile, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, ".\n"])),
+      logging(Logfile, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", 
+        WggT, ".\n"])),
       %todo: implementation
       %todo: initiale Mis an ggTs senden
-      logging(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) initiales Mi 53444391 gesendet.\n"])),
+      logging(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) ", 
+        "initiales Mi 53444391 gesendet.\n"])),
       logging(Logfile, "Allen ggT-Prozessen ein initiales Mi gesendet.\n"),
 
       %todo: wievielen ggTs startendes y senden? und anschliessend senden 
-      logging(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) startendes y 23154859 gesendet.\n"])),
+      logging(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) ", 
+        "startendes y 23154859 gesendet.\n"])),
       logging(Logfile, "Allen ausgewählten ggT-Prozessen ein y gesendet.\n"),
       todo;
 
@@ -127,11 +136,13 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
       end, 
 
       logging(Logfile, 
-        lists:concat(["toggle des Koordinators um ", timeMilliSecond(), ":", Korrigieren, " zu ", NewKorrigieren, ".\n"])),
+        lists:concat(["toggle des Koordinators um ", timeMilliSecond(), ":", 
+          Korrigieren, " zu ", NewKorrigieren, ".\n"])),
       arbeitsphase(Nameservice, GgTSet, NewKorrigieren, Logfile);
 
     {nudge} ->
-      % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT deren Lebenszustand ab und zeigt dies im log an.
+      % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT 
+      % deren Lebenszustand ab und zeigt dies im log an.
       % ggT-Prozess 488312 ist lebendig (01.12 15:51:44,720|).
       % Alle ggT-Prozesse auf Lebendigkeit geprüft.
       todo;
@@ -139,11 +150,13 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
     {kill} -> beendigungsphase(Nameservice, GgTSet, Logfile);
 
     {prompt} ->
-      %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per tellmi deren aktuelles Mi ab und zeigt dies im log an.
+      %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per 
+      % tellmi deren aktuelles Mi ab und zeigt dies im log an.
       todo;
     
     {briefmi, {Clientname, CMi, CZeit}} ->
-      %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen Clientname informiert über sein neues Mi CMi um CZeit Uhr.
+      %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen 
+      % Clientname informiert über sein neues Mi CMi um CZeit Uhr.
       logging(Logfile, 
         lists:concat([Clientname, " meldet neues Mi ", CMi, " um ", CZeit, ".\n"])),
       todo;
