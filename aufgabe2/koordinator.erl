@@ -1,6 +1,7 @@
 -module(koordinator).
 -import(werkzeug, [get_config_value/2, logging/2, to_String/1, timeMilliSecond/0]).
 -export([start/0]).
+-export([create_ring_tuples/4]).
 
 load_config() ->
   {ok, ConfigFile} = file:consult("koordinator.cfg"),
@@ -92,10 +93,7 @@ step(GgTSet, Logfile) ->
   %todo: bind all ggt
   % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
   logging(Logfile, "Alle ggT-Prozesse gebunden.\n"),
-  %todo ring erstellen
-  %todo ggts ueber nachbarn informieren
-  % ggT-Prozess 48832 (ggT@Brummpa) über linken (48813) und rechten (488312) Nachbarn informiert.
-  logging(Logfile, "Alle ggT-Prozesse über Nachbarn informiert.\n"),
+  create_ring(GgTSet, Logfile),
   logging(Logfile, "Ring wird/wurde erstellt, Koordinator geht in den Zustand 'Bereit für Berechnung'.\n").
 
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - length(GgTSet).
@@ -152,19 +150,22 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
 
     {briefterm, {Clientname, CMi, CZeit}, From} ->
       %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname 
-      % und PID From informiert über über die Terminierung der Berechnung mit Ergebnis CMi um CZeit Uhr.
+      % und PID From informiert über über die Terminierung der Berechnung 
+      % mit Ergebnis CMi um CZeit Uhr.
       % todo: falsch berechnen
       Falsch = true,
       case Falsch of
         true -> 
-          logging(Logfile, lists:concat([Clientname, " meldet falsche Terminierung mit ggT ", CMi, " um ", CZeit, ".\n"])),
+          logging(Logfile, lists:concat([Clientname, 
+            " meldet falsche Terminierung mit ggT ", CMi, " um ", CZeit, ".\n"])),
           case Korrigieren of
             true -> % todo: korrigierendes sendy an From,
               From;
             false -> nix
           end;
         false -> 
-          logging(Logfile, lists:concat([Clientname, " meldet Terminierung mit ggT ", CMi, " um ", CZeit, ".\n"]))
+          logging(Logfile, lists:concat([Clientname, 
+            " meldet Terminierung mit ggT ", CMi, " um ", CZeit, ".\n"]))
       end,
       todo;
 
@@ -179,13 +180,38 @@ beendigungsphase(Nameservice, GgTSet, Logfile) ->
   end,
   unregister(koordinator),
   logging(Logfile, 
-    lists:concat(["Downtime: ", timeMilliSecond(), " vom Koordinator ", config(koordinatorname), "\n"])).
+    lists:concat(["Downtime: ", timeMilliSecond(), " vom Koordinator ", 
+      config(koordinatorname), "\n"])).
 
 kill_all_ggt(GgTSet, Logfile) ->
   kill_all_ggt(sets:to_list(GgTSet)),
   logging(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.\n").
 
 kill_all_ggt([]) -> ok;
-kill_all_ggt([GGT|Rest]) ->
-  GGT ! {kill},
+kill_all_ggt([GgT|Rest]) ->
+  GgT ! {kill},
   kill_all_ggt(Rest).
+
+create_ring(GgTSet, Logfile) ->
+  GgTList = sets:to_list(GgTSet),
+  Pairs = create_ring_tuples(GgTList, none, none, []),
+  set_neighbors(Pairs, Logfile).
+
+create_ring_tuples([First|Rest], none, none, Accu) ->
+  NewAccu = [{First, lists:last(Rest), lists:nth(1, Rest)}] ++ Accu,
+  create_ring_tuples(Rest, First, First, NewAccu);
+create_ring_tuples([], _Previous, _First, Accu) -> Accu;
+create_ring_tuples([Element], Previous, First, Accu) ->
+  create_ring_tuples([], Element, First, [{Element, Previous, First}] ++ Accu);
+create_ring_tuples([Element|Rest], Previous, First, Accu) ->
+  NewAccu = [{Element, Previous, lists:nth(1, Rest)}] ++ Accu,
+  create_ring_tuples(Rest, Element, First, NewAccu).
+
+set_neighbors([], Logfile) -> 
+  logging(Logfile, "Alle ggT-Prozesse über Nachbarn informiert.\n");
+set_neighbors([{GgT, Left, Right}|Rest], Logfile) ->
+  GgT ! {setneighbors, Left, Right},
+  logging(Logfile, 
+    lists:concat(["ggT-Prozess ", ggT, " über linken (", Left, ")", 
+      " und rechten (", Right, ") Nachbarn informiert."])),
+  set_neighbors(Rest, Logfile).
