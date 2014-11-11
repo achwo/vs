@@ -50,8 +50,8 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
     {sendy,Y} -> 
       
       logging(LogFile, lists:concat(["sendy ", to_String(Y), "; \n"])),
-      timer:cancel(Timer),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(),{term}),
+      {{_,_,_},{_,_,Sec}} = erlang:localtime(),
+      
       timer:sleep(Arbeitszeit*1000),
       {NewMi, CTime} = calculateMi(Y, Mi),
       case NewMi == Mi of
@@ -66,6 +66,30 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit,
         
         true ->
           logging(LogFile, lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  "Keine Berechnung\n"))
+      end;
+
+    {tellmi, From} -> 
+      From ! {mi,Mi},
+      io:fwrite("Aktuelles Mi: ~p~n", [Mi]),
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer);
+
+    {pingGGT,From} ->
+      From ! {pongGGT,GgtName},
+      io:fwrite("PongGGT: ~p~n", [GgtName]),
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer);
+
+    {abstimmung, Initiator} -> 
+      case Initiator == GgtName of
+        true -> 
+          CurrentTime = timeMilliSecond(),
+          Koordinator ! {briefmi,{GgtName, Mi, CurrentTime}},
+          %TODO Zudem zählt er seine erfolgreich gemeldeten Terminierungsmeldungen
+          %TODO im Logging die Anzahl der gemeldeten Termierungsmeldungen einfügen
+          logging(LogFile, lists:concat(GgtName, ": stimme ab (", GgtName, "): Koordinator 3te Terminierung gemeldet mit ", Mi, ". ", CurrentTime));
+          %TODO beenden!
+        false -> 
+          RightN ! {abstimmung, Initiator},  
+          loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer)
       end;
 
     {kill} -> 
@@ -83,16 +107,16 @@ die(Nameservice, GgtName) ->
   end,
   unregister(GgtName).
 
+
 buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl) ->
  erlang:list_to_atom(lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, 1])).
   
 
 calculateMi(Y, Mi) -> 
-  
   case (Y < Mi) of
     true -> NewMi = ((Mi-1) rem Y) +1,
             {NewMi, timeMilliSecond()};
-    
+      
     false -> {Mi, timeMilliSecond()} 
   end.       
 
