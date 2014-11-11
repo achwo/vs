@@ -19,7 +19,10 @@ load_config() ->
   application:set_env(koordinator, nameservicenode, NameserviceNode),
 
   {ok, NameserviceName} = get_config_value(nameservicename, ConfigFile),
-  application:set_env(koordinator, nameservicename, NameserviceName).
+  application:set_env(koordinator, nameservicename, NameserviceName),
+
+  {ok, Korrigieren} = get_config_value(korrigieren, ConfigFile),
+  application:set_env(koordinator, korrigieren, Korrigieren).
 
  config(Key) ->
   {_, Value} = application:get_env(koordinator, Key),
@@ -74,7 +77,7 @@ initialphase(Nameservice, GgTSet, Logfile) ->
       initialphase(Nameservice, GgTSetNew, Logfile);
 
     {step} ->
-      step(GgTSet, Logfile),
+      step(GgTSet, Nameservice, Logfile),
       arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile);
 
     {reset} ->
@@ -87,21 +90,21 @@ initialphase(Nameservice, GgTSet, Logfile) ->
     _ -> initialphase(Nameservice, GgTSet, Logfile)
   end.
 
-step(GgTSet, Logfile) ->
+step(GgTSet, Nameservice, Logfile) ->
   logging(Logfile, "step()\n"),
   %todo: missing ggt berechnen
   Missing = missing_ggT(GgTSet),
   logging(Logfile, 
-    lists:concat(["Anmeldefrist für ggT-Prozesse abgelaufen. ", 
+    lists:concat(["Anmeldefrist fuer ggT-Prozesse abgelaufen. ", 
       "Vermisst werden aktuell ", Missing, " ggT-Prozesse.\n"])),
   %todo: bind all ggt
   % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
   logging(Logfile, "Alle ggT-Prozesse gebunden.\n"),
-  create_ring(GgTSet, Logfile),
-  logging(Logfile, "Ring wird/wurde erstellt, ", 
-    "Koordinator geht in den Zustand 'Bereit für Berechnung'.\n").
+  create_ring(GgTSet, Nameservice, Logfile),
+  logging(Logfile, lists:concat(["Ring wird/wurde erstellt, ", 
+    "Koordinator geht in den Zustand 'Bereit für Berechnung'.\n"])).
 
-missing_ggT(GgTSet) -> config(ggtprozessnummer) - length(GgTSet).
+missing_ggT(GgTSet) -> config(ggtprozessnummer) - sets:size(GgTSet).
 
 arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
   logging(Logfile, "arbeitsphase()\n"), 
@@ -205,10 +208,10 @@ kill_all_ggt([GgT|Rest]) ->
   GgT ! {kill},
   kill_all_ggt(Rest).
 
-create_ring(GgTSet, Logfile) ->
+create_ring(GgTSet, Nameservice, Logfile) ->
   GgTList = sets:to_list(GgTSet),
   Pairs = create_ring_tuples(GgTList, none, none, []),
-  set_neighbors(Pairs, Logfile).
+  set_neighbors(Pairs, Nameservice, Logfile).
 
 create_ring_tuples([First|Rest], none, none, Accu) ->
   NewAccu = [{First, lists:last(Rest), lists:nth(1, Rest)}] ++ Accu,
@@ -220,11 +223,25 @@ create_ring_tuples([Element|Rest], Previous, First, Accu) ->
   NewAccu = [{Element, Previous, lists:nth(1, Rest)}] ++ Accu,
   create_ring_tuples(Rest, Element, First, NewAccu).
 
-set_neighbors([], Logfile) -> 
-  logging(Logfile, "Alle ggT-Prozesse über Nachbarn informiert.\n");
-set_neighbors([{GgT, Left, Right}|Rest], Logfile) ->
-  GgT ! {setneighbors, Left, Right},
+set_neighbors([], Nameservice, Logfile) -> 
+  logging(Logfile, "Alle ggT-Prozesse ueber Nachbarn informiert.\n");
+set_neighbors([{GgTName, Left, Right}|Rest], Nameservice, Logfile) ->
+  GgTProcess = find_process(GgTName, Nameservice),
+  GgTProcess ! {setneighbors, Left, Right},
+
   logging(Logfile, 
-    lists:concat(["ggT-Prozess ", ggT, " über linken (", Left, ")", 
+    lists:concat(["ggT-Prozess ", GgTName, "(", to_String(GgTProcess), 
+      ") ueber linken (", Left, ")", 
       " und rechten (", Right, ") Nachbarn informiert."])),
-  set_neighbors(Rest, Logfile).
+  set_neighbors(Rest, Nameservice, Logfile).
+
+find_process(ProcessName, Nameservice) ->
+  Nameservice ! {self(), {lookup, ProcessName}}, 
+  receive 
+    {pin, {Name, Node}} -> 
+      net_adm:ping(Node),
+      timer:sleep(1000),
+      global:whereis_name(Name); 
+    _ -> nok 
+  end.
+  
