@@ -10,13 +10,14 @@
 %{pingGGT,From}: Sendet ein pongGGT an From: From ! {pongGGT,GGTname}. Wird vom Koordinator z.B. genutzt, um auf manuelle Anforderung hin die Lebendigkeit des Rings zu prüfen.
 %kill: der ggT-Prozess wird beendet.
 
+
 start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->
   
   LogFile = lists:concat(["GGTP_", to_String(node()), ".log"]),
   StartLog = lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId, " Startzeit:", timeMilliSecond(), "mit ", to_String(node()), "auf ", to_String(self()), " \n"]),
   logging(LogFile, StartLog),
 
-  GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl),
+  GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId),
   logging(LogFile, lists:concat(["Build Ggt-Name: ", to_String(GgtName), "\n"])),
   global:register_name(GgtName,self()),
   
@@ -35,56 +36,73 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice, Koordinator
   end,
 
 
-loop(Nameservice, Koordinator, GgtName, LeftN, RightN, 1, LogFile, Arbeitszeit, TermZeit, empty).
+loop(Nameservice, Koordinator, GgtName, LeftN, RightN, -99, LogFile, Arbeitszeit, TermZeit, empty, 0, timeMilliSecond()).
 
 
-loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer) ->
+loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime) ->
   receive 
     
     {setpm, MiNeu} ->
-      logging(LogFile, lists:concat(["Setpm: ", MiNeu, "\n"])),
       timer:cancel(Timer),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000,term),
-      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, LogFile, Arbeitszeit, TermZeit, NewTimer);
+      {ok,NewTimer} = timer:send_after(TermZeit*1000,{tiTerm}),
+      logging(LogFile, lists:concat(["Setpm: ", MiNeu, "\n"])),
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, timeMilliSecond());
 
     {sendy,Y} -> 
-      
+      timer:cancel(Timer),
+      {ok,NewTimer} = timer:send_after(TermZeit*1000,{tiTerm}),
       logging(LogFile, lists:concat(["sendy ", to_String(Y), "; \n"])),
-      {{_,_,_},{_,_,Sec}} = erlang:localtime(),
       spawn_link(fun() -> calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, self(), Arbeitszeit, GgtName) end),
-      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer);
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, timeMilliSecond());
 
     {tellmi, From} -> 
       From ! {mi,Mi},
       io:fwrite("Aktuelles Mi: ~p~n", [Mi]),
-      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer);
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
     {pingGGT,From} ->
       From ! {pongGGT,GgtName},
       io:fwrite("PongGGT: ~p~n", [GgtName]),
-      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer);
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
     {abstimmung, Initiator} -> 
-      case Initiator == GgtName of
+      case Initiator =:= GgtName of
         true -> 
+          TermCountNew = TermCount +1,
           CurrentTime = timeMilliSecond(),
-          Koordinator ! {briefmi,{GgtName, Mi, CurrentTime}},
-          %TODO Zudem zählt er seine erfolgreich gemeldeten Terminierungsmeldungen
-          %TODO im Logging die Anzahl der gemeldeten Termierungsmeldungen einfügen
-          logging(LogFile, lists:concat(GgtName, ": stimme ab (", GgtName, "): Koordinator 3te Terminierung gemeldet mit ", Mi, ". ", CurrentTime));
-          %TODO beenden!
+          Koordinator ! {briefmi, {GgtName, Mi, CurrentTime}},
+          logging(LogFile, lists:concat([GgtName, ": stimme ab (", GgtName, "): Koordinator ", TermCountNew, " Terminierung gemeldet mit ", Mi, ". ", CurrentTime, "\n"]));
+          
         false -> 
-          RightN ! {abstimmung, Initiator},  
-          loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer)
-      end;
+          Now = timeMilliSecond(),
+          DiffTime = Now - LastMiTime,
+
+          case DiffTime >= ((TermZeit*1000)/2) of
+            true -> 
+              RightN ! {abstimmung, Initiator},  
+              logging(LogFile, lists:concat([GgtName, ": stimme ab (", Initiator, "): mit >JA< gestimmt und weitergeleitet ", timeMilliSecond(), "\n"])); 
+            false ->
+              logging(LogFile, lists:concat([GgtName,": stimme ab (", Initiator, " ): mit >NEIN< gestimmt und ignoriert."]))
+          end
+      
+      end,
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
+
+    {tiTerm} ->
+      logging(LogFile, lists:concat([GgtName, ": initiiere eine Terminierungsabstimmung (", Mi, "). ", timeMilliSecond(), "\n"])),
+      RightN ! {abstimmung, GgtName},
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
     {calcResult, NewMi} -> 
-      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, NewMi, LogFile, Arbeitszeit, TermZeit, Timer);
+      io:fwrite("Erhalte Berechnung: ~p~n", [NewMi]),
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, NewMi, LogFile, Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
     {kill} -> 
-      die(Nameservice, GgtName);
+      die(Nameservice, GgtName),
+      logging(LogFile, lists:concat(["Downtime: ", timeMilliSecond(), " vom Client ", GgtName]));
+    
     _ -> 
-      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer)
+      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime)
   end.
 
 
@@ -97,16 +115,16 @@ die(Nameservice, GgtName) ->
   unregister(GgtName).
 
 
-buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl) ->
- erlang:list_to_atom(lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, 1])).
+buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId) ->
+ erlang:list_to_atom(lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId])).
   
 
 calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess, Arbeitszeit,GgtName) -> 
   case (Y < Mi) of
     true -> NewMi = ((Mi-1) rem Y) +1,
             timer:sleep(Arbeitszeit*1000),
-        case NewMi == Mi of
-          false -> 
+        case NewMi =/= Mi of
+          true -> 
             logging(LogFile, lists:concat(["sendy: ", to_String(Y), 
             " (", to_String(Mi), ") berechnet als neues Mi: ", to_String(NewMi), " ", timeMilliSecond(), "\n"])),
             LeftN ! {sendy,NewMi},
@@ -116,7 +134,7 @@ calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess, Arbeitszeit,
             Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}},
             GgtProcess ! {calcResult, NewMi};
         
-          true ->
+          false ->
             logging(LogFile, lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  "Zahl nach Berechnung gleich geblieben\n")),
             GgtProcess ! {calcResult, Mi}
         end;
