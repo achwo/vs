@@ -1,6 +1,6 @@
 -module(utility).
--export([find_process/2, find_nameservice/2, log/2, load_config/2,
-  from_config/2]).
+-export([find_process/2, find_process_with_node/2, find_nameservice/2, log/2, 
+  load_config/2, from_config/2]).
 
 find_nameservice(NameserviceNode, NameserviceName) ->
   net_adm:ping(NameserviceNode),
@@ -8,12 +8,16 @@ find_nameservice(NameserviceNode, NameserviceName) ->
   global:whereis_name(NameserviceName).
 
 find_process(ProcessNameAtom, Nameservice) ->
+  {Process, _} = find_process_with_node(ProcessNameAtom, Nameservice),
+  Process.
+
+find_process_with_node(ProcessNameAtom, Nameservice) ->
   Nameservice ! {self(), {lookup, ProcessNameAtom}},
   receive 
     {pin, {Name, Node}} -> 
       net_adm:ping(Node),
       timer:sleep(1000),
-      global:whereis_name(Name); 
+      {global:whereis_name(Name), Node}; 
     _ -> nok 
   end.
 

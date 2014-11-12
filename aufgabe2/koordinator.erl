@@ -17,8 +17,7 @@ run() ->
   utility:load_config(koordinator, ConfigFile),
   log(Logfile, "koordinator.cfg gelesen..."),
   Nameservice = utility:find_nameservice(
-    config(nameservicenode), 
-    config(nameservicename)),
+    config(nameservicenode), config(nameservicename)),
 
   case Nameservice of
     undefined -> log(Logfile, "Nameservice nicht gefunden...");
@@ -68,40 +67,32 @@ step(GgTSet, Nameservice, Logfile) ->
   log(Logfile, 
     lists:concat(["Anmeldefrist fuer ggT-Prozesse abgelaufen. ", 
       "Vermisst werden aktuell ", missing_ggT(GgTSet), " ggT-Prozesse."])),
-  %todo: bind all ggt
-  % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
-  log(Logfile, "Alle ggT-Prozesse gebunden."),
   create_ring(GgTSet, Nameservice, Logfile),
   log(Logfile, lists:concat(["Ring wird/wurde erstellt, ", 
     "Koordinator geht in den Zustand 'Bereit fuer Berechnung'."])).
 
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - sets:size(GgTSet).
 
-arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
-  log(Logfile, "arbeitsphase()"), 
+arbeitsphase(Nameservice, GgTSet, Korrigieren, Log) ->
+  log(Log, "arbeitsphase()"), 
   receive
 
     {calc, WggT} ->
-      %{calc,WggT}: Der Koordinator startet eine neue ggT-Berechnung mit 
-      % Wunsch-ggT WggT.
-      %todo: was bedeutet das? Ziel?
-      log(Logfile, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", 
-        WggT, "."])),
-      %todo: implementation
-      %todo: initiale Mis an ggTs senden
-      log(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) ", 
-        "initiales Mi 53444391 gesendet."])),
-      log(Logfile, "Allen ggT-Prozessen ein initiales Mi gesendet."),
+      log(Log, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, "."])),
+      MiList = werkzeug:bestimme_mis(WggT, sets:size(GgTSet)),
+
+      send_mis_to_ggts(sets:to_list(GgTSet), MiList, Nameservice, Log),
+      log(Log, "Allen ggT-Prozessen ein initiales Mi gesendet."),
 
       %todo: wievielen ggTs startendes y senden? und anschliessend senden 
-      log(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) ", 
+      log(Log, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) ", 
         "startendes y 23154859 gesendet."])),
-      log(Logfile, "Allen ausgewählten ggT-Prozessen ein y gesendet."),
+      log(Log, "Allen ausgewaehlten ggT-Prozessen ein y gesendet."),
       todo;
 
     {reset} ->
-      kill_all_ggt(GgTSet, Logfile),
-      initialphase(Nameservice, [], Logfile);
+      kill_all_ggt(GgTSet, Log),
+      initialphase(Nameservice, [], Log);
 
     {toggle} ->  
       case Korrigieren of
@@ -109,10 +100,10 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
         1 -> NewKorrigieren = 0
       end, 
 
-      log(Logfile, 
+      log(Log, 
         lists:concat(["toggle des Koordinators um ", timeMilliSecond(), ":", 
           Korrigieren, " zu ", NewKorrigieren, "."])),
-      arbeitsphase(Nameservice, GgTSet, NewKorrigieren, Logfile);
+      arbeitsphase(Nameservice, GgTSet, NewKorrigieren, Log);
 
     {nudge} ->
       % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT 
@@ -121,7 +112,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
       % Alle ggT-Prozesse auf Lebendigkeit geprueft.
       todo;
 
-    {kill} -> beendigungsphase(Nameservice, GgTSet, Logfile);
+    {kill} -> beendigungsphase(Nameservice, GgTSet, Log);
 
     {prompt} ->
       %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per 
@@ -131,7 +122,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
     {briefmi, {Clientname, CMi, CZeit}} ->
       %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen 
       % Clientname informiert ueber sein neues Mi CMi um CZeit Uhr.
-      log(Logfile, 
+      log(Log, 
         lists:concat([Clientname, " meldet neues Mi ", CMi, " um ", CZeit, "."])),
       todo;
 
@@ -143,7 +134,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
       Falsch = true,
       case Falsch of
         true -> 
-          log(Logfile, lists:concat([Clientname, 
+          log(Log, lists:concat([Clientname, 
             " meldet falsche Terminierung mit ggT ", CMi, " um ", CZeit, "."])),
           case Korrigieren of
             true -> % todo: korrigierendes sendy an From,
@@ -151,12 +142,12 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
             false -> nix
           end;
         false -> 
-          log(Logfile, lists:concat([Clientname, 
+          log(Log, lists:concat([Clientname, 
             " meldet Terminierung mit ggT ", CMi, " um ", CZeit, "."]))
       end,
       todo;
 
-    _ -> arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile)
+    _ -> arbeitsphase(Nameservice, GgTSet, Korrigieren, Log)
   end.
 
 beendigungsphase(Nameservice, GgTSet, Logfile) ->
@@ -205,3 +196,11 @@ set_neighbors([{GgTName, Left, Right}|Rest], Nameservice, Logfile) ->
       ") ueber linken (", Left, ")", 
       " und rechten (", Right, ") Nachbarn informiert."])),
   set_neighbors(Rest, Nameservice, Logfile).
+
+send_mis_to_ggts([], [], _, _) -> ok;
+send_mis_to_ggts([GgT|RestGGTs], [Mi|RestMis], Nameservice, Log) -> 
+  {Process, Node} = utility:find_process_with_node(GgT, Nameservice),
+  Process ! {setpm, Mi},
+  log(Log, lists:concat(["ggT-Prozess ", GgT, " (", Node, ") ", 
+        "initiales Mi ", Mi, " gesendet."])),
+  send_mis_to_ggts(RestGGTs, RestMis, Nameservice, Log).
