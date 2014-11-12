@@ -1,8 +1,7 @@
 0. Configs anpassen (ip)
-1. nameservice
-2. koordinator
-3. starter
-
+1. ./start_nameserver.sh $ip
+2. ./start_stuff.sh $ip
+3. ./gui.sh $ip
 
 --------------------
 Compilieren der Dateien:

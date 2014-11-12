@@ -54,8 +54,6 @@ initialphase(Nameservice, GgTSet, Logfile) ->
       arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile);
 
     {reset} ->
-    % reset: Der Koordinator sendet allen ggT-Prozessen das kill-Kommando und bringt 
-    % sich selbst in den initialen Zustand, indem sich Starter wieder melden können.
       kill_all_ggt(GgTSet, Logfile),
       initialphase(Nameservice, sets:new(), Logfile);
    
@@ -78,12 +76,14 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log) ->
   receive
 
     {calc, WggT} ->
-      log(Log, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, "."])),
+      log(Log, 
+        lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, "."])),
       MiList = werkzeug:bestimme_mis(WggT, sets:size(GgTSet)),
 
       send_mis_to_ggts(sets:to_list(GgTSet), MiList, Nameservice, Log),
-      log(Log, "Allen ggT-Prozessen ein initiales Mi gesendet."),
+      log(Log, "Allen ggT-Prozessen ein initiales Mi gesendet.");
 
+    {startggt, GgT} ->
       %todo: wievielen ggTs startendes y senden? und anschliessend senden 
       log(Log, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) ", 
         "startendes y 23154859 gesendet."])),

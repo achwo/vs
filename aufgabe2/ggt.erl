@@ -48,10 +48,12 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
   receive
   {setneighbors,LeftN,RightN} ->  
     log(LogFile, lists:concat(["Linker Nachbar: ", LeftN])), 
-    log(LogFile, lists:concat(["Rechter Nachbar: ", RightN]))
+    log(LogFile, lists:concat(["Rechter Nachbar: ", RightN])),
+    LeftNProcess = utility:find_process(LeftN, Nameservice),
+    RightNProcess = utility:find_process(RightN, Nameservice)
   end,
 
-  loop(Nameservice, Koordinator, GgtName, LeftN, RightN, -99, 
+  loop(Nameservice, Koordinator, GgtName, LeftNProcess, RightNProcess, -99, 
     LogFile, Arbeitszeit, TermZeit, empty, 0, timeMilliSecond()).
 
 

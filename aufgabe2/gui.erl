@@ -1,23 +1,20 @@
 -module(gui).
 -export([start/0]).
+-import(werkzeug, [to_String/1]).
+-import(utility, [log/2]).
 
 start() ->
-  net_adm:ping('ns@192.168.178.21'),
-  timer:sleep(1000),
-  N = global:whereis_name(nameservice),
-  N ! {self(), {lookup, koordinator}}, 
-  receive 
-    {pin, {Name, Node}} -> 
-      net_adm:ping(Node),
-      timer:sleep(1000),
-      Koordinator = global:whereis_name(Name),
-      Koordinator ! {step}
-      % Ggt = global:whereis_name('1121'),
-      % % Ggt ! {setneighbors, adolf, joseph}
-      % % Ggt ! {setpm, 1982373652472384}
-      % Ggt ! {sendy, 129381237}
-      % do stuff
-      ; 
-    _ -> kacke 
-  end.
+  {ok, ConfigFile} = file:consult("koordinator.cfg"),
+  utility:load_config(gui, ConfigFile),
+  NNode = utility:from_config(gui, nameservicenode),
+  NName = utility:from_config(gui, nameservicename),
+  N = utility:find_nameservice(NNode, NName),
+  Koordinator = utility:find_process(koordinator, N),
   
+  Log = lists:concat(["gui.log"]),
+
+  Koordinator ! {step},
+  log(Log, "Sent {step} to koordinator."),
+  timer:sleep(4000),
+  Koordinator ! {calc, 3},
+  log(Log, "Sent {calc, 3} to koordinator.").
