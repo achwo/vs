@@ -5,6 +5,7 @@
 %und GGTProzessnummer ist die Anzahl der zu startenden ggT-Prozesse.
 -module(starter).
 -import(werkzeug, [get_config_value/2, logging/2, timeMilliSecond/0, to_String/1]).
+-import(utility, [log/2]).
 -export([start/2, startGGT/8]).
 %Starter_11-ggTs@Brummpa-KLC Startzeit: 01.12 15:49:57,839| mit PID <0.37.0>
 
@@ -32,38 +33,31 @@ config(Key) ->
 
 
 start(UniqueID, Koordinator) -> 
-    LogFile = lists:concat(["Starter_", UniqueID, " ", to_String(node()),".log"]),
-    StartLog = lists:concat(["Starter_", UniqueID, "-", to_String(node()), " Startzeit: ", timeMilliSecond(), "mit PID ", to_String(self()), " \n"]),
-    logging(LogFile, StartLog),
-    load_config(),
+  StarterName = lists:concat(["Starter_", UniqueID]),
+  NodeString = to_String(node()),
 
-    logging(LogFile, lists:concat(["ggt.cfg gelesen..."])),
-    Koordinator ! {getsteeringval, self()},
-    RegisterKoordinatorLog = lists:concat(["Koordinator ", to_String(Koordinator)," gebunden \n"]),
-    logging(LogFile, RegisterKoordinatorLog),
-    
-    
-    receive
-      {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> 
-      ReceiveSteeringValLog = lists:concat(["getsteeringval: ", Arbeitszeit, " Arbeitszeit ggT; ", TermZeit, " Wartezeit ggT, ", GGTProzessAnzahl, " Anzahl GGT Prozesse. \n"]),
-      logging(LogFile, ReceiveSteeringValLog),
-      nix
-    end,
-    
-    Nameservice = findNameService(),
-    RegisterNameserviceLog = lists:concat(["Nameservice ", to_String(Nameservice), "gebunden...\n"]),
-    logging(LogFile, RegisterNameserviceLog),
-    
+  LogFile = lists:concat([StarterName, " ", NodeString,".log"]),
+  log(LogFile, lists:concat([StarterName, "-", NodeString, 
+    " Startzeit: ", timeMilliSecond(), "mit PID ", to_String(self())])),
+  load_config(),
 
-    startGGT(UniqueID, GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
+  logging(LogFile, lists:concat(["ggt.cfg gelesen..."])),
+  Koordinator ! {getsteeringval, self()},
+  logging(LogFile, lists:concat(["Koordinator ", to_String(Koordinator)," gebunden \n"])),
 
+  receive
+    {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> 
+    ReceiveSteeringValLog = lists:concat(["getsteeringval: ", Arbeitszeit, " Arbeitszeit ggT; ", TermZeit, " Wartezeit ggT, ", GGTProzessAnzahl, " Anzahl GGT Prozesse. \n"]),
+    logging(LogFile, ReceiveSteeringValLog),
+    nix
+  end,
+  
+  Nameservice = utility:find_nameservice(
+    config(nameservicenode), 
+    config(nameservicename)),
 
-
-findNameService() ->
-  NameserviceNode = config(nameservicenode),
-  net_adm:ping(NameserviceNode),
-  timer:sleep(1000),
-  NS = global:whereis_name(nameservice).
+  logging(LogFile, lists:concat(["Nameservice ", to_String(Nameservice), "gebunden...\n"])),
+  startGGT(UniqueID, GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, config(praktikumsgruppe), config(teamnummer)).
 
 startGGT(_, 0, _, _, _, _, _, _) -> nix;
 startGGT(UniqueID, GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, Koordinator, Praktikumsgruppe, Teamnummer) ->

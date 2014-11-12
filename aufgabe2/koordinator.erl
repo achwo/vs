@@ -1,5 +1,6 @@
 -module(koordinator).
--import(werkzeug, [get_config_value/2, logging/2, to_String/1, timeMilliSecond/0]).
+-import(werkzeug, [get_config_value/2, to_String/1, timeMilliSecond/0]).
+-import(utility, [log/2, find_process/2, find_nameservice/2]).
 -export([start/0]).
 -export([create_ring_tuples/4]).
 
@@ -28,35 +29,30 @@ load_config() ->
   {_, Value} = application:get_env(koordinator, Key),
   Value.
 
-findNameService() ->
-  NameserviceName = config(nameservicenode),
-  net_adm:ping(NameserviceName),
-  timer:sleep(1000),
-  global:whereis_name(nameservice).
-
 start() ->
   spawn_link(fun() -> run() end).
 
 run() ->
   Logfile = lists:concat(["koordinator_", to_String(node()), ".log"]),
-  Startlog = lists:concat([to_String(node()), " Startzeit: ", 
-    timeMilliSecond()," mit PID ", to_String(self()), "\n"]),
-  logging(Logfile, Startlog),
+  log(Logfile, lists:concat([to_String(node()), " Startzeit: ", 
+    timeMilliSecond()," mit PID ", to_String(self())])),
   load_config(),
-  logging(Logfile, "koordinator.cfg gelesen...\n"),
-  Nameservice = findNameService(),
+  log(Logfile, "koordinator.cfg gelesen..."),
+  Nameservice = find_nameservice(
+    config(nameservicenode), 
+    config(nameservicename)),
 
   case Nameservice of
-    undefined -> logging(Logfile, "Nameservice nicht gefunden...\n");
-    _ -> logging(Logfile, "Nameservice gebunden...\n"),
+    undefined -> log(Logfile, "Nameservice nicht gefunden...");
+    _ -> log(Logfile, "Nameservice gebunden..."),
       global:register_name(koordinator,self()),
-      logging(Logfile, "lokal registriert...\n"),
+      log(Logfile, "lokal registriert..."),
      
       Nameservice ! {self(),{bind,koordinator,node()}},
-      receive ok -> logging(Logfile, "beim Namensdienst registriert.\n");
-        in_use -> io:format("Fehler: Name schon gebunden.\n")
+      receive ok -> log(Logfile, "beim Namensdienst registriert.");
+        in_use -> io:format("Fehler: Name schon gebunden.")
       end,
-      logging(Logfile, "\n"),
+      log(Logfile, ""), % for \n
       initialphase(Nameservice, sets:new(), Logfile)
   end.
 
@@ -64,15 +60,15 @@ initialphase(Nameservice, GgTSet, Logfile) ->
   receive 
     {getsteeringval,StarterName} -> 
       % todo: was ist die (0)?
-      logging(Logfile, 
-        lists:concat(["getsteeringval: ", to_String(StarterName), " (0).\n"])),
+      log(Logfile, 
+        lists:concat(["getsteeringval: ", to_String(StarterName), " (0)."])),
     	StarterName ! {steeringval, config(arbeitszeit),
         config(termzeit), config(ggtprozessnummer)},
       initialphase(Nameservice, GgTSet, Logfile);
 
     {hello, GgtName} ->
       % todo: was ist die (3)?
-      logging(Logfile, lists:concat(["hello: ", to_String(GgtName), " (3).\n"])),
+      log(Logfile, lists:concat(["hello: ", to_String(GgtName), " (3)."])),
       GgTSetNew = sets:add_element(GgtName, GgTSet),
       initialphase(Nameservice, GgTSetNew, Logfile);
 
@@ -91,41 +87,38 @@ initialphase(Nameservice, GgTSet, Logfile) ->
   end.
 
 step(GgTSet, Nameservice, Logfile) ->
-  logging(Logfile, "step()\n"),
-  %todo: missing ggt berechnen
-  Missing = missing_ggT(GgTSet),
-  logging(Logfile, 
+  log(Logfile, 
     lists:concat(["Anmeldefrist fuer ggT-Prozesse abgelaufen. ", 
-      "Vermisst werden aktuell ", Missing, " ggT-Prozesse.\n"])),
+      "Vermisst werden aktuell ", missing_ggT(GgTSet), " ggT-Prozesse."])),
   %todo: bind all ggt
   % ggT-Prozess 488312 (488312) auf ggTs@Brummpa gebunden.
-  logging(Logfile, "Alle ggT-Prozesse gebunden.\n"),
+  log(Logfile, "Alle ggT-Prozesse gebunden."),
   create_ring(GgTSet, Nameservice, Logfile),
-  logging(Logfile, lists:concat(["Ring wird/wurde erstellt, ", 
-    "Koordinator geht in den Zustand 'Bereit für Berechnung'.\n"])).
+  log(Logfile, lists:concat(["Ring wird/wurde erstellt, ", 
+    "Koordinator geht in den Zustand 'Bereit fuer Berechnung'."])).
 
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - sets:size(GgTSet).
 
 arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
-  logging(Logfile, "arbeitsphase()\n"), 
+  log(Logfile, "arbeitsphase()"), 
   receive
 
     {calc, WggT} ->
       %{calc,WggT}: Der Koordinator startet eine neue ggT-Berechnung mit 
       % Wunsch-ggT WggT.
       %todo: was bedeutet das? Ziel?
-      logging(Logfile, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", 
-        WggT, ".\n"])),
+      log(Logfile, lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", 
+        WggT, "."])),
       %todo: implementation
       %todo: initiale Mis an ggTs senden
-      logging(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) ", 
-        "initiales Mi 53444391 gesendet.\n"])),
-      logging(Logfile, "Allen ggT-Prozessen ein initiales Mi gesendet.\n"),
+      log(Logfile, lists:concat(["ggT-Prozess 488312 (ggTs@Brummpa) ", 
+        "initiales Mi 53444391 gesendet."])),
+      log(Logfile, "Allen ggT-Prozessen ein initiales Mi gesendet."),
 
       %todo: wievielen ggTs startendes y senden? und anschliessend senden 
-      logging(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) ", 
-        "startendes y 23154859 gesendet.\n"])),
-      logging(Logfile, "Allen ausgewählten ggT-Prozessen ein y gesendet.\n"),
+      log(Logfile, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) ", 
+        "startendes y 23154859 gesendet."])),
+      log(Logfile, "Allen ausgewählten ggT-Prozessen ein y gesendet."),
       todo;
 
     {reset} ->
@@ -138,16 +131,16 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
         1 -> NewKorrigieren = 0
       end, 
 
-      logging(Logfile, 
+      log(Logfile, 
         lists:concat(["toggle des Koordinators um ", timeMilliSecond(), ":", 
-          Korrigieren, " zu ", NewKorrigieren, ".\n"])),
+          Korrigieren, " zu ", NewKorrigieren, "."])),
       arbeitsphase(Nameservice, GgTSet, NewKorrigieren, Logfile);
 
     {nudge} ->
       % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT 
       % deren Lebenszustand ab und zeigt dies im log an.
       % ggT-Prozess 488312 ist lebendig (01.12 15:51:44,720|).
-      % Alle ggT-Prozesse auf Lebendigkeit geprüft.
+      % Alle ggT-Prozesse auf Lebendigkeit geprueft.
       todo;
 
     {kill} -> beendigungsphase(Nameservice, GgTSet, Logfile);
@@ -159,29 +152,29 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Logfile) ->
     
     {briefmi, {Clientname, CMi, CZeit}} ->
       %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen 
-      % Clientname informiert über sein neues Mi CMi um CZeit Uhr.
-      logging(Logfile, 
-        lists:concat([Clientname, " meldet neues Mi ", CMi, " um ", CZeit, ".\n"])),
+      % Clientname informiert ueber sein neues Mi CMi um CZeit Uhr.
+      log(Logfile, 
+        lists:concat([Clientname, " meldet neues Mi ", CMi, " um ", CZeit, "."])),
       todo;
 
     {briefterm, {Clientname, CMi, CZeit}, From} ->
       %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname 
-      % und PID From informiert über über die Terminierung der Berechnung 
+      % und PID From informiert ueber ueber die Terminierung der Berechnung 
       % mit Ergebnis CMi um CZeit Uhr.
       % todo: falsch berechnen
       Falsch = true,
       case Falsch of
         true -> 
-          logging(Logfile, lists:concat([Clientname, 
-            " meldet falsche Terminierung mit ggT ", CMi, " um ", CZeit, ".\n"])),
+          log(Logfile, lists:concat([Clientname, 
+            " meldet falsche Terminierung mit ggT ", CMi, " um ", CZeit, "."])),
           case Korrigieren of
             true -> % todo: korrigierendes sendy an From,
               From;
             false -> nix
           end;
         false -> 
-          logging(Logfile, lists:concat([Clientname, 
-            " meldet Terminierung mit ggT ", CMi, " um ", CZeit, ".\n"]))
+          log(Logfile, lists:concat([Clientname, 
+            " meldet Terminierung mit ggT ", CMi, " um ", CZeit, "."]))
       end,
       todo;
 
@@ -192,16 +185,16 @@ beendigungsphase(Nameservice, GgTSet, Logfile) ->
   kill_all_ggt(GgTSet, Logfile),
   Nameservice ! {self(),{unbind,koordinator}},
   receive 
-    ok -> logging(Logfile, "Unbound koordinator at nameservice.\n")
+    ok -> log(Logfile, "Unbound koordinator at nameservice.")
   end,
   unregister(koordinator),
-  logging(Logfile, 
+  log(Logfile, 
     lists:concat(["Downtime: ", timeMilliSecond(), " vom Koordinator ", 
-      config(koordinatorname), "\n"])).
+      config(koordinatorname)])).
 
 kill_all_ggt(GgTSet, Logfile) ->
   kill_all_ggt(sets:to_list(GgTSet)),
-  logging(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.\n").
+  log(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.").
 
 kill_all_ggt([]) -> ok;
 kill_all_ggt([GgT|Rest]) ->
@@ -223,25 +216,14 @@ create_ring_tuples([Element|Rest], Previous, First, Accu) ->
   NewAccu = [{Element, Previous, lists:nth(1, Rest)}] ++ Accu,
   create_ring_tuples(Rest, Element, First, NewAccu).
 
-set_neighbors([], Nameservice, Logfile) -> 
-  logging(Logfile, "Alle ggT-Prozesse ueber Nachbarn informiert.\n");
+set_neighbors([], _, Logfile) -> 
+  log(Logfile, "Alle ggT-Prozesse ueber Nachbarn informiert.");
 set_neighbors([{GgTName, Left, Right}|Rest], Nameservice, Logfile) ->
   GgTProcess = find_process(GgTName, Nameservice),
   GgTProcess ! {setneighbors, Left, Right},
 
-  logging(Logfile, 
+  log(Logfile, 
     lists:concat(["ggT-Prozess ", GgTName, "(", to_String(GgTProcess), 
       ") ueber linken (", Left, ")", 
       " und rechten (", Right, ") Nachbarn informiert."])),
   set_neighbors(Rest, Nameservice, Logfile).
-
-find_process(ProcessName, Nameservice) ->
-  Nameservice ! {self(), {lookup, ProcessName}}, 
-  receive 
-    {pin, {Name, Node}} -> 
-      net_adm:ping(Node),
-      timer:sleep(1000),
-      global:whereis_name(Name); 
-    _ -> nok 
-  end.
-  

@@ -2,7 +2,7 @@
 -export([start/0]).
 
 start() ->
-  net_adm:ping('ns@141.22.75.105'),
+  net_adm:ping('ns@192.168.178.21'),
   timer:sleep(1000),
   N = global:whereis_name(nameservice),
   N ! {self(), {lookup, koordinator}}, 
