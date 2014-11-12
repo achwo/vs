@@ -75,20 +75,14 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log) ->
   log(Log, "arbeitsphase()"), 
   receive
 
+    {calc} ->
+      WggT = random:uniform(1000),
+      calc(WggT, GgTSet, Nameservice, Log),
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log);
+
     {calc, WggT} ->
-      log(Log, 
-        lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, "."])),
-      MiList = werkzeug:bestimme_mis(WggT, sets:size(GgTSet)),
-
-      send_mis_to_ggts(sets:to_list(GgTSet), MiList, Nameservice, Log),
-      log(Log, "Allen ggT-Prozessen ein initiales Mi gesendet.");
-
-    {startggt, GgT} ->
-      %todo: wievielen ggTs startendes y senden? und anschliessend senden 
-      log(Log, lists:concat(["ggT-Prozess 48832 (ggT@Brummpa) ", 
-        "startendes y 23154859 gesendet."])),
-      log(Log, "Allen ausgewaehlten ggT-Prozessen ein y gesendet."),
-      todo;
+      calc(WggT, GgTSet, Nameservice, Log),
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log);
 
     {reset} ->
       kill_all_ggt(GgTSet, Log),
@@ -150,6 +144,22 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log) ->
     _ -> arbeitsphase(Nameservice, GgTSet, Korrigieren, Log)
   end.
 
+calc(WggT, GgTSet, Nameservice, Log) ->
+  NumberGgts = sets:size(GgTSet),
+  GgTList = sets:to_list(GgTSet),
+
+  log(Log, 
+    lists:concat(["Beginne eine neue ggT-Berechnung mit Ziel ", WggT, "."])),
+  MiList = werkzeug:bestimme_mis(WggT, NumberGgts),
+  send_mis_to_ggts(GgTList, MiList, Nameservice, Log),
+  log(Log, "Allen ggT-Prozessen ein initiales Mi gesendet."),
+
+  NumberOfYs = erlang:max(2, (0.15 * NumberGgts)),
+  Ys = werkzeug:bestimme_mis(WggT, NumberOfYs),
+  Shuffled = werkzeug:shuffle(GgTList),
+  send_ys_to_ggts(Shuffled, Ys, Nameservice, Log),
+  log(Log, "Allen ausgewaehlten ggT-Prozessen ein y gesendet.").
+
 beendigungsphase(Nameservice, GgTSet, Logfile) ->
   kill_all_ggt(GgTSet, Logfile),
   Nameservice ! {self(),{unbind,koordinator}},
@@ -202,5 +212,15 @@ send_mis_to_ggts([GgT|RestGGTs], [Mi|RestMis], Nameservice, Log) ->
   {Process, Node} = utility:find_process_with_node(GgT, Nameservice),
   Process ! {setpm, Mi},
   log(Log, lists:concat(["ggT-Prozess ", GgT, " (", Node, ") ", 
-        "initiales Mi ", Mi, " gesendet."])),
+    "initiales Mi ", Mi, " gesendet."])),
   send_mis_to_ggts(RestGGTs, RestMis, Nameservice, Log).
+
+send_ys_to_ggts(_, [], _, _) -> ok;
+send_ys_to_ggts([GgT|RestGGTs], [Y|RestYs], Nameservice, Log) ->
+  {Process, Node} = utility:find_process_with_node(GgT, Nameservice),
+  log(Log, "Process: " ++ to_String(Process)), 
+  % undefined? probably the one that dies of bad arith...
+  Process ! {sendy, Y},
+  log(Log, lists:concat(["ggT-Prozess ", GgT, " (", Node, ") ", 
+    "startendes y ", Y, " gesendet."])),
+  send_ys_to_ggts(RestGGTs, RestYs, Nameservice, Log).

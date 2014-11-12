@@ -166,8 +166,8 @@ calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess,
           LeftN ! {sendy,NewMi},
           RightN ! {sendy,NewMi},
           log(LogFile, 
-            lists:concat(["informed ", LeftN, "and ", RightN, 
-              " with new Mi: ", NewMi])),
+            lists:concat(["informed ", to_String(LeftN), "and ", 
+              to_String(RightN), " with new Mi: ", NewMi])),
         
           Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}},
           GgtProcess ! {calcResult, NewMi};
