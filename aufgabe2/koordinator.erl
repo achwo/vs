@@ -1,33 +1,10 @@
 -module(koordinator).
 -import(werkzeug, [get_config_value/2, to_String/1, timeMilliSecond/0]).
--import(utility, [log/2, find_process/2, find_nameservice/2]).
+-import(utility, [log/2, find_process/2]).
 -export([start/0]).
 -export([create_ring_tuples/4]).
 
-load_config() ->
-  {ok, ConfigFile} = file:consult("koordinator.cfg"),
-  
-  {ok, Arbeitszeit} = get_config_value(arbeitszeit, ConfigFile),
-  application:set_env(koordinator, arbeitszeit, Arbeitszeit),
-  
-  {ok, Termzeit} = get_config_value(termzeit, ConfigFile),
-  application:set_env(koordinator, termzeit, Termzeit),
-
-  {ok, Ggtprozessnummer} = get_config_value(ggtprozessnummer, ConfigFile),
-  application:set_env(koordinator, ggtprozessnummer, Ggtprozessnummer),
-
-  {ok, NameserviceNode} = get_config_value(nameservicenode, ConfigFile),
-  application:set_env(koordinator, nameservicenode, NameserviceNode),
-
-  {ok, NameserviceName} = get_config_value(nameservicename, ConfigFile),
-  application:set_env(koordinator, nameservicename, NameserviceName),
-
-  {ok, Korrigieren} = get_config_value(korrigieren, ConfigFile),
-  application:set_env(koordinator, korrigieren, Korrigieren).
-
- config(Key) ->
-  {_, Value} = application:get_env(koordinator, Key),
-  Value.
+config(Key) -> utility:from_config(koordinator, Key).
 
 start() ->
   spawn_link(fun() -> run() end).
@@ -36,9 +13,10 @@ run() ->
   Logfile = lists:concat(["koordinator_", to_String(node()), ".log"]),
   log(Logfile, lists:concat([to_String(node()), " Startzeit: ", 
     timeMilliSecond()," mit PID ", to_String(self())])),
-  load_config(),
+  {ok, ConfigFile} = file:consult("koordinator.cfg"),
+  utility:load_config(koordinator, ConfigFile),
   log(Logfile, "koordinator.cfg gelesen..."),
-  Nameservice = find_nameservice(
+  Nameservice = utility:find_nameservice(
     config(nameservicenode), 
     config(nameservicename)),
 
