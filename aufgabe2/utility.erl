@@ -1,6 +1,6 @@
 -module(utility).
 -export([find_process/2, find_process_with_node/2, find_nameservice/2, log/2, 
-  load_config/2, from_config/2]).
+  load_config/2, from_config/2, current_time_millis/0]).
 
 find_nameservice(NameserviceNode, NameserviceName) ->
   net_adm:ping(NameserviceNode),
@@ -34,3 +34,8 @@ load_config(ApplicationName, [{Key, Value} | Rest]) ->
 from_config(ApplicationName, Key) ->
   {_, Value} = application:get_env(ApplicationName, Key),
   Value.
+
+%-spec get_timestamp() -> integer().
+current_time_millis() ->
+  {Mega, Sec, Micro} = os:timestamp(),
+  (Mega*1000000 + Sec)*1000 + round(Micro/1000).
