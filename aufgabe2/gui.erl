@@ -13,8 +13,10 @@ start() ->
   
   Log = lists:concat(["gui.log"]),
 
-  Koordinator ! {step},
+  % Koordinator ! {step},
   log(Log, "Sent {step} to koordinator."),
   timer:sleep(4000),
-  Koordinator ! {calc, 3},
-  log(Log, "Sent {calc, 3} to koordinator.").
+  Koordinator ! {calc, 19},
+  log(Log, "Sent {calc, 3} to koordinator."),
+  timer:sleep(10000),
+  Koordinator ! {kill}.
