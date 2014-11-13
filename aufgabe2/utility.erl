@@ -3,9 +3,24 @@
   load_config/2, from_config/2, current_time_millis/0]).
 
 find_nameservice(NameserviceNode, NameserviceName) ->
-  net_adm:ping(NameserviceNode),
-  timer:sleep(500),
+  meet(NameserviceNode),
   global:whereis_name(NameserviceName).
+
+meet(Node) ->
+  case is_in_nodelist(Node) of
+    false -> 
+      net_adm:ping(Node),
+      timer:sleep(500);
+    _ -> ok
+  end.
+
+is_in_nodelist(Node) ->
+  Nodelist = nodes(),
+  find_node(Nodelist, Node).
+
+find_node([], _) -> false;
+find_node([Element|Rest], Node) when Element == Node -> true;
+find_node([_|Rest], Node) -> find_node(Rest, Node).
 
 find_process(ProcessNameAtom, Nameservice) ->
   {Process, _} = find_process_with_node(ProcessNameAtom, Nameservice),
@@ -15,8 +30,7 @@ find_process_with_node(ProcessNameAtom, Nameservice) ->
   Nameservice ! {self(), {lookup, ProcessNameAtom}},
   receive 
     {pin, {Name, Node}} -> 
-      net_adm:ping(Node),
-      timer:sleep(500),
+      meet(Node),
       {global:whereis_name(Name), Node}; 
     _ -> nok 
   end.
