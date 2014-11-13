@@ -62,15 +62,20 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
   receive 
     
     {setpm, MiNeu} ->
-      timer:cancel(Timer),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000,{tiTerm}),
-      log(LogFile, lists:concat(["Setpm: ", MiNeu])),
+      case Mi =/= -99 of
+        true -> 
+          timer:cancel(Timer),
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm});
+        false ->
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm})
+      end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, 
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {sendy,Y} -> 
       timer:cancel(Timer),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000,{tiTerm}),
+      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
+      log(LogFile, lists:concat(["NewTimer: ", to_String(NewTimer)])),
       log(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
       spawn_link(fun() -> 
         calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, 
@@ -103,12 +108,14 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
           
         false -> 
           Now = (current_time_millis() / 1000),
-          io:fwrite("NowTime: ~p~n", [Now]),
+          log(LogFile, lists:concat(["NowTime: ", to_String(Now)])),
+          
           
           NewLastTime = (LastMiTime / 1000), 
-          io:fwrite("LastTime: ~p~n", [NewLastTime]),
+          log(LogFile, lists:concat(["NewLastTime: ", to_String(NewLastTime)])),
+          
           DiffTime = Now - NewLastTime,
-          io:fwrite("DiffTime: ~p~n", [DiffTime]),
+          log(LogFile, lists:concat(["DiffTime: ", to_String(DiffTime)])),
 
           case DiffTime >= ((TermZeit*1000)/2) of
             true -> 
