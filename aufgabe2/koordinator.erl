@@ -51,7 +51,8 @@ initialphase(Nameservice, GgTSet, Logfile) ->
 
     {step} ->
       step(GgTSet, Nameservice, Logfile),
-      arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile);
+      %TODO CMi wert klug definieren
+      arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile, 134217728);
 
     {reset} ->
       kill_all_ggt(GgTSet, Logfile),
@@ -71,18 +72,18 @@ step(GgTSet, Nameservice, Logfile) ->
 
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - sets:size(GgTSet).
 
-arbeitsphase(Nameservice, GgTSet, Korrigieren, Log) ->
+arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
   log(Log, "arbeitsphase()"), 
   receive
 
     {calc} ->
       WggT = random:uniform(1000),
       calc(WggT, GgTSet, Nameservice, Log),
-      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log);
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
 
     {calc, WggT} ->
       calc(WggT, GgTSet, Nameservice, Log),
-      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log);
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
 
     {reset} ->
       kill_all_ggt(GgTSet, Log),
@@ -97,7 +98,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log) ->
       log(Log, 
         lists:concat(["toggle des Koordinators um ", timeMilliSecond(), ":", 
           Korrigieren, " zu ", NewKorrigieren, "."])),
-      arbeitsphase(Nameservice, GgTSet, NewKorrigieren, Log);
+      arbeitsphase(Nameservice, GgTSet, NewKorrigieren, Log, LastCMi);
 
     {nudge} ->
       % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT 
@@ -113,35 +114,37 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log) ->
       % tellmi deren aktuelles Mi ab und zeigt dies im log an.
       todo;
     
-    {briefmi, {Clientname, CMi, CZeit}} ->
+    {briefmi, {Clientname, NewCMi, CZeit}} ->
       %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen 
       % Clientname informiert ueber sein neues Mi CMi um CZeit Uhr.
       log(Log, 
-        lists:concat([Clientname, " meldet neues Mi ", CMi, " um ", CZeit, "."])),
-      todo;
+        lists:concat([Clientname, " meldet neues Mi ", NewCMi, " um ", CZeit, "."])),
+
+          BestCMi = erlang:min(LastCMi, NewCMi), 
+          log(Log,lists:concat([" bestes CMi ", BestCMi])),
+          arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, BestCMi);
 
     {briefterm, {Clientname, CMi, CZeit}, From} ->
       %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname 
       % und PID From informiert ueber ueber die Terminierung der Berechnung 
       % mit Ergebnis CMi um CZeit Uhr.
-      % todo: falsch berechnen
-      Falsch = true,
-      case Falsch of
-        true -> 
+
+      if LastCMi < CMi
+           -> 
           log(Log, lists:concat([Clientname, 
             " meldet falsche Terminierung mit ggT ", CMi, " um ", CZeit, "."])),
           case Korrigieren of
-            true -> % todo: korrigierendes sendy an From,
-              From;
-            false -> nix
+            1 -> 
+              From ! {sendy, LastCMi};
+            0 -> nix
           end;
-        false -> 
+        LastCMi >= CMi -> 
           log(Log, lists:concat([Clientname, 
             " meldet Terminierung mit ggT ", CMi, " um ", CZeit, "."]))
       end,
       todo;
 
-    _ -> arbeitsphase(Nameservice, GgTSet, Korrigieren, Log)
+    _ -> arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi)
   end.
 
 calc(WggT, GgTSet, Nameservice, Log) ->
