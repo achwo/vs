@@ -73,7 +73,6 @@ step(GgTSet, Nameservice, Logfile) ->
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - sets:size(GgTSet).
 
 arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
-  log(Log, "arbeitsphase()"), 
   receive
 
     {calc} ->

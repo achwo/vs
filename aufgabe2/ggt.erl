@@ -102,11 +102,12 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
     {abstimmung, Initiator} -> 
+      log(LogFile, lists:concat(["Abstimmung -> Initiator: ", to_String(Initiator)," GgtName: ", to_String(GgtName)])),
       case Initiator =:= GgtName of
         true -> 
           TermCountNew = TermCount +1,
           CurrentTime = timeMilliSecond(),
-          Koordinator ! {briefmi, {GgtName, Mi, CurrentTime}},
+          Koordinator ! {briefterm, {GgtName, Mi, CurrentTime}, self()},
           log(LogFile, lists:concat([GgtName, ": stimme ab (", GgtName, "): ", 
             "Koordinator ", TermCountNew, " Terminierung gemeldet mit ", Mi, 
             ". ", CurrentTime]));
@@ -122,7 +123,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
           DiffTime = Now - NewLastTime,
           log(LogFile, lists:concat(["DiffTime: ", to_String(DiffTime)])),
 
-          case DiffTime >= ((TermZeit*1000)/2) of
+          case DiffTime < ((TermZeit*1000)/2) of
             true -> 
               RightN ! {abstimmung, Initiator},  
               log(LogFile, lists:concat([GgtName, ": stimme ab (", 
@@ -144,8 +145,28 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
-    {calcResult, NewMi} -> 
-      log(LogFile, lists:concat(["Erhalte Berechnung: ", NewMi])),
+    {calcResult, NewMi, Y} ->
+      log(LogFile, lists:concat(["Erhalte Berechnung: ", NewMi])), 
+
+      case NewMi =/= Mi of
+        true -> 
+          log(LogFile, lists:concat(["sendy: ", to_String(Y), " (", 
+            to_String(Mi), ") berechnet als neues Mi: ", to_String(NewMi), 
+            " ", timeMilliSecond()])),
+          LeftN ! {sendy,NewMi},
+          RightN ! {sendy,NewMi},
+          log(LogFile, 
+            lists:concat(["informed ", to_String(LeftN), "and ", 
+              to_String(RightN), " with new Mi: ", NewMi])),
+          
+          Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}},
+          log(LogFile, lists:concat(["An Koordinator gesenden: ", to_String(Koordinator)]));
+          
+        false ->
+          log(LogFile, 
+            lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  
+            "Zahl nach Berechnung gleich geblieben"]))
+      end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, NewMi, LogFile, 
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
@@ -175,28 +196,9 @@ calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess,
     true -> 
       NewMi = ((Mi-1) rem Y) +1, 
       timer:sleep(Arbeitszeit*1000),
-      case NewMi =/= Mi of
-        true -> 
-          log(LogFile, lists:concat(["sendy: ", to_String(Y), " (", 
-            to_String(Mi), ") berechnet als neues Mi: ", to_String(NewMi), 
-            " ", timeMilliSecond()])),
-          LeftN ! {sendy,NewMi},
-          RightN ! {sendy,NewMi},
-          log(LogFile, 
-            lists:concat(["informed ", to_String(LeftN), "and ", 
-              to_String(RightN), " with new Mi: ", NewMi])),
-        
-          Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}},
-          log(LogFile, lists:concat(["An Koordinator gesenden: ", to_String(Koordinator)])),
-          GgtProcess ! {calcResult, NewMi},
+
+      GgtProcess ! {calcResult, NewMi, Y},
           log(LogFile, lists:concat(["An GgtProcess gesenden: ", to_String(GgtProcess)]));
-      
-        false ->
-          log(LogFile, 
-            lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  
-            "Zahl nach Berechnung gleich geblieben"]))
-      end;
-    
     false -> 
       log(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); Keine Berechnung"]))
   end.
