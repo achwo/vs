@@ -4,7 +4,7 @@
 
 find_nameservice(NameserviceNode, NameserviceName) ->
   net_adm:ping(NameserviceNode),
-  timer:sleep(200),
+  timer:sleep(500),
   global:whereis_name(NameserviceName).
 
 find_process(ProcessNameAtom, Nameservice) ->
@@ -16,7 +16,7 @@ find_process_with_node(ProcessNameAtom, Nameservice) ->
   receive 
     {pin, {Name, Node}} -> 
       net_adm:ping(Node),
-      timer:sleep(200),
+      timer:sleep(500),
       {global:whereis_name(Name), Node}; 
     _ -> nok 
   end.
