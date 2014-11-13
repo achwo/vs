@@ -111,7 +111,8 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
     {prompt} ->
       %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per 
       % tellmi deren aktuelles Mi ab und zeigt dies im log an.
-      todo;
+      tellmi_all_ggt(GgTSet, Log),
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
     
     {briefmi, {Clientname, NewCMi, CZeit}} ->
       %{briefmi,{Clientname,CMi,CZeit}}: Ein ggT-Prozess mit Namen 
@@ -181,6 +182,16 @@ kill_all_ggt([]) -> ok;
 kill_all_ggt([GgT|Rest]) ->
   GgT ! {kill},
   kill_all_ggt(Rest).
+
+tellmi_all_ggt([],Logfile) -> 
+  log(Logfile, "Keine ggT-Prozesse lebendig");
+tellmi_all_ggt(GgTSet, Logfile) ->
+  tellmi_all_ggt(sets:to_list(GgTSet)),
+  log(Logfile, "Alle ggT-Prozesse nach dem Aktuellen Mi Wert gefragt.").
+
+tellmi_all_ggt([GgT|Rest]) ->
+    GgT ! {tellmi, self()},
+    tellmi_all_ggt(Rest).
 
 create_ring(GgTSet, Nameservice, Logfile) ->
   GgTList = sets:to_list(GgTSet),
