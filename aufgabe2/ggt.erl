@@ -1,6 +1,6 @@
 -module(ggt).
 -import(werkzeug,[to_String/1, get_config_value/2, timeMilliSecond/0]).
--import(utility, [log/2]).
+-import(utility, [log/2, current_time_millis/0]).
 -export([start/8, calculateMi/9]).
 
 %{setneighbors,LeftN,RightN}: die (lokal auf deren Node registrieten und im 
@@ -54,7 +54,7 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
   end,
 
   loop(Nameservice, Koordinator, GgtName, LeftNProcess, RightNProcess, -99, 
-    LogFile, Arbeitszeit, TermZeit, empty, 0, timeMilliSecond()).
+    LogFile, Arbeitszeit, TermZeit, empty, 0, current_time_millis()).
 
 
 loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
@@ -62,22 +62,32 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
   receive 
     
     {setpm, MiNeu} ->
-      timer:cancel(Timer),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000,{tiTerm}),
-      log(LogFile, lists:concat(["Setpm: ", MiNeu])),
+      case Mi =/= -99 of
+        true -> 
+          timer:cancel(Timer),
+          log(LogFile, lists:concat(["Setpm: Timer cancel and start new Timer"])),
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
+          log(LogFile, lists:concat(["Setpm: start new Timer after cancel: ", to_String(NewTimer)]));       
+        false ->
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
+          log(LogFile, lists:concat(["Setpm: start new Timer: ", to_String(NewTimer)]))
+      end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, 
-        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, timeMilliSecond());
+        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {sendy,Y} -> 
       timer:cancel(Timer),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000,{tiTerm}),
+      log(LogFile, lists:concat(["Sendy: Timer cancel and start new Timer"])),
+      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
+      log(LogFile, lists:concat(["Sendy: start new Timer after cancel: ", to_String(NewTimer)])),        
       log(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
+      ProcessName = self(),
       spawn_link(fun() -> 
         calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, 
-          self(), Arbeitszeit, GgtName) 
+          ProcessName, Arbeitszeit, GgtName) 
       end),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, 
-        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, timeMilliSecond());
+        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {tellmi, From} -> 
       From ! {mi,Mi},
@@ -102,8 +112,15 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
             ". ", CurrentTime]));
           
         false -> 
-          Now = timeMilliSecond(),
-          DiffTime = Now - LastMiTime,
+          Now = (current_time_millis() / 1000),
+          log(LogFile, lists:concat(["NowTime: ", to_String(Now)])),
+          
+          
+          NewLastTime = (LastMiTime / 1000), 
+          log(LogFile, lists:concat(["NewLastTime: ", to_String(NewLastTime)])),
+          
+          DiffTime = Now - NewLastTime,
+          log(LogFile, lists:concat(["DiffTime: ", to_String(DiffTime)])),
 
           case DiffTime >= ((TermZeit*1000)/2) of
             true -> 
@@ -170,15 +187,17 @@ calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess,
               to_String(RightN), " with new Mi: ", NewMi])),
         
           Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}},
-          GgtProcess ! {calcResult, NewMi};
+          log(LogFile, lists:concat(["An Koordinator gesenden: ", to_String(Koordinator)])),
+          GgtProcess ! {calcResult, NewMi},
+          log(LogFile, lists:concat(["An GgtProcess gesenden: ", to_String(GgtProcess)]));
       
         false ->
           log(LogFile, 
-            lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  
-            "Zahl nach Berechnung gleich geblieben"))
+            lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  
+            "Zahl nach Berechnung gleich geblieben"]))
       end;
     
     false -> 
-      log(LogFile, lists:concat("sendy: ", to_String(Y), 
-        "(", to_String(Mi) ,"); Keine Berechnung"))
+      log(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); Keine Berechnung"]))
   end.
+
