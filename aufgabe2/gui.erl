@@ -16,5 +16,11 @@ start() ->
   Koordinator ! {step},
   log(Log, "Sent {step} to koordinator."),
   timer:sleep(4000),
-  Koordinator ! {calc, 3},
+  Koordinator ! {calc, 19},
   log(Log, "Sent {calc, 3} to koordinator.").
+  % timer:sleep(20000),
+  % Koordinator ! {calc},
+  % log(Log, "Sent {calc}."),
+  % timer:sleep(20000),
+  % Koordinator ! {kill},
+  % log(Log, "Sent {kill} to koordinator.").

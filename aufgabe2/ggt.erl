@@ -1,7 +1,7 @@
 -module(ggt).
 -import(werkzeug,[to_String/1, get_config_value/2, timeMilliSecond/0]).
 -import(utility, [log/2, current_time_millis/0]).
--export([start/8, calculateMi/9]).
+-export([start/8]).
 
 %{setneighbors,LeftN,RightN}: die (lokal auf deren Node registrieten und im 
   % Namensdienst registriexrten) Namen des linken und rechten Nachbarn 
@@ -65,33 +65,27 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
       case Mi =/= -99 of
         true -> 
           timer:cancel(Timer),
-          log(LogFile, lists:concat(["Setpm: Timer cancel and start new Timer"])),
-          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
-          log(LogFile, lists:concat(["Setpm: start new Timer after cancel: ", to_String(NewTimer)]));       
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm});
         false ->
-          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
-          log(LogFile, lists:concat(["Setpm: start new Timer: ", to_String(NewTimer)]))
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm})
       end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, 
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {sendy,Y} -> 
       timer:cancel(Timer),
-      log(LogFile, lists:concat(["Sendy: Timer cancel and start new Timer"])),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
-      log(LogFile, lists:concat(["Sendy: start new Timer after cancel: ", to_String(NewTimer)])),        
-      log(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
+      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),    
+      log(LogFile, lists:concat([GgtName, ": sendy ", to_String(Y), "; "])),
       ProcessName = self(),
       spawn_link(fun() -> 
-        calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, 
-          ProcessName, Arbeitszeit, GgtName) 
+        calculateMi(Y, Mi, LogFile, ProcessName, Arbeitszeit) 
       end),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, 
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {tellmi, From} -> 
       From ! {mi,Mi},
-      log(LogFile, lists:concat(["Aktuelles Mi: ", Mi])),
+      log(LogFile, lists:concat([GgtName, ": Aktuelles Mi: ", Mi])),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
@@ -113,17 +107,11 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
             ". ", CurrentTime]));
           
         false -> 
-          Now = (current_time_millis() / 1000),
-          log(LogFile, lists:concat(["NowTime: ", to_String(Now)])),
-          
-          
-          NewLastTime = (LastMiTime / 1000), 
-          log(LogFile, lists:concat(["NewLastTime: ", to_String(NewLastTime)])),
-          
+          Now = current_time_millis(),
+          NewLastTime = LastMiTime, 
           DiffTime = Now - NewLastTime,
-          log(LogFile, lists:concat(["DiffTime: ", to_String(DiffTime)])),
 
-          case DiffTime < ((TermZeit*1000)/2) of
+          case DiffTime > ((TermZeit*1000)/2) of
             true -> 
               RightN ! {abstimmung, Initiator},  
               log(LogFile, lists:concat([GgtName, ": stimme ab (", 
@@ -132,11 +120,12 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
             false ->
               log(LogFile, lists:concat([GgtName,": stimme ab (", Initiator, 
                 "): mit >NEIN< gestimmt und ignoriert."]))
-          end
+          end,
+          TermCountNew = TermCount
       
       end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
-        Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
+        Arbeitszeit, TermZeit, Timer, TermCountNew, LastMiTime);
 
     {tiTerm} ->
       log(LogFile, lists:concat([GgtName, ": initiiere eine ", 
@@ -182,7 +171,7 @@ die(Nameservice, GgtName, LogFile) ->
   receive 
     ok -> log(LogFile, lists:concat([GgtName, " unbound."]))
   end,
-  unregister(GgtName),
+  global:unregister_name(GgtName),
   log(LogFile, 
     lists:concat(["Downtime: ", timeMilliSecond(), " vom Client ", GgtName])).
 
@@ -190,8 +179,7 @@ buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId) ->
   erlang:list_to_atom(
     lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId])).
   
-calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess, 
-  Arbeitszeit, GgtName) -> 
+calculateMi(Y, Mi, LogFile, GgtProcess, Arbeitszeit) -> 
   case (Y < Mi) of
     true -> 
       NewMi = ((Mi-1) rem Y) +1, 
