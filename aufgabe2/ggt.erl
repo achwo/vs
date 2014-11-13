@@ -65,22 +65,17 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
       case Mi =/= -99 of
         true -> 
           timer:cancel(Timer),
-          log(LogFile, lists:concat(["Setpm: Timer cancel and start new Timer"])),
-          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
-          log(LogFile, lists:concat(["Setpm: start new Timer after cancel: ", to_String(NewTimer)]));       
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm});
         false ->
-          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
-          log(LogFile, lists:concat(["Setpm: start new Timer: ", to_String(NewTimer)]))
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm})
       end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, 
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {sendy,Y} -> 
       timer:cancel(Timer),
-      log(LogFile, lists:concat(["Sendy: Timer cancel and start new Timer"])),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
-      log(LogFile, lists:concat(["Sendy: start new Timer after cancel: ", to_String(NewTimer)])),        
-      log(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
+      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),    
+      log(LogFile, lists:concat([GgtName, ": sendy ", to_String(Y), "; "])),
       ProcessName = self(),
       spawn_link(fun() -> 
         calculateMi(Y, Mi, LogFile, ProcessName, Arbeitszeit) 
@@ -90,7 +85,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
 
     {tellmi, From} -> 
       From ! {mi,Mi},
-      log(LogFile, lists:concat(["Aktuelles Mi: ", Mi])),
+      log(LogFile, lists:concat([GgtName, ": Aktuelles Mi: ", Mi])),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
@@ -112,17 +107,11 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
             ". ", CurrentTime]));
           
         false -> 
-          Now = (current_time_millis() / 1000),
-          log(LogFile, lists:concat(["NowTime: ", to_String(Now)])),
-          
-          
-          NewLastTime = (LastMiTime / 1000), 
-          log(LogFile, lists:concat(["NewLastTime: ", to_String(NewLastTime)])),
-          
+          Now = current_time_millis(),
+          NewLastTime = LastMiTime, 
           DiffTime = Now - NewLastTime,
-          log(LogFile, lists:concat(["DiffTime: ", to_String(DiffTime)])),
 
-          case DiffTime < ((TermZeit*1000)/2) of
+          case DiffTime > ((TermZeit*1000)/2) of
             true -> 
               RightN ! {abstimmung, Initiator},  
               log(LogFile, lists:concat([GgtName, ": stimme ab (", 
