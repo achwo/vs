@@ -1,6 +1,6 @@
 -module(ggt).
 -import(werkzeug,[to_String/1, get_config_value/2, timeMilliSecond/0]).
--import(utility, [log/2]).
+-import(utility, [log/2, current_time_millis/0]).
 -export([start/8, calculateMi/9]).
 
 %{setneighbors,LeftN,RightN}: die (lokal auf deren Node registrieten und im 
@@ -54,7 +54,7 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
   end,
 
   loop(Nameservice, Koordinator, GgtName, LeftNProcess, RightNProcess, -99, 
-    LogFile, Arbeitszeit, TermZeit, empty, 0, timeMilliSecond()).
+    LogFile, Arbeitszeit, TermZeit, empty, 0, current_time_millis()).
 
 
 loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
@@ -66,7 +66,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
       {ok,NewTimer} = timer:send_after(TermZeit*1000,{tiTerm}),
       log(LogFile, lists:concat(["Setpm: ", MiNeu])),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, 
-        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, timeMilliSecond());
+        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {sendy,Y} -> 
       timer:cancel(Timer),
@@ -77,7 +77,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
           self(), Arbeitszeit, GgtName) 
       end),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, 
-        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, timeMilliSecond());
+        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {tellmi, From} -> 
       From ! {mi,Mi},
@@ -102,8 +102,13 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
             ". ", CurrentTime]));
           
         false -> 
-          Now = timeMilliSecond(),
-          DiffTime = Now - LastMiTime,
+          Now = (current_time_millis() / 1000),
+          io:fwrite("NowTime: ~p~n", [Now]),
+          
+          NewLastTime = (LastMiTime / 1000), 
+          io:fwrite("LastTime: ~p~n", [NewLastTime]),
+          DiffTime = Now - NewLastTime,
+          io:fwrite("DiffTime: ~p~n", [DiffTime]),
 
           case DiffTime >= ((TermZeit*1000)/2) of
             true -> 
