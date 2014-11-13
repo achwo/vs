@@ -65,21 +65,26 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
       case Mi =/= -99 of
         true -> 
           timer:cancel(Timer),
-          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm});
+          log(LogFile, lists:concat(["Setpm: Timer cancel and start new Timer"])),
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
+          log(LogFile, lists:concat(["Setpm: start new Timer after cancel: ", to_String(NewTimer)]));       
         false ->
-          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm})
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
+          log(LogFile, lists:concat(["Setpm: start new Timer: ", to_String(NewTimer)]))
       end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, MiNeu, 
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {sendy,Y} -> 
       timer:cancel(Timer),
+      log(LogFile, lists:concat(["Sendy: Timer cancel and start new Timer"])),
       {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),
-      log(LogFile, lists:concat(["NewTimer: ", to_String(NewTimer)])),
+      log(LogFile, lists:concat(["Sendy: start new Timer after cancel: ", to_String(NewTimer)])),        
       log(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
+      ProcessName = self(),
       spawn_link(fun() -> 
         calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, 
-          self(), Arbeitszeit, GgtName) 
+          ProcessName, Arbeitszeit, GgtName) 
       end),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, 
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
@@ -182,15 +187,17 @@ calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess,
               to_String(RightN), " with new Mi: ", NewMi])),
         
           Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}},
-          GgtProcess ! {calcResult, NewMi};
+          log(LogFile, lists:concat(["An Koordinator gesenden: ", to_String(Koordinator)])),
+          GgtProcess ! {calcResult, NewMi},
+          log(LogFile, lists:concat(["An GgtProcess gesenden: ", to_String(GgtProcess)]));
       
         false ->
           log(LogFile, 
-            lists:concat("sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  
-            "Zahl nach Berechnung gleich geblieben"))
+            lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); ",  
+            "Zahl nach Berechnung gleich geblieben"]))
       end;
     
     false -> 
-      log(LogFile, lists:concat("sendy: ", to_String(Y), 
-        "(", to_String(Mi) ,"); Keine Berechnung"))
+      log(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); Keine Berechnung"]))
   end.
+
