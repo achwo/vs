@@ -1,7 +1,7 @@
 -module(ggt).
 -import(werkzeug,[to_String/1, get_config_value/2, timeMilliSecond/0]).
 -import(utility, [log/2, current_time_millis/0]).
--export([start/8, calculateMi/9]).
+-export([start/8]).
 
 %{setneighbors,LeftN,RightN}: die (lokal auf deren Node registrieten und im 
   % Namensdienst registriexrten) Namen des linken und rechten Nachbarn 
@@ -83,8 +83,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
       log(LogFile, lists:concat(["sendy ", to_String(Y), "; "])),
       ProcessName = self(),
       spawn_link(fun() -> 
-        calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, 
-          ProcessName, Arbeitszeit, GgtName) 
+        calculateMi(Y, Mi, LogFile, ProcessName, Arbeitszeit) 
       end),
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, 
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
@@ -132,11 +131,12 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
             false ->
               log(LogFile, lists:concat([GgtName,": stimme ab (", Initiator, 
                 "): mit >NEIN< gestimmt und ignoriert."]))
-          end
+          end,
+          TermCountNew = TermCount
       
       end,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
-        Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
+        Arbeitszeit, TermZeit, Timer, TermCountNew, LastMiTime);
 
     {tiTerm} ->
       log(LogFile, lists:concat([GgtName, ": initiiere eine ", 
@@ -182,7 +182,7 @@ die(Nameservice, GgtName, LogFile) ->
   receive 
     ok -> log(LogFile, lists:concat([GgtName, " unbound."]))
   end,
-  unregister(GgtName),
+  global:unregister_name(GgtName),
   log(LogFile, 
     lists:concat(["Downtime: ", timeMilliSecond(), " vom Client ", GgtName])).
 
@@ -190,8 +190,7 @@ buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId) ->
   erlang:list_to_atom(
     lists:concat([Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId])).
   
-calculateMi(Y, Mi, Koordinator, LeftN, RightN, LogFile, GgtProcess, 
-  Arbeitszeit, GgtName) -> 
+calculateMi(Y, Mi, LogFile, GgtProcess, Arbeitszeit) -> 
   case (Y < Mi) of
     true -> 
       NewMi = ((Mi-1) rem Y) +1, 

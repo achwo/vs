@@ -55,7 +55,7 @@ initialphase(Nameservice, GgTSet, Logfile) ->
       arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile, 134217728);
 
     {reset} ->
-      kill_all_ggt(GgTSet, Logfile),
+      kill_all_ggt(GgTSet, Nameservice, Logfile),
       initialphase(Nameservice, sets:new(), Logfile);
    
     {kill} -> beendigungsphase(Nameservice, GgTSet, Logfile);
@@ -85,7 +85,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
       arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
 
     {reset} ->
-      kill_all_ggt(GgTSet, Log),
+      kill_all_ggt(GgTSet, Nameservice, Log),
       initialphase(Nameservice, [], Log);
 
     {toggle} ->  
@@ -136,12 +136,14 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
             1 -> 
               From ! {sendy, LastCMi};
             0 -> nix
-          end;
-        LastCMi >= CMi -> 
+          end,
+          BestMi = LastCMi;
+        true -> 
+          BestMi = CMi,
           log(Log, lists:concat([Clientname, 
             " meldet Terminierung mit ggT ", CMi, " um ", CZeit, "."]))
       end,
-      todo;
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, BestMi);
 
     _ -> arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi)
   end.
@@ -163,24 +165,26 @@ calc(WggT, GgTSet, Nameservice, Log) ->
   log(Log, "Allen ausgewaehlten ggT-Prozessen ein y gesendet.").
 
 beendigungsphase(Nameservice, GgTSet, Logfile) ->
-  kill_all_ggt(GgTSet, Logfile),
+  kill_all_ggt(GgTSet, Nameservice, Logfile),
   Nameservice ! {self(),{unbind,koordinator}},
   receive 
     ok -> log(Logfile, "Unbound koordinator at nameservice.")
   end,
-  unregister(koordinator),
+  global:unregister_name(koordinator),
   log(Logfile, 
     lists:concat(["Downtime: ", timeMilliSecond(), " vom Koordinator ", 
       config(koordinatorname)])).
 
-kill_all_ggt(GgTSet, Logfile) ->
-  kill_all_ggt(sets:to_list(GgTSet)),
+kill_all_ggt(GgTSet, Nameservice, Logfile) ->
+  GgTList = sets:to_list(GgTSet),
+  kill_all_ggt(GgTList, Nameservice),
   log(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.").
 
-kill_all_ggt([]) -> ok;
-kill_all_ggt([GgT|Rest]) ->
-  GgT ! {kill},
-  kill_all_ggt(Rest).
+kill_all_ggt([], _) -> ok;
+kill_all_ggt([GgT|Rest], Nameservice) ->
+  GgTProcess = find_process(GgT, Nameservice),
+  GgTProcess ! {kill},
+  kill_all_ggt(Rest, Nameservice).
 
 create_ring(GgTSet, Nameservice, Logfile) ->
   GgTList = sets:to_list(GgTSet),
