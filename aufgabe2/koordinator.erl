@@ -128,7 +128,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
       %{briefterm,{Clientname,CMi,CZeit},From}: Ein ggT-Prozess mit Namen Clientname 
       % und PID From informiert ueber ueber die Terminierung der Berechnung 
       % mit Ergebnis CMi um CZeit Uhr.
-
+ 
       if LastCMi < CMi
            -> 
           log(Log, lists:concat([Clientname, 
