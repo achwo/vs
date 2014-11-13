@@ -1,4 +1,4 @@
-\#!/bin/sh
+#!/bin/bash
 
 erlc werkzeug.erl nameservice.erl
 
