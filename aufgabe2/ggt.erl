@@ -102,11 +102,12 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
     {abstimmung, Initiator} -> 
+      log(LogFile, lists:concat(["Abstimmung -> Initiator: ", to_String(Initiator)," GgtName: ", to_String(GgtName)])),
       case Initiator =:= GgtName of
         true -> 
           TermCountNew = TermCount +1,
           CurrentTime = timeMilliSecond(),
-          Koordinator ! {briefmi, {GgtName, Mi, CurrentTime}},
+          Koordinator ! {briefterm, {GgtName, Mi, CurrentTime}, self()},
           log(LogFile, lists:concat([GgtName, ": stimme ab (", GgtName, "): ", 
             "Koordinator ", TermCountNew, " Terminierung gemeldet mit ", Mi, 
             ". ", CurrentTime]));
