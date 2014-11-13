@@ -19,7 +19,7 @@ is_in_nodelist(Node) ->
   find_node(Nodelist, Node).
 
 find_node([], _) -> false;
-find_node([Element|Rest], Node) when Element == Node -> true;
+find_node([Element|_], Node) when Element == Node -> true;
 find_node([_|Rest], Node) -> find_node(Rest, Node).
 
 find_process(ProcessNameAtom, Nameservice) ->
