@@ -104,7 +104,8 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
       % deren Lebenszustand ab und zeigt dies im log an.
       % ggT-Prozess 488312 ist lebendig (01.12 15:51:44,720|).
       % Alle ggT-Prozesse auf Lebendigkeit geprueft.
-      todo;
+      nudge(GgTSet, Nameservice, Log),
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
 
     {kill} -> beendigungsphase(Nameservice, GgTSet, Log);
 
@@ -164,6 +165,25 @@ calc(WggT, GgTSet, Nameservice, Log) ->
   Shuffled = werkzeug:shuffle(GgTList),
   send_ys_to_ggts(Shuffled, Ys, Nameservice, Log),
   log(Log, "Allen ausgewaehlten ggT-Prozessen ein y gesendet.").
+
+nudge(GgTSet, Nameservice, Log) ->
+  pingGGTs(sets:to_list(GgTSet), Nameservice, Log).
+
+pingGGTs([], _, _) -> ok;
+pingGGTs([GgT|RestGGTs], Nameservice, Log) -> 
+  Process = utility:find_process(GgT, Nameservice),
+  case Process of
+    nok -> log(Log, lists:concat(["ggT-Prozess ", GgT, " ist tot :("]));
+    _ ->
+    Process ! {pingGGT, self()},
+    receive
+      {pongGGT, GGTName} -> 
+        log(Log, lists:concat(["ggT-Prozess ", GGTName, " lebt!"]))
+      after 1000 ->
+        log(Log, lists:concat(["ggT-Prozess ", GgT, " ist tot :("]))
+    end
+  end,
+  pingGGTs(RestGGTs, Nameservice, Log).  
 
 beendigungsphase(Nameservice, GgTSet, Logfile) ->
   kill_all_ggt(GgTSet, Nameservice, Logfile),

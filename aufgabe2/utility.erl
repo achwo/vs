@@ -32,7 +32,7 @@ find_process_with_node(ProcessNameAtom, Nameservice) ->
     {pin, {Name, Node}} -> 
       meet(Node),
       {global:whereis_name(Name), Node}; 
-    _ -> nok 
+    _ -> {nok, nok} 
   end.
 
 % Logs and attaches \n to message
