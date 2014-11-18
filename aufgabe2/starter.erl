@@ -34,8 +34,6 @@ start(UniqueID) ->
   log(LogFile, 
     lists:concat(["getsteeringval gesendet"])),
 
-  Koordinator ! {getsteeringval, self()},
-
   receive
     {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> 
       log(LogFile, 
