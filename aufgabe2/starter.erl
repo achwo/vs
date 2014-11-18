@@ -11,7 +11,7 @@
 
 config(Key) -> utility:from_config(ggt, Key).
 
-start(UniqueID, Koordinator) -> 
+start(UniqueID) -> 
   StarterName = lists:concat(["Starter_", UniqueID]),
   NodeString = to_String(node()),
 
@@ -21,6 +21,12 @@ start(UniqueID, Koordinator) ->
   {ok, ConfigFile} = file:consult("ggt.cfg"),
   utility:load_config(ggt, ConfigFile),
   log(LogFile, "ggt.cfg gelesen..."),
+
+  Nameservice = utility:find_nameservice(
+    config(nameservicenode), 
+    config(nameservicename)),
+
+  Koordinator = utility:find_process(koordinator, Nameservice),
 
   Koordinator ! {getsteeringval, self()},
   log(LogFile, 
@@ -34,9 +40,7 @@ start(UniqueID, Koordinator) ->
           GGTProzessAnzahl, " Anzahl GGT Prozesse."]))
   end,
   
-  Nameservice = utility:find_nameservice(
-    config(nameservicenode), 
-    config(nameservicename)),
+
 
   log(LogFile, 
     lists:concat(["Nameservice ", to_String(Nameservice), "gebunden..."])),

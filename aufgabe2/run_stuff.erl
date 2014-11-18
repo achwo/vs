@@ -10,6 +10,6 @@ start() ->
 
   NS ! {self(), reset},
 
-  K = koordinator:start(),
+  koordinator:start(),
   timer:sleep(2000),
-  starter:start(1, K).
+  starter:start(1).

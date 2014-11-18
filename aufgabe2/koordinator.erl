@@ -78,11 +78,11 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
     {calc} ->
       WggT = random:uniform(1000),
       calc(WggT, GgTSet, Nameservice, Log),
-      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, 134217728);
 
     {calc, WggT} ->
       calc(WggT, GgTSet, Nameservice, Log),
-      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, 134217728);
 
     {reset} ->
       kill_all_ggt(GgTSet, Nameservice, Log),
