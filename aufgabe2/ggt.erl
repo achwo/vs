@@ -73,15 +73,20 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
         LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {sendy,Y} -> 
-      timer:cancel(Timer),
-      {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),    
-      log(LogFile, lists:concat([GgtName, ": sendy ", to_String(Y), "; "])),
-      ProcessName = self(),
-      spawn_link(fun() -> 
-        calculateMi(Y, Mi, LogFile, ProcessName, Arbeitszeit) 
-      end),
-      loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, 
-        LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
+      case Mi =/= -99 of
+        true ->
+          timer:cancel(Timer),
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm}),    
+          log(LogFile, lists:concat([GgtName, ": sendy ", to_String(Y), "; "])),
+          ProcessName = self(),
+          spawn_link(fun() -> 
+            calculateMi(Y, Mi, LogFile, ProcessName, Arbeitszeit) end);
+        false -> 
+          {ok,NewTimer} = timer:send_after(TermZeit*1000, self(), {tiTerm})
+        end,    
+          
+          loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, 
+            LogFile, Arbeitszeit, TermZeit, NewTimer, TermCount, current_time_millis());
 
     {tellmi, From} -> 
       From ! {mi,Mi},
@@ -97,33 +102,37 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
 
     {abstimmung, Initiator} -> 
       log(LogFile, lists:concat(["Abstimmung -> Initiator: ", to_String(Initiator)," GgtName: ", to_String(GgtName)])),
-      case Initiator =:= GgtName of
-        true -> 
-          TermCountNew = TermCount +1,
-          CurrentTime = timeMilliSecond(),
-          Koordinator ! {briefterm, {GgtName, Mi, CurrentTime}, self()},
-          log(LogFile, lists:concat([GgtName, ": stimme ab (", GgtName, "): ", 
-            "Koordinator ", TermCountNew, " Terminierung gemeldet mit ", Mi, 
-            ". ", CurrentTime]));
-          
-        false -> 
-          Now = current_time_millis(),
-          NewLastTime = LastMiTime, 
-          DiffTime = Now - NewLastTime,
-
-          case DiffTime > ((TermZeit*1000)/2) of
+      case Mi =/= -99 of
+        true ->
+          case Initiator =:= GgtName of
             true -> 
-              RightN ! {abstimmung, Initiator},  
-              log(LogFile, lists:concat([GgtName, ": stimme ab (", 
-                Initiator, "): mit >JA< gestimmt und weitergeleitet ", 
-              timeMilliSecond()])); 
-            false ->
-              log(LogFile, lists:concat([GgtName,": stimme ab (", Initiator, 
-                "): mit >NEIN< gestimmt und ignoriert."]))
-          end,
-          TermCountNew = TermCount
-      
-      end,
+              TermCountNew = TermCount +1,
+              CurrentTime = timeMilliSecond(),
+              Koordinator ! {briefterm, {GgtName, Mi, CurrentTime}, self()},
+              log(LogFile, lists:concat([GgtName, ": stimme ab (", GgtName, "): ", 
+                "Koordinator ", TermCountNew, " Terminierung gemeldet mit ", Mi, 
+                ". ", CurrentTime]));
+              
+            false -> 
+              Now = current_time_millis(),
+              NewLastTime = LastMiTime, 
+              DiffTime = Now - NewLastTime,
+
+              case DiffTime > ((TermZeit*1000)/2) of
+                true -> 
+                  RightN ! {abstimmung, Initiator},  
+                  log(LogFile, lists:concat([GgtName, ": stimme ab (", 
+                    Initiator, "): mit >JA< gestimmt und weitergeleitet ", 
+                  timeMilliSecond()])); 
+                false ->
+                  log(LogFile, lists:concat([GgtName,": stimme ab (", Initiator, 
+                    "): mit >NEIN< gestimmt und ignoriert."]))
+              end,
+              TermCountNew = TermCount
+          
+          end;
+         false -> TermCountNew = TermCount
+         end, 
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 
         Arbeitszeit, TermZeit, Timer, TermCountNew, LastMiTime);
 
