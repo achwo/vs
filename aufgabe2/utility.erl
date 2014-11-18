@@ -11,11 +11,9 @@ meet(Node) ->
   case is_in_nodelist(Node) of
     
     false -> 
-    io:fwrite("Ping war Notwendig -> ~p~n", [to_String(Node)]),
       net_adm:ping(Node),
       timer:sleep(1000);
-    _ -> 
-    io:fwrite("Ping war nicht Notwendig ->  ~p~n", [to_String(Node)]), meet_ok
+    _ -> ok
   end.
 
 is_in_nodelist(Node) ->
