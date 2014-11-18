@@ -35,7 +35,7 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
   register(GgtName,self()),
   
   
-  Nameservice ! {self(),{bind,GgtName,node()}},
+  Nameservice ! {self(),{rebind,GgtName,node()}},
   receive 
     ok -> log(LogFile, lists:concat([GgtName, " gebunden."]));
     in_use -> 
@@ -107,7 +107,8 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
     {abstimmung, Initiator} -> 
-      log(LogFile, lists:concat(["Abstimmung -> Initiator: ", to_String(Initiator)," GgtName: ", to_String(GgtName)])),
+      log(LogFile, lists:concat(["Abstimmung -> Initiator: ", 
+        to_String(Initiator)," GgtName: ", to_String(GgtName)])),
       case Mi =/= -99 of
         true ->
           case Initiator =:= GgtName of
