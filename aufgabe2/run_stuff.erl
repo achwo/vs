@@ -9,6 +9,7 @@ start() ->
   NS = utility:find_nameservice(NameserviceNode, NameserviceName),
 
   NS ! {self(), reset},
+  receive _ -> nix end,
 
   koordinator:start(),
   timer:sleep(2000),

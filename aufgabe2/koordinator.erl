@@ -17,7 +17,7 @@ run() ->
   utility:load_config(koordinator, ConfigFile),
   log(Logfile, "koordinator.cfg gelesen..."),
   Nameservice = utility:find_nameservice(
-    config(nameservicenode), config(nameservicename)),
+    config(nameservicenode), config(nameservicename)), 
 
   case Nameservice of
     undefined -> log(Logfile, "Nameservice nicht gefunden...");
@@ -26,7 +26,7 @@ run() ->
       % global:register_name(koordinator,self()),
       log(Logfile, "lokal registriert..."),
      
-      Nameservice ! {self(),{rebind,config(koordinatorname),node()}},
+      Nameservice ! {self(),{bind,config(koordinatorname),node()}},
       receive ok -> log(Logfile, "beim Namensdienst registriert.");
         in_use -> io:format("Fehler: Name schon gebunden.")
       end,
@@ -35,6 +35,7 @@ run() ->
   end.
 
 initialphase(Nameservice, GgTSet, Logfile) ->
+  log(Logfile, "initialphase()"),
   receive 
     {getsteeringval,StarterName} -> 
       log(Logfile, 
@@ -57,7 +58,9 @@ initialphase(Nameservice, GgTSet, Logfile) ->
       initialphase(Nameservice, sets:new(), Logfile);
    
     {kill} -> beendigungsphase(Nameservice, GgTSet, Logfile);
-    _ -> initialphase(Nameservice, GgTSet, Logfile)
+    Any -> 
+      log(Logfile, lists:concat(["Received strange message: ", to_String(Any)])),
+      initialphase(Nameservice, GgTSet, Logfile)
   end.
 
 step(GgTSet, Nameservice, Logfile) ->
