@@ -30,8 +30,9 @@ find_process_with_node(ProcessNameAtom, Nameservice) ->
   Nameservice ! {self(), {lookup, ProcessNameAtom}},
   receive 
     {pin, {Name, Node}} -> 
-      meet(Node),
-      {global:whereis_name(Name), Node}; 
+      {Name, Node};
+    %  meet(Node),
+    %  {global:whereis_name(Name), Node}; 
     _ -> {nok, nok} 
   end.
 

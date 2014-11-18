@@ -7,7 +7,7 @@
 -module(starter).
 -import(werkzeug, [get_config_value/2, timeMilliSecond/0, to_String/1]).
 -import(utility, [log/2]).
--export([start/2]).
+-export([start/1]).
 
 config(Key) -> utility:from_config(ggt, Key).
 
