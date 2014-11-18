@@ -26,7 +26,7 @@ start(UniqueID) ->
     config(nameservicenode), 
     config(nameservicename)),
 
-  Koordinator = utility:find_process(koordinator, Nameservice),
+  Koordinator = utility:find_process(config(koordinatorname), Nameservice),
 
   Koordinator ! {getsteeringval, self()},
   log(LogFile, 

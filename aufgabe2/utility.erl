@@ -23,8 +23,9 @@ find_node([Element|_], Node) when Element == Node -> true;
 find_node([_|Rest], Node) -> find_node(Rest, Node).
 
 find_process(ProcessNameAtom, Nameservice) ->
-  {Process, _} = find_process_with_node(ProcessNameAtom, Nameservice),
-  Process.
+%  {Process, _} = find_process_with_node(ProcessNameAtom, Nameservice),
+%  Process.
+find_process_with_node(ProcessNameAtom, Nameservice).
 
 find_process_with_node(ProcessNameAtom, Nameservice) ->
   Nameservice ! {self(), {lookup, ProcessNameAtom}},
