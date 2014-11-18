@@ -32,12 +32,9 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
 
   GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId),
   log(LogFile, lists:concat(["Build Ggt-Name: ", to_String(GgtName)])),
-  global:register_name(GgtName,self()),
+  register(GgtName,self()),
   
-  Koordinator ! {hello, GgtName},
-  log(LogFile, lists:concat(["Beim Koordinator ", to_String(Koordinator), 
-    " gemeldet."])),
-
+  
   Nameservice ! {self(),{bind,GgtName,node()}},
   receive 
     ok -> log(LogFile, lists:concat([GgtName, " gebunden."]));
@@ -45,12 +42,21 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
       log(LogFile, lists:concat(["Fehler: ", GgtName, " schon gebunden."]))
   end,
 
+  Koordinator ! {hello, GgtName},
+    log(LogFile, lists:concat(["Beim Koordinator ", to_String(Koordinator), 
+    " gemeldet."])),
+
+
   receive
-  {setneighbors,LeftN,RightN} ->  
-    log(LogFile, lists:concat(["Linker Nachbar: ", LeftN])), 
-    log(LogFile, lists:concat(["Rechter Nachbar: ", RightN])),
-    LeftNProcess = utility:find_process(LeftN, Nameservice),
-    RightNProcess = utility:find_process(RightN, Nameservice)
+    {setneighbors,LeftN,RightN} ->  
+      log(LogFile, lists:concat(["Linker Nachbar: ", LeftN])), 
+      log(LogFile, lists:concat(["Rechter Nachbar: ", RightN])),
+      LeftNProcess = utility:find_process(LeftN, Nameservice),
+      RightNProcess = utility:find_process(RightN, Nameservice);
+    Any -> 
+      LeftNProcess = nix,
+      RightNProcess = nix,
+      log(LogFile, lists:concat(["Setneighbors: ", Any]))
   end,
 
   loop(Nameservice, Koordinator, GgtName, LeftNProcess, RightNProcess, -99, 
@@ -180,7 +186,7 @@ die(Nameservice, GgtName, LogFile) ->
   receive 
     ok -> log(LogFile, lists:concat([GgtName, " unbound."]))
   end,
-  global:unregister_name(GgtName),
+  unregister(GgtName),
   log(LogFile, 
     lists:concat(["Downtime: ", timeMilliSecond(), " vom Client ", GgtName])).
 

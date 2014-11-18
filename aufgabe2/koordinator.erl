@@ -22,7 +22,7 @@ run() ->
   case Nameservice of
     undefined -> log(Logfile, "Nameservice nicht gefunden...");
     _ -> log(Logfile, "Nameservice gebunden..."),
-      global:register_name(koordinator,self()),
+      register(koordinator,self()),
       log(Logfile, "lokal registriert..."),
      
       Nameservice ! {self(),{bind,koordinator,node()}},
@@ -191,7 +191,7 @@ beendigungsphase(Nameservice, GgTSet, Logfile) ->
   receive 
     ok -> log(Logfile, "Unbound koordinator at nameservice.")
   end,
-  global:unregister_name(koordinator),
+  unregister(koordinator),
   log(Logfile, 
     lists:concat(["Downtime: ", timeMilliSecond(), " vom Koordinator ", 
       config(koordinatorname)])).
