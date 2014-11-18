@@ -36,7 +36,7 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
   % global:register_name(GgtName,self()),
   
   
-  Nameservice ! {self(),{bind,GgtName,node()}},
+  Nameservice ! {self(),{rebind,GgtName,node()}},
   receive 
     ok -> log(LogFile, lists:concat([GgtName, " gebunden."]));
     in_use -> 

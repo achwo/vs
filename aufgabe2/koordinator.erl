@@ -25,7 +25,7 @@ run() ->
       register(config(koordinatorname),self()),
       log(Logfile, "lokal registriert..."),
      
-      Nameservice ! {self(),{bind,config(koordinatorname),node()}},
+      Nameservice ! {self(),{rebind,config(koordinatorname),node()}},
       receive ok -> log(Logfile, "beim Namensdienst registriert.");
         in_use -> io:format("Fehler: Name schon gebunden.")
       end,
@@ -246,7 +246,7 @@ set_neighbors([{GgTName, Left, Right}|Rest], Nameservice, Logfile) ->
 
 send_mis_to_ggts([], [], _, _) -> ok;
 send_mis_to_ggts([GgT|RestGGTs], [Mi|RestMis], Nameservice, Log) -> 
-  {Process, Node} = utility:find_process_(GgT, Nameservice),
+  {Process, Node} = utility:find_process(GgT, Nameservice),
   {Process, Node} ! {setpm, Mi},
   log(Log, lists:concat(["ggT-Prozess ", GgT, " (", Node, ") ", 
     "initiales Mi ", Mi, " gesendet."])),
