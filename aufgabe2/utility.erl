@@ -25,8 +25,9 @@ find_node([_|Rest], Node) -> find_node(Rest, Node).
 find_process(ProcessNameAtom, Nameservice) ->
   Nameservice ! {self(), {lookup, ProcessNameAtom}},
   receive 
-    {pin, Process} -> 
-      Process;
+    {pin, {Name, Node}} -> 
+      meet(Node),
+      {Name, Node};
     _ -> {nok, nok} 
   end.
 

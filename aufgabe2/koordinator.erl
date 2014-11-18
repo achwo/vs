@@ -22,7 +22,8 @@ run() ->
   case Nameservice of
     undefined -> log(Logfile, "Nameservice nicht gefunden...");
     _ -> log(Logfile, "Nameservice gebunden..."),
-      register(koordinator,self()),
+      % register(koordinator,self()),
+      global:register_name(koordinator,self()),
       log(Logfile, "lokal registriert..."),
      
       Nameservice ! {self(),{rebind,config(koordinatorname),node()}},
