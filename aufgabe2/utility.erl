@@ -31,11 +31,9 @@ find_process(ProcessNameAtom, Nameservice) ->
 loop() ->
   receive 
     {pin, {Name, Node}} -> 
-      io:fwrite("pin: ~p~n~n~n", [to_String(Name)]),
       meet(Node),
       {Name, Node};
-    Any -> 
-      io:fwrite("any: ~p~n~n~n", [to_String(Any)]), loop()
+    _ -> bad
   end.
 
 % Logs and attaches \n to message
