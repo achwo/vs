@@ -10,7 +10,7 @@ meet(Node) ->
   case is_in_nodelist(Node) of
     false -> 
       net_adm:ping(Node),
-      timer:sleep(500);
+      timer:sleep(1000);
     _ -> ok
   end.
 
