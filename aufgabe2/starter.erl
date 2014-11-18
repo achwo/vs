@@ -47,14 +47,12 @@ start(UniqueID) ->
         lists:concat(["getsteeringval: ", Arbeitszeit, " Arbeitszeit ggT; ", 
           TermZeit, " Wartezeit ggT, ", 
           GGTProzessAnzahl, " Anzahl GGT Prozesse."]));
-      Any -> 
-        Arbeitszeit = nix, TermZeit = nix, GGTProzessAnzahl = nix,
-        io:fwrite("Any: ~p~n~n~n", [Any]),
-        log(LogFile, lists:concat(["steeringval: ", to_String(Any)]))
+      % Any -> 
+      %   Arbeitszeit = nix, TermZeit = nix, GGTProzessAnzahl = nix,
+      %   io:fwrite("Any: ~p~n~n~n", [Any]),
+      %   log(LogFile, lists:concat(["steeringval: ", to_String(Any)]))
   end,
   
-
-
   log(LogFile, 
     lists:concat(["Nameservice ", to_String(Nameservice), "gebunden..."])),
   startGGT(UniqueID, GGTProzessAnzahl, Arbeitszeit, TermZeit, Nameservice, 
