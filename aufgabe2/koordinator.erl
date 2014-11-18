@@ -36,7 +36,6 @@ run() ->
 initialphase(Nameservice, GgTSet, Logfile) ->
   receive 
     {getsteeringval,StarterName} -> 
-      % todo: was ist die (0)?
       log(Logfile, 
         lists:concat(["getsteeringval: ", to_String(StarterName), " (0)."])),
     	StarterName ! {steeringval, config(arbeitszeit),
@@ -44,14 +43,12 @@ initialphase(Nameservice, GgTSet, Logfile) ->
       initialphase(Nameservice, GgTSet, Logfile);
 
     {hello, GgtName} ->
-      % todo: was ist die (3)?
       log(Logfile, lists:concat(["hello: ", to_String(GgtName), " (3)."])),
       GgTSetNew = sets:add_element(GgtName, GgTSet),
       initialphase(Nameservice, GgTSetNew, Logfile);
 
     {step} ->
       step(GgTSet, Nameservice, Logfile),
-      %TODO CMi wert klug definieren
       arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile, 134217728);
 
     {reset} ->
@@ -246,18 +243,18 @@ set_neighbors([{GgTName, Left, Right}|Rest], Nameservice, Logfile) ->
 
 send_mis_to_ggts([], [], _, _) -> ok;
 send_mis_to_ggts([GgT|RestGGTs], [Mi|RestMis], Nameservice, Log) -> 
-  {Process, Node} = utility:find_process_with_node(GgT, Nameservice),
-  Process ! {setpm, Mi},
+  {Process, Node} = utility:find_process_(GgT, Nameservice),
+  {Process, Node} ! {setpm, Mi},
   log(Log, lists:concat(["ggT-Prozess ", GgT, " (", Node, ") ", 
     "initiales Mi ", Mi, " gesendet."])),
   send_mis_to_ggts(RestGGTs, RestMis, Nameservice, Log).
 
 send_ys_to_ggts(_, [], _, _) -> ok;
 send_ys_to_ggts([GgT|RestGGTs], [Y|RestYs], Nameservice, Log) ->
-  {Process, Node} = utility:find_process_with_node(GgT, Nameservice),
+  {Process, Node} = utility:find_process(GgT, Nameservice),
   log(Log, "Process: " ++ to_String(Process)), 
-  % undefined? probably the one that dies of bad arith...
-  Process ! {sendy, Y},
+
+  {Process, Node} ! {sendy, Y},
   log(Log, lists:concat(["ggT-Prozess ", GgT, " (", Node, ") ", 
     "startendes y ", Y, " gesendet."])),
   send_ys_to_ggts(RestGGTs, RestYs, Nameservice, Log).

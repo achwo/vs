@@ -1,5 +1,5 @@
 -module(utility).
--export([find_process/2, find_process_with_node/2, find_nameservice/2, log/2, 
+-export([find_process/2, find_nameservice/2, log/2, 
   load_config/2, from_config/2, current_time_millis/0]).
 
 find_nameservice(NameserviceNode, NameserviceName) ->
@@ -23,17 +23,10 @@ find_node([Element|_], Node) when Element == Node -> true;
 find_node([_|Rest], Node) -> find_node(Rest, Node).
 
 find_process(ProcessNameAtom, Nameservice) ->
-%  {Process, _} = find_process_with_node(ProcessNameAtom, Nameservice),
-%  Process.
-find_process_with_node(ProcessNameAtom, Nameservice).
-
-find_process_with_node(ProcessNameAtom, Nameservice) ->
   Nameservice ! {self(), {lookup, ProcessNameAtom}},
   receive 
-    {pin, {Name, Node}} -> 
-      {Name, Node};
-    %  meet(Node),
-    %  {global:whereis_name(Name), Node}; 
+    {pin, Process} -> 
+      Process;
     _ -> {nok, nok} 
   end.
 
