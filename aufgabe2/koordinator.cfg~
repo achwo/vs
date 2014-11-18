@@ -1,5 +1,7 @@
-{praktikumsgruppe, 1}.
-{teamnummer, 1}.
+{arbeitszeit, 2}.
+{termzeit, 3}.
+{ggtprozessnummer, 3}.
 {nameservicenode, 'ns@lab31.cpt.haw-hamburg.de'}.
 {nameservicename, nameservice}.
 {koordinatorname, koordinator}.
+{korrigieren, 0}.
