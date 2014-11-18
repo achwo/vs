@@ -9,7 +9,7 @@ start() ->
   NNode = utility:from_config(gui, nameservicenode),
   NName = utility:from_config(gui, nameservicename),
   N = utility:find_nameservice(NNode, NName),
-  Koordinator = utility:find_process(koordinator, N),
+  Koordinator = utility:find_process(chef, N),
 
   GGT = utility:find_process('1111', N),
   

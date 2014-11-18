@@ -46,7 +46,7 @@ start(UniqueID) ->
       log(LogFile, 
         lists:concat(["getsteeringval: ", Arbeitszeit, " Arbeitszeit ggT; ", 
           TermZeit, " Wartezeit ggT, ", 
-          GGTProzessAnzahl, " Anzahl GGT Prozesse."]));
+          GGTProzessAnzahl, " Anzahl GGT Prozesse."]))
       % Any -> 
       %   Arbeitszeit = nix, TermZeit = nix, GGTProzessAnzahl = nix,
       %   io:fwrite("Any: ~p~n~n~n", [Any]),
