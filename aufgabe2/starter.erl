@@ -28,16 +28,22 @@ start(UniqueID) ->
 
   Koordinator = utility:find_process(config(koordinatorname), Nameservice),
 
-  Koordinator ! {getsteeringval, self()},
   log(LogFile, 
     lists:concat(["Koordinator ", to_String(Koordinator)," gebunden"])),
+  Koordinator ! {getsteeringval, self()},
+  
+  log(LogFile, 
+    lists:concat(["getsteeringval gesendet"])),
 
   receive
     {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> 
       log(LogFile, 
         lists:concat(["getsteeringval: ", Arbeitszeit, " Arbeitszeit ggT; ", 
           TermZeit, " Wartezeit ggT, ", 
-          GGTProzessAnzahl, " Anzahl GGT Prozesse."]))
+          GGTProzessAnzahl, " Anzahl GGT Prozesse."]));
+      Any -> 
+        Arbeitszeit = nix, TermZeit = nix, GGTProzessAnzahl = nix,
+        log(LogFile, lists:concat(["steeringval: ",Any]))
   end,
   
 
