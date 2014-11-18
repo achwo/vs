@@ -58,7 +58,7 @@ initialphase(Nameservice, GgTSet, Logfile) ->
    
     {kill} -> beendigungsphase(Nameservice, GgTSet, Logfile);
     Any -> 
-      log(Logfile, lists:concat(["Received strange message: ", to_String(Any)])),
+      log(Logfile, lists:concat(["Received unerwartete message: ", to_String(Any)])),
       initialphase(Nameservice, GgTSet, Logfile)
   end.
 

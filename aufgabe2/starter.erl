@@ -26,20 +26,12 @@ start(UniqueID) ->
     config(nameservicenode), 
     config(nameservicename)),
 
-  KName = config(koordinatorname),
-  Koordinator = utility:find_process(KName, Nameservice),
+  Koordinator = utility:find_process(config(koordinatorname), Nameservice),
 
-  io:fwrite("config(koordinatorname): ~p~n", [config(koordinatorname)]),
-  io:fwrite("Nameservice: ~p~n", [Nameservice]),
-  io:fwrite("Koordinator: ~p~n~n~n", [Koordinator]),
   log(LogFile, 
     lists:concat(["Koordinator ", to_String(Koordinator)," gebunden"])),
 
-  log(LogFile, lists:concat(["nodes(): ", to_String(nodes())])),
-
   Koordinator ! {getsteeringval, self()},
-  log(LogFile, 
-    lists:concat(["getsteeringval gesendet"])),
 
   receive
     {steeringval, Arbeitszeit, TermZeit, GGTProzessAnzahl} -> 
@@ -47,10 +39,6 @@ start(UniqueID) ->
         lists:concat(["getsteeringval: ", Arbeitszeit, " Arbeitszeit ggT; ", 
           TermZeit, " Wartezeit ggT, ", 
           GGTProzessAnzahl, " Anzahl GGT Prozesse."]))
-      % Any -> 
-      %   Arbeitszeit = nix, TermZeit = nix, GGTProzessAnzahl = nix,
-      %   io:fwrite("Any: ~p~n~n~n", [Any]),
-      %   log(LogFile, lists:concat(["steeringval: ", to_String(Any)]))
   end,
   
   log(LogFile, 

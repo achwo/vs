@@ -33,8 +33,6 @@ start(StarterId, GGTProzessZahl, Arbeitszeit, TermZeit, Nameservice,
   GgtName = buildName(Praktikumsgruppe, Teamnummer, GGTProzessZahl, StarterId),
   log(LogFile, lists:concat(["Build Ggt-Name: ", to_String(GgtName)])),
   register(GgtName,self()),
-  % global:register_name(GgtName,self()),
-  
   
   Nameservice ! {self(),{rebind,GgtName,node()}},
   receive 
