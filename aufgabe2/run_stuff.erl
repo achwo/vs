@@ -11,6 +11,10 @@ start() ->
   NS ! {self(), reset},
   receive _ -> nix end,
 
-  koordinator:start(),
+  K = koordinator:start(),
   timer:sleep(2000),
+  starter:start(1), 
+  timer:sleep(2000),
+  K ! reset,
+  timer:sleep(1000),
   starter:start(1).

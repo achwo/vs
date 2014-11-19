@@ -10,64 +10,64 @@ start() ->
   spawn_link(fun() -> run() end).
 
 run() ->
-  Logfile = lists:concat(["koordinator_", to_String(node()), ".log"]),
-  log(Logfile, lists:concat([to_String(node()), " Startzeit: ", 
+  Log = lists:concat(["koordinator_", to_String(node()), ".log"]),
+  log(Log, lists:concat([to_String(node()), " Startzeit: ", 
     timeMilliSecond()," mit PID ", to_String(self())])),
   {ok, ConfigFile} = file:consult("koordinator.cfg"),
   utility:load_config(koordinator, ConfigFile),
-  log(Logfile, "koordinator.cfg gelesen..."),
+  log(Log, "koordinator.cfg gelesen..."),
   Nameservice = utility:find_nameservice(
     config(nameservicenode), config(nameservicename)), 
 
   case Nameservice of
-    undefined -> log(Logfile, "Nameservice nicht gefunden...");
-    _ -> log(Logfile, "Nameservice gebunden..."),
+    undefined -> log(Log, "Nameservice nicht gefunden...");
+    _ -> log(Log, "Nameservice gebunden..."),
       register(config(koordinatorname),self()),
-      log(Logfile, "lokal registriert..."),
+      log(Log, "lokal registriert..."),
      
       Nameservice ! {self(),{rebind,config(koordinatorname),node()}},
-      receive ok -> log(Logfile, "beim Namensdienst registriert.");
+      receive ok -> log(Log, "beim Namensdienst registriert.");
         in_use -> io:format("Fehler: Name schon gebunden.")
       end,
-      log(Logfile, ""), % for \n
-      initialphase(Nameservice, sets:new(), Logfile)
+      log(Log, ""), % for \n
+      initialphase(Nameservice, sets:new(), Log)
   end.
 
-initialphase(Nameservice, GgTSet, Logfile) ->
-  log(Logfile, "initialphase()"),
+initialphase(Nameservice, GgTSet, Log) ->
+  log(Log, "initialphase()"),
   receive 
     {getsteeringval,StarterName} -> 
-      log(Logfile, 
+      log(Log, 
         lists:concat(["getsteeringval: ", to_String(StarterName), " (0)."])),
     	StarterName ! {steeringval, config(arbeitszeit),
         config(termzeit), config(ggtprozessnummer)},
-      initialphase(Nameservice, GgTSet, Logfile);
+      initialphase(Nameservice, GgTSet, Log);
 
     {hello, GgtName} ->
-      log(Logfile, lists:concat(["hello: ", to_String(GgtName), " (3)."])),
+      log(Log, lists:concat(["hello: ", to_String(GgtName), " (3)."])),
       GgTSetNew = sets:add_element(GgtName, GgTSet),
-      initialphase(Nameservice, GgTSetNew, Logfile);
+      initialphase(Nameservice, GgTSetNew, Log);
 
     step ->
-      step(GgTSet, Nameservice, Logfile),
-      arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile, 134217728);
+      step(GgTSet, Nameservice, Log),
+      arbeitsphase(Nameservice, GgTSet, config(korrigieren), Log, 134217728);
 
     reset ->
-      kill_all_ggt(GgTSet, Nameservice, Logfile),
-      initialphase(Nameservice, sets:new(), Logfile);
+      kill_all_ggt(GgTSet, Nameservice, Log),
+      initialphase(Nameservice, sets:new(), Log);
    
-    kill -> beendigungsphase(Nameservice, GgTSet, Logfile);
+    kill -> beendigungsphase(Nameservice, GgTSet, Log);
     Any -> 
-      log(Logfile, lists:concat(["Received unerwartete message: ", to_String(Any)])),
-      initialphase(Nameservice, GgTSet, Logfile)
+      log(Log, lists:concat(["Received unerwartete message: ", to_String(Any)])),
+      initialphase(Nameservice, GgTSet, Log)
   end.
 
-step(GgTSet, Nameservice, Logfile) ->
-  log(Logfile, 
+step(GgTSet, Nameservice, Log) ->
+  log(Log, 
     lists:concat(["Anmeldefrist fuer ggT-Prozesse abgelaufen. ", 
       "Vermisst werden aktuell ", missing_ggT(GgTSet), " ggT-Prozesse."])),
-  create_ring(GgTSet, Nameservice, Logfile),
-  log(Logfile, lists:concat(["Ring wird/wurde erstellt, ", 
+  create_ring(GgTSet, Nameservice, Log),
+  log(Log, lists:concat(["Ring wird/wurde erstellt, ", 
     "Koordinator geht in den Zustand 'Bereit fuer Berechnung'."])).
 
 missing_ggT(GgTSet) -> config(ggtprozessnummer) - sets:size(GgTSet).
@@ -85,6 +85,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
       arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, 134217728);
 
     reset ->
+      log(Log, "Reset empfangen"),
       kill_all_ggt(GgTSet, Nameservice, Log),
       initialphase(Nameservice, [], Log);
 
@@ -185,21 +186,21 @@ pingGGTs([GgT|RestGGTs], Nameservice, Log) ->
   end,
   pingGGTs(RestGGTs, Nameservice, Log).  
 
-beendigungsphase(Nameservice, GgTSet, Logfile) ->
-  kill_all_ggt(GgTSet, Nameservice, Logfile),
+beendigungsphase(Nameservice, GgTSet, Log) ->
+  kill_all_ggt(GgTSet, Nameservice, Log),
   Nameservice ! {self(),{unbind,config(koordinatorname)}},
   receive 
-    ok -> log(Logfile, "Unbound koordinator at nameservice.")
+    ok -> log(Log, "Unbound koordinator at nameservice.")
   end,
   unregister(config(koordinatorname)),
-  log(Logfile, 
+  log(Log, 
     lists:concat(["Downtime: ", timeMilliSecond(), " vom Koordinator ", 
       config(koordinatorname)])).
 
-kill_all_ggt(GgTSet, Nameservice, Logfile) ->
+kill_all_ggt(GgTSet, Nameservice, Log) ->
   GgTList = sets:to_list(GgTSet),
   kill_all_ggt(GgTList, Nameservice),
-  log(Logfile, "Allen ggT-Prozessen ein 'kill' gesendet.").
+  log(Log, "Allen ggT-Prozessen ein 'kill' gesendet.").
 
 kill_all_ggt([], _) -> ok;
 kill_all_ggt([GgT|Rest], Nameservice) ->
@@ -207,20 +208,20 @@ kill_all_ggt([GgT|Rest], Nameservice) ->
   GgTProcess ! kill,
   kill_all_ggt(Rest, Nameservice).
 
-tellmi_all_ggt([],Logfile) -> 
-  log(Logfile, "Keine ggT-Prozesse lebendig");
-tellmi_all_ggt(GgTSet, Logfile) ->
+tellmi_all_ggt([],Log) -> 
+  log(Log, "Keine ggT-Prozesse lebendig");
+tellmi_all_ggt(GgTSet, Log) ->
   tellmi_all_ggt(sets:to_list(GgTSet)),
-  log(Logfile, "Alle ggT-Prozesse nach dem Aktuellen Mi Wert gefragt.").
+  log(Log, "Alle ggT-Prozesse nach dem Aktuellen Mi Wert gefragt.").
 
 tellmi_all_ggt([GgT|Rest]) ->
     GgT ! {tellmi, self()},
     tellmi_all_ggt(Rest).
 
-create_ring(GgTSet, Nameservice, Logfile) ->
+create_ring(GgTSet, Nameservice, Log) ->
   GgTList = sets:to_list(GgTSet),
   Pairs = create_ring_tuples(GgTList, none, none, []),
-  set_neighbors(Pairs, Nameservice, Logfile).
+  set_neighbors(Pairs, Nameservice, Log).
 
 create_ring_tuples([First|Rest], none, none, Accu) ->
   NewAccu = [{First, lists:last(Rest), lists:nth(1, Rest)}] ++ Accu,
@@ -232,17 +233,17 @@ create_ring_tuples([Element|Rest], Previous, First, Accu) ->
   NewAccu = [{Element, Previous, lists:nth(1, Rest)}] ++ Accu,
   create_ring_tuples(Rest, Element, First, NewAccu).
 
-set_neighbors([], _, Logfile) -> 
-  log(Logfile, "Alle ggT-Prozesse ueber Nachbarn informiert.");
-set_neighbors([{GgTName, Left, Right}|Rest], Nameservice, Logfile) ->
+set_neighbors([], _, Log) -> 
+  log(Log, "Alle ggT-Prozesse ueber Nachbarn informiert.");
+set_neighbors([{GgTName, Left, Right}|Rest], Nameservice, Log) ->
   GgTProcess = find_process(GgTName, Nameservice),
   GgTProcess ! {setneighbors, Left, Right},
 
-  log(Logfile, 
+  log(Log, 
     lists:concat(["ggT-Prozess ", GgTName, "(", to_String(GgTProcess), 
       ") ueber linken (", Left, ")", 
       " und rechten (", Right, ") Nachbarn informiert."])),
-  set_neighbors(Rest, Nameservice, Logfile).
+  set_neighbors(Rest, Nameservice, Log).
 
 send_mis_to_ggts([], [], _, _) -> ok;
 send_mis_to_ggts([GgT|RestGGTs], [Mi|RestMis], Nameservice, Log) -> 
