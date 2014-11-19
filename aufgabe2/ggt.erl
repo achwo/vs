@@ -174,7 +174,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, NewMi, LogFile, 
         Arbeitszeit, TermZeit, Timer, TermCount, LastMiTime);
 
-    {kill} -> die(Nameservice, GgtName, LogFile);
+    kill -> die(Nameservice, GgtName, LogFile);
     
     _ -> 
       loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile, 

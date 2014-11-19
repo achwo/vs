@@ -9,7 +9,6 @@ Compilieren der Dateien:
 Zu dem Paket gehören die Dateien
 koordinator.erl ggt.erl nameservice.erl werkzeug.erl
 utility.erl starter.erl
-server_func.erl; server_starter.erl; werkzeug.erl;
 
 sowie:
 Readme.txt; ggt.cfg; koordinator.cfg

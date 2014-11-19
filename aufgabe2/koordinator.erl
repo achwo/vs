@@ -48,15 +48,15 @@ initialphase(Nameservice, GgTSet, Logfile) ->
       GgTSetNew = sets:add_element(GgtName, GgTSet),
       initialphase(Nameservice, GgTSetNew, Logfile);
 
-    {step} ->
+    step ->
       step(GgTSet, Nameservice, Logfile),
       arbeitsphase(Nameservice, GgTSet, config(korrigieren), Logfile, 134217728);
 
-    {reset} ->
+    reset ->
       kill_all_ggt(GgTSet, Nameservice, Logfile),
       initialphase(Nameservice, sets:new(), Logfile);
    
-    {kill} -> beendigungsphase(Nameservice, GgTSet, Logfile);
+    kill -> beendigungsphase(Nameservice, GgTSet, Logfile);
     Any -> 
       log(Logfile, lists:concat(["Received unerwartete message: ", to_String(Any)])),
       initialphase(Nameservice, GgTSet, Logfile)
@@ -75,7 +75,7 @@ missing_ggT(GgTSet) -> config(ggtprozessnummer) - sets:size(GgTSet).
 arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
   receive
 
-    {calc} ->
+    calc ->
       WggT = random:uniform(1000),
       calc(WggT, GgTSet, Nameservice, Log),
       arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, 134217728);
@@ -84,11 +84,11 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
       calc(WggT, GgTSet, Nameservice, Log),
       arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, 134217728);
 
-    {reset} ->
+    reset ->
       kill_all_ggt(GgTSet, Nameservice, Log),
       initialphase(Nameservice, [], Log);
 
-    {toggle} ->  
+    toggle ->  
       case Korrigieren of
         0 -> NewKorrigieren = 1;
         1 -> NewKorrigieren = 0
@@ -99,7 +99,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
           Korrigieren, " zu ", NewKorrigieren, "."])),
       arbeitsphase(Nameservice, GgTSet, NewKorrigieren, Log, LastCMi);
 
-    {nudge} ->
+    nudge ->
       % Der Koordinator erfragt bei allen ggT-Prozessen per pingGGT 
       % deren Lebenszustand ab und zeigt dies im log an.
       % ggT-Prozess 488312 ist lebendig (01.12 15:51:44,720|).
@@ -107,9 +107,9 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
       nudge(GgTSet, Nameservice, Log),
       arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
 
-    {kill} -> beendigungsphase(Nameservice, GgTSet, Log);
+    kill -> beendigungsphase(Nameservice, GgTSet, Log);
 
-    {prompt} ->
+    prompt ->
       %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per 
       % tellmi deren aktuelles Mi ab und zeigt dies im log an.
       tellmi_all_ggt(GgTSet, Log),
@@ -204,7 +204,7 @@ kill_all_ggt(GgTSet, Nameservice, Logfile) ->
 kill_all_ggt([], _) -> ok;
 kill_all_ggt([GgT|Rest], Nameservice) ->
   GgTProcess = find_process(GgT, Nameservice),
-  GgTProcess ! {kill},
+  GgTProcess ! kill,
   kill_all_ggt(Rest, Nameservice).
 
 tellmi_all_ggt([],Logfile) -> 
