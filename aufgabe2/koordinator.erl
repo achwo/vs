@@ -34,7 +34,6 @@ run() ->
   end.
 
 initialphase(Nameservice, GgTSet, Log) ->
-  log(Log, "initialphase()"),
   receive 
     {getsteeringval,StarterName} -> 
       log(Log, 
@@ -51,10 +50,6 @@ initialphase(Nameservice, GgTSet, Log) ->
     step ->
       step(GgTSet, Nameservice, Log),
       arbeitsphase(Nameservice, GgTSet, config(korrigieren), Log, 134217728);
-
-    reset ->
-      kill_all_ggt(GgTSet, Nameservice, Log),
-      initialphase(Nameservice, sets:new(), Log);
    
     kill -> beendigungsphase(Nameservice, GgTSet, Log);
     Any -> 
@@ -87,7 +82,7 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
     reset ->
       log(Log, "Reset empfangen"),
       kill_all_ggt(GgTSet, Nameservice, Log),
-      initialphase(Nameservice, [], Log);
+      initialphase(Nameservice, sets:new(), Log);
 
     toggle ->  
       case Korrigieren of
@@ -113,7 +108,11 @@ arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi) ->
     prompt ->
       %prompt: Der Koordinator erfragt bei allen ggT-Prozessen per 
       % tellmi deren aktuelles Mi ab und zeigt dies im log an.
-      tellmi_all_ggt(GgTSet, Log),
+      tellmi_all_ggt(GgTSet, Nameservice, Log),
+      arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
+
+    {mi, Mi} ->
+      log(Log, lists:concat(["Mi: ", Mi])),
       arbeitsphase(Nameservice, GgTSet, Korrigieren, Log, LastCMi);
     
     {briefmi, {Clientname, NewCMi, CZeit}} ->
@@ -176,13 +175,13 @@ pingGGTs([GgT|RestGGTs], Nameservice, Log) ->
   case Process of
     nok -> log(Log, lists:concat(["ggT-Prozess ", GgT, " ist tot :("]));
     _ ->
-    Process ! {pingGGT, self()},
-    receive
-      {pongGGT, GGTName} -> 
-        log(Log, lists:concat(["ggT-Prozess ", GGTName, " lebt!"]))
-      after 1000 ->
-        log(Log, lists:concat(["ggT-Prozess ", GgT, " ist tot :("]))
-    end
+      Process ! {pingGGT, self()},
+      receive
+        {pongGGT, GGTName} -> 
+          log(Log, lists:concat(["ggT-Prozess ", GGTName, " lebt!"]))
+        after 1000 ->
+          log(Log, lists:concat(["ggT-Prozess ", GgT, " ist tot :("]))
+      end
   end,
   pingGGTs(RestGGTs, Nameservice, Log).  
 
@@ -208,15 +207,19 @@ kill_all_ggt([GgT|Rest], Nameservice) ->
   GgTProcess ! kill,
   kill_all_ggt(Rest, Nameservice).
 
-tellmi_all_ggt([],Log) -> 
-  log(Log, "Keine ggT-Prozesse lebendig");
-tellmi_all_ggt(GgTSet, Log) ->
-  tellmi_all_ggt(sets:to_list(GgTSet)),
-  log(Log, "Alle ggT-Prozesse nach dem Aktuellen Mi Wert gefragt.").
+tellmi_all_ggt(GgTSet, Nameservice, Log) ->
+  case sets:size(GgTSet) of
+    0 -> log(Log, "Keine ggT-Prozesse lebendig");
+    _ -> 
+      tellmi_all_ggt(sets:to_list(GgTSet), Nameservice),
+      log(Log, "Alle ggT-Prozesse nach dem Aktuellen Mi Wert gefragt.")
+  end.
 
-tellmi_all_ggt([GgT|Rest]) ->
-    GgT ! {tellmi, self()},
-    tellmi_all_ggt(Rest).
+tellmi_all_ggt([], _) -> ok;
+tellmi_all_ggt([GgT|Rest], Nameservice) ->
+  GgTProcess = find_process(GgT, Nameservice),
+  GgTProcess ! {tellmi, self()},
+  tellmi_all_ggt(Rest, Nameservice).
 
 create_ring(GgTSet, Nameservice, Log) ->
   GgTList = sets:to_list(GgTSet),

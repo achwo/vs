@@ -7,34 +7,33 @@ find_nameservice(NameserviceNode, NameserviceName) ->
   meet(NameserviceNode),
   global:whereis_name(NameserviceName).
 
+find_process(ProcessNameAtom, Nameservice) ->
+  Nameservice ! {self(), {lookup, ProcessNameAtom}},
+  receive 
+    {pin, {Name, Node}} -> 
+      meet(Node),
+      {Name, Node}
+  end.
+
 meet(Node) ->
-  case is_in_nodelist(Node) of
-    
+  case is_known_node(Node) of
     false -> 
       net_adm:ping(Node),
       timer:sleep(1000);
     _ -> ok
   end.
 
-is_in_nodelist(Node) ->
-  Nodelist = nodes(),
-  find_node(Nodelist, Node).
+is_known_node(Node) ->
+  case node() of
+    Node -> true;
+    _ -> 
+      Nodelist = nodes(),
+      find_node(Nodelist, Node)
+  end.
 
 find_node([], _) -> false;
 find_node([Element|_], Node) when Element == Node -> true;
 find_node([_|Rest], Node) -> find_node(Rest, Node).
-
-find_process(ProcessNameAtom, Nameservice) ->
-  Nameservice ! {self(), {lookup, ProcessNameAtom}},
-  loop().
-
-loop() ->
-  receive 
-    {pin, {Name, Node}} -> 
-      meet(Node),
-      {Name, Node};
-    _ -> bad
-  end.
 
 % Logs and attaches \n to message
 log(LogFile, Message) ->

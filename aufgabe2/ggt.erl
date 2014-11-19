@@ -163,8 +163,7 @@ loop(Nameservice, Koordinator, GgtName, LeftN, RightN, Mi, LogFile,
             lists:concat(["informed ", to_String(LeftN), "and ", 
               to_String(RightN), " with new Mi: ", NewMi])),
           
-          Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}},
-          log(LogFile, lists:concat(["An Koordinator gesenden: ", to_String(Koordinator)]));
+          Koordinator ! {briefmi,{GgtName,NewMi,timeMilliSecond()}};
           
         false ->
           log(LogFile, 
@@ -201,7 +200,7 @@ calculateMi(Y, Mi, LogFile, GgtProcess, Arbeitszeit) ->
       timer:sleep(Arbeitszeit*1000),
 
       GgtProcess ! {calcResult, NewMi, Y},
-          log(LogFile, lists:concat(["An GgtProcess gesenden: ", to_String(GgtProcess)]));
+        log(LogFile, lists:concat(["An GgtProcess gesenden: ", to_String(GgtProcess)]));
     false -> 
       log(LogFile, lists:concat(["sendy: ", to_String(Y), "(", to_String(Mi) ,"); Keine Berechnung"]))
   end.
