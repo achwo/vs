@@ -1,3 +1,17 @@
+--------------------
+Ausführung des Funktionstests:
+--------------------
+
+0. Configs anpassen (nameservicenode, koordinatorname)
+1. Nameserver starten: ./start_nameserver.sh $own_ip
+2. Koordinator und Starter ausführen: ./start_stuff.sh $own_ip
+3. Testdatei ausführen: ./gui.sh $own_ip
+
+Wobei $own_ip die IP-Adresse des jeweiligen ausführenden PCs ist.
+
+--------------------
+Startreihenfolge der Erlangdateien:
+--------------------
 0. Configs anpassen (nameservicenode, koordinatorname)
 1. Nameserver starten
 2. Koordinator starten: koordinator:start()
@@ -8,7 +22,7 @@ Compilieren der Dateien:
 --------------------
 Zu dem Paket gehören die Dateien
 koordinator.erl ggt.erl nameservice.erl werkzeug.erl
-utility.erl starter.erl
+utility.erl starter.erl gui.erl
 
 sowie:
 Readme.txt; ggt.cfg; koordinator.cfg

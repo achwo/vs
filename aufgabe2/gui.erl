@@ -10,9 +10,10 @@ start() ->
   utility:load_config(gui, ConfigFile),
   NNode = utility:from_config(gui, nameservicenode),
   NName = utility:from_config(gui, nameservicename),
+  KName = utility:from_config(gui, koordinatorname),
   N = utility:find_nameservice(NNode, NName),
 
-  Koordinator = utility:find_process(chef, N),
+  Koordinator = utility:find_process(KName, N),
 
   starter:start(2),
   log(Log, "Started 2. Starter"),
