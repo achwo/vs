@@ -1,0 +1,14 @@
+Hallo zusammen!
+Der Hinweis zu Erlang: 
+bitte verwenden Sie bei gen_udp die Optionen {active,false} und {reuseaddr,true}., damit Sie durch aktives Abholen der Nachricht gen_udp:recv/N die Flusskontrolle behalten.
+Das sollte unter Linux und Windows Ihnen erlauben, auf einem Rechner mehrere Stationen zu starten.
+Beachten Sie dazu
+http://www.erlang.org/documentation/doc-5.2/lib/kernel-2.8.0/doc/html/gen_udp.html
+und
+http://www.erlang.org/documentation/doc-5.2/lib/kernel-2.8.0/doc/html/inet.html#setopts
+
+In vielen Gruppen im letzten Praktikum wurde mit {active,true} gearbeitet, dass unter Windows bei mehreren Stationen Probleme erzeugte.
+Anbei ist die modifizierte werkzeug.erl, in der für beide Varianten Hilfsfunktionen eingefügt wurden (openSe/2,openSeA/2,openRec/3,openRecA/3,).
+
+Gruß
+C Klauck
