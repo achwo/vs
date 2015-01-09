@@ -7,7 +7,7 @@
       <x>60</x>
       <y>0</y>
       <w>640</w>
-      <h>350</h>
+      <h>380</h>
     </coordinates>
     <panel_attributes>title: Sending (Frame n)
 _A:DataSource~a_|_B:SlotChooser~b_|_C:SlotSender~c_
@@ -15,9 +15,10 @@ _A:DataSource~a_|_B:SlotChooser~b_|_C:SlotSender~c_
 a-&gt;&gt;&gt;a:a:msg from stdin
 
 b-&gt;&gt;b:b:choose Slot (n+1)
-b-&gt;c:b,c:slot n+1, slot n
-c-&gt;a:a,c:getmsg
-a-&gt;c:a,c:msg
+b-&gt;c:b,c:{current_slot, 5}
+b-&gt;c:b,c:{next_slot, 9}
+c-&gt;a:a,c:{C, getmsg}
+a-&gt;c:a,c:{msg, Msg}
 c-&gt;&gt;c:c:attach Slot (n+1) to msg
 c-&gt;&gt;c:c:attach Timestamp to msg
 
@@ -39,11 +40,11 @@ d-&gt;&gt;&gt;d:d:receive msg via multicast
 
 d-&gt;b:d,b:{badslot,9}
 d-&gt;d:d:Ignore invalid msgs
-d-&gt;e:d,e:List of valid msgs in frame n
+d-&gt;e:d,e:{frameMessages, ListOfMsgs}
 e-&gt;&gt;e:e:calculate time diff
-e-&gt;c:c,e:time diff
-e-&gt;d:e,d:time diff
-e-&gt;f:e,f:valid msgs
+e-&gt;c:c,e:{timediff, 321}
+e-&gt;d:e,d:{timediff, 321}
+e-&gt;f:e,f:{messages, ListOfMsgs}
 
 f-&gt;&gt;&gt;f:f:send msg to stdout</panel_attributes>
     <additional_attributes/>
