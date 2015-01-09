@@ -6,11 +6,11 @@
     <coordinates>
       <x>50</x>
       <y>20</y>
-      <w>610</w>
+      <w>640</w>
       <h>260</h>
     </coordinates>
     <panel_attributes>title: Sending (Frame n)
-_DataSource~a_|_SlotChooser~b_|_SlotSender~c_
+_A:DataSource~a_|_B:SlotChooser~b_|_C:SlotSender~c_
 
 a-&gt;b:a,b:msg
 
@@ -25,26 +25,27 @@ c-&gt;&gt;c:c:attach Timestamp to msg
   <element>
     <type>com.baselet.element.old.allinone.SequenceDiagram</type>
     <coordinates>
-      <x>50</x>
-      <y>340</y>
-      <w>640</w>
-      <h>260</h>
+      <x>0</x>
+      <y>330</y>
+      <w>870</w>
+      <h>290</h>
     </coordinates>
     <panel_attributes>title: Receiving (Frame n)
-_SlotReceiver~d_|_MsgManager~b_|_SyncManager~e_|_DataSink~f_
+_D:SlotReceiver~d_|_B:SlotChooser~b_|_C:SlotSender~c_|_E:SyncManager~e_|_F:DataSink~f_
 
 d-&gt;b:d,b:{badslot,9}
-b-&gt;e:b,e:List of all msgs in frame n
+d-&gt;e:d,e:List of all msgs in frame n
 e-&gt;&gt;e:e:calculate time diff
-e-&gt;b:b,e:time diff
+e-&gt;c:c,e:time diff
+e-&gt;d:e,d:time diff
 e-&gt;f:e,f:valid msgs</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLNote</id>
     <coordinates>
-      <x>510</x>
-      <y>280</y>
+      <x>590</x>
+      <y>140</y>
       <w>140</w>
       <h>70</h>
     </coordinates>
