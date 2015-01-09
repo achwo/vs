@@ -6,11 +6,11 @@
     <coordinates>
       <x>50</x>
       <y>20</y>
-      <w>620</w>
+      <w>610</w>
       <h>260</h>
     </coordinates>
     <panel_attributes>title: Sending (Frame n)
-_InputHandler~a_|_SlotChooser~b_|_SlotSender~c_
+_DataSource~a_|_SlotChooser~b_|_SlotSender~c_
 
 a-&gt;b:a,b:msg
 
@@ -27,11 +27,11 @@ c-&gt;&gt;c:c:attach Timestamp to msg
     <coordinates>
       <x>50</x>
       <y>340</y>
-      <w>690</w>
+      <w>640</w>
       <h>260</h>
     </coordinates>
     <panel_attributes>title: Receiving (Frame n)
-_SlotReceiver~d_|MsgManager~b|_SyncManager~e_|_OutputHandler~f_
+_SlotReceiver~d_|_MsgManager~b_|_SyncManager~e_|_DataSink~f_
 
 d-&gt;b:d,b:{badslot,9}
 b-&gt;e:b,e:List of all msgs in frame n
