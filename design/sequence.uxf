@@ -4,14 +4,15 @@
   <element>
     <type>com.baselet.element.old.allinone.SequenceDiagram</type>
     <coordinates>
-      <x>50</x>
+      <x>60</x>
       <y>0</y>
       <w>640</w>
-      <h>290</h>
+      <h>350</h>
     </coordinates>
     <panel_attributes>title: Sending (Frame n)
 _A:DataSource~a_|_B:SlotChooser~b_|_C:SlotSender~c_
 
+a-&gt;&gt;&gt;a:a:msg from stdin
 
 b-&gt;&gt;b:b:choose Slot (n+1)
 b-&gt;c:b,c:slot n+1, slot n
@@ -20,19 +21,21 @@ a-&gt;c:a,c:msg
 c-&gt;&gt;c:c:attach Slot (n+1) to msg
 c-&gt;&gt;c:c:attach Timestamp to msg
 
-</panel_attributes>
+c-&gt;&gt;&gt;c:c:send msg via multicast</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.baselet.element.old.allinone.SequenceDiagram</type>
     <coordinates>
       <x>0</x>
-      <y>310</y>
-      <w>870</w>
-      <h>320</h>
+      <y>400</y>
+      <w>970</w>
+      <h>380</h>
     </coordinates>
     <panel_attributes>title: Receiving (Frame n)
 _D:SlotReceiver~d_|_B:SlotChooser~b_|_C:SlotSender~c_|_E:SyncManager~e_|_F:DataSink~f_
+
+d-&gt;&gt;&gt;d:d:receive msg via multicast
 
 d-&gt;b:d,b:{badslot,9}
 d-&gt;d:d:Ignore invalid msgs
@@ -40,19 +43,9 @@ d-&gt;e:d,e:List of valid msgs in frame n
 e-&gt;&gt;e:e:calculate time diff
 e-&gt;c:c,e:time diff
 e-&gt;d:e,d:time diff
-e-&gt;f:e,f:valid msgs</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLNote</id>
-    <coordinates>
-      <x>590</x>
-      <y>120</y>
-      <w>140</w>
-      <h>70</h>
-    </coordinates>
-    <panel_attributes>In- und Output fehlen! Muss noch hinzugefuegt werden!
-bg=White</panel_attributes>
+e-&gt;f:e,f:valid msgs
+
+f-&gt;&gt;&gt;f:f:send msg to stdout</panel_attributes>
     <additional_attributes/>
   </element>
 </diagram>
