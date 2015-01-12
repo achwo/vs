@@ -44,8 +44,8 @@ currentTime(TimeOffset) ->
 sync(TimeOffset, Deviations) when length(Deviations) == 0 ->
   TimeOffset;
 sync(TimeOffset, Deviations) ->
-  TimeOffset + calculateDeviation(Deviations).
+  TimeOffset + calculateNewOffset(Deviations).
 
-calculateDeviation(Deviations) ->
+calculateNewOffset(Deviations) ->
   Sum = lists:sum(Deviations),
   round(Sum / length(Deviations)). %Special case if own station is class A?
