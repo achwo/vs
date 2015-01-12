@@ -17,7 +17,10 @@ loop(TimeOffset, Deviations) ->
       loop(TimeOffset, Deviations);
     {sync} ->
       NewTimeOffset = sync(TimeOffset, Deviations),
-      loop(NewTimeOffset, Deviations)
+      loop(NewTimeOffset, Deviations);
+    Any ->
+      io:fwrite("Received unknown message type: ~p~n", [Any]),
+      loop(TimeOffset, Deviations)
   end.
 
 addDeviation(StationType, SendTime, ReceiveTime, Deviations) 
@@ -46,4 +49,3 @@ sync(TimeOffset, Deviations) ->
 calculateDeviation(Deviations) ->
   Sum = lists:sum(Deviations),
   round(Sum / length(Deviations)). %Special case if own station is class A?
-
