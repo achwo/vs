@@ -5,11 +5,9 @@ start() -> spawn(fun() -> loop() end).
 
 loop() ->
   receive 
-    {messages, ListOfMessages} -> messages(ListOfMessages)
+    {data, Data} -> data(Data)
   end,
   loop().
 
-messages(ListOfMessages) ->
-  lists:foreach(fun(Message) ->
-      io:fwrite("~p~n", [Message]) 
-    end, ListOfMessages).
+data(Data) ->
+  io:fwrite("~p~n", [Data]). % todo: use output file
