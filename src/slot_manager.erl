@@ -52,6 +52,7 @@ handleFrameEnd() ->
   % transmission_slot setzen
   % sender ! {new_timer, WaitTimeTillTransmissionSlot}
   % reset FreeSlotList
+  todo.
 
 
 
