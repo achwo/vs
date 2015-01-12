@@ -25,8 +25,8 @@ loop(SyncManager, Sender, Receiver, FreeSlotList) ->
       NewFreeSlotList = reserveSlot(SlotNumber, FreeSlotList),
       loop(SyncManager, Sender, Receiver, NewFreeSlotList);
     {From, reserve_slot} ->
-      reserveRandomSlot(From),
-      loop(SyncManager, Sender, Receiver, FreeSlotList);
+      NewFreeSlotList = reserveRandomSlot(From, FreeSlotList),
+      loop(SyncManager, Sender, Receiver, NewFreeSlotList);
     {slot_end} ->
       slotEnd(),
       loop(SyncManager, Sender, Receiver, FreeSlotList)
@@ -34,14 +34,14 @@ loop(SyncManager, Sender, Receiver, FreeSlotList) ->
 
 
 reserveSlot(SlotNumber, FreeSlotList) ->
-  % remove SlotNumber from FreeSlotList (if possible)
   lists:delete(SlotNumber, FreeSlotList).
 
-reserveRandomSlot(From) -> 
-  
-  % get random Slot from FreeSlotList and return
-  % From ! {reserved_slot, SlotNumber}
-  todo.
+reserveRandomSlot(From, FreeSlotList) -> 
+  Index = random:uniform(length(FreeSlotList)),
+  Slot = lists:nth(Index, FreeSlotList),
+  NewFreeSlotList = lists:delete(Slot, FreeSlotList),
+  From ! {reserved_slot, Slot},
+  NewFreeSlotList.
 
 slotEnd() -> 
   % receiver ! {slot_end}
