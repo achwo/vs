@@ -28,8 +28,8 @@ loop(SyncManager, Sender, Receiver, FreeSlotList) ->
       NewFreeSlotList = reserveRandomSlot(From, FreeSlotList),
       loop(SyncManager, Sender, Receiver, NewFreeSlotList);
     {slot_end} ->
-      slotEnd(),
-      loop(SyncManager, Sender, Receiver, FreeSlotList)
+      NewFreeSlotList = slotEnd(Receiver),
+      loop(SyncManager, Sender, Receiver, NewFreeSlotList)
   end.
 
 
@@ -43,17 +43,20 @@ reserveRandomSlot(From, FreeSlotList) ->
   From ! {reserved_slot, Slot},
   NewFreeSlotList.
 
-slotEnd() -> 
-  % receiver ! {slot_end}
-  % possible answers:
-  % - collision
-  % - no_message
-  % - {reserve_slot, 9}
-
+slotEnd(Receiver) -> 
+  Receiver ! {slot_end},
+  receive
+    {collision} ->
+      nothing; % really?
+    {no_message} ->
+      nothing; % really?
+    {reserve_slot, SlotNumber} ->
+      NewFreeSlotList = reserve_slot(SlotNumber, FreeSlotList)
+  end
   % start new slottimer
   % if first slot, handleFrameEnd()
 
-  todo.
+  NewFreeSlotList.
 
 handleFrameEnd() ->
   % sync_manager ! {sync},
