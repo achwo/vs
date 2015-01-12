@@ -1,7 +1,9 @@
 -module(data_sink).
 -export([start/0]).
 
-start() -> spawn(fun() -> loop() end).
+start() -> 
+	io:format ("------data_sink------"),
+	spawn(fun() -> loop() end).
 
 loop() ->
   receive 
