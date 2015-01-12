@@ -10,10 +10,10 @@ loop(StationType, TimeOffset, Deviations) ->
       NewDeviations = addDeviation(StationType, SendTime, ReceiveTime, Deviations),
       loop(StationType, TimeOffset, NewDeviations);
     {reset_deviations} ->
-      resetDeviations(),
-      loop(StationType, TimeOffset, Deviations);
+      NewDeviations = resetDeviations(),
+      loop(StationType, TimeOffset, NewDeviations);
     {From, get_current_time} ->
-      getCurrentTime(From),
+      getCurrentTime(From, TimeOffset),
       loop(StationType, TimeOffset, Deviations)
   end.
 
@@ -25,9 +25,12 @@ addDeviation(_, _, _, Deviations) ->
   Deviations.
 
 resetDeviations() ->
-  % clear deviation list
-  todo.
+  [].
 
-getCurrentTime(From) ->
-  % From ! {current_time, CurrentTime}.
-  todo.
+getCurrentTime(From, TimeOffset) ->
+  CurrentTime = currentTime(TimeOffset),
+  From ! {current_time, CurrentTime}.
+
+currentTime(TimeOffset) ->
+  {MegaSecs, Secs, MicroSecs} = erlang:now(),
+  (MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000) + TimeOffset.
