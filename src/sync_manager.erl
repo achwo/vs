@@ -1,29 +1,49 @@
 -module(sync_manager).
--export([start/0]).
+-export([start/2]).
 
-start() -> spawn(fun() -> loop() end).
+start(StationType, TimeOffset) ->  % do we need to know our own station type?
+  spawn(fun() -> loop(TimeOffset, []) end).
 
-loop() ->
+loop(TimeOffset, Deviations) ->
   receive 
     {add_deviation, StationType, SendTime, ReceiveTime} ->
-      addDeviation(StationType, SendTime, ReceiveTime),
-      loop();
+      NewDeviations = addDeviation(StationType, SendTime, ReceiveTime, Deviations),
+      loop(TimeOffset, NewDeviations);
     {reset_deviations} ->
-      resetDeviations(),
-      loop();
+      NewDeviations = resetDeviations(),
+      loop(TimeOffset, NewDeviations);
     {From, get_current_time} ->
-      getCurrentTime(From),
-      loop()
+      getCurrentTime(From, TimeOffset),
+      loop(TimeOffset, Deviations);
+    {sync} ->
+      NewTimeOffset = sync(TimeOffset, Deviations),
+      loop(NewTimeOffset, Deviations)
   end.
 
-addDeviation(StationType, SendTime, ReceiveTime) ->
-  % add deviation to list
-  todo.
+addDeviation(StationType, SendTime, ReceiveTime, Deviations) 
+  when StationType == "A" ->
+  Deviation = SendTime - ReceiveTime,
+  [Deviation | Deviations];
+addDeviation(_, _, _, Deviations) ->
+  Deviations.
 
 resetDeviations() ->
-  % clear deviation list
-  todo.
+  [].
 
-getCurrentTime(From) ->
-  % From ! {current_time, CurrentTime}.
-  todo.
+getCurrentTime(From, TimeOffset) ->
+  CurrentTime = currentTime(TimeOffset),
+  From ! {current_time, CurrentTime}.
+
+currentTime(TimeOffset) ->
+  {MegaSecs, Secs, MicroSecs} = erlang:now(),
+  (MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000) + TimeOffset.
+
+sync(TimeOffset, Deviations) when length(Deviations) == 0 ->
+  TimeOffset;
+sync(TimeOffset, Deviations) ->
+  TimeOffset + calculateDeviation(Deviations).
+
+calculateDeviation(Deviations) ->
+  Sum = lists:sum(Deviations),
+  round(Sum / length(Deviations)). %Special case if own station is class A?
+
