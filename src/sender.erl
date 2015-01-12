@@ -14,8 +14,7 @@ loop() ->
     {send} ->
       send(),
       loop()
-  end,
-  loop().
+  end.
 
 
 data(Data) ->
