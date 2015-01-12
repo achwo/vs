@@ -1,52 +1,67 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram program="umlet" version="13.1">
-  <zoom_level>10</zoom_level>
+  <zoom_level>6</zoom_level>
   <element>
     <type>com.baselet.element.old.allinone.SequenceDiagram</type>
     <coordinates>
-      <x>60</x>
+      <x>204</x>
       <y>0</y>
-      <w>640</w>
-      <h>380</h>
+      <w>402</w>
+      <h>300</h>
     </coordinates>
-    <panel_attributes>title: Sending (Frame n)
-_A:DataSource~a_|_B:SlotChooser~b_|_C:SlotSender~c_
+    <panel_attributes>title: Sending a message
+_A:DataSource~a_|_B:SlotManager~b_|_C:Sender~c_|_E:SyncManager~e_
 
-a-&gt;&gt;&gt;a:a:msg from stdin
+a-&gt;&gt;&gt;a:a:data from stdin
+a-&gt;c:a,c:{data, Data}
 
-b-&gt;&gt;b:b:choose Slot (n+1)
-b-&gt;c:b,c:{current_slot, 5}
-b-&gt;c:b,c:{next_slot, 9}
-c-&gt;a:a,c:{C, getmsg}
-a-&gt;c:a,c:{msg, Msg}
-c-&gt;&gt;c:c:attach Slot (n+1) to msg
+b-&gt;&gt;b:b:WaitTime = 40ms * SendSlot
+b-&gt;c:b,c:{new_timer, WaitTime}
+
+iframe{:After sender timer runs out
+c-&gt;b:b,c:{reserve_slot}
+b-&gt;c:b,c:{reserved_slot, 9}
+c-&gt;&gt;c:c:attach reserved_slot to msg
+c-&gt;e:c,e:{get_current_time}
+e-&gt;c:c,e:{current_time, 123567}
 c-&gt;&gt;c:c:attach Timestamp to msg
-
-c-&gt;&gt;&gt;c:c:send msg via multicast</panel_attributes>
+c-&gt;&gt;&gt;c:c:send msg via multicast
+iframe}</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <type>com.baselet.element.old.allinone.SequenceDiagram</type>
     <coordinates>
-      <x>0</x>
-      <y>400</y>
-      <w>970</w>
-      <h>380</h>
+      <x>168</x>
+      <y>318</y>
+      <w>570</w>
+      <h>372</h>
     </coordinates>
-    <panel_attributes>title: Receiving (Frame n)
-_D:SlotReceiver~d_|_B:SlotChooser~b_|_C:SlotSender~c_|_E:SyncManager~e_|_F:DataSink~f_
+    <panel_attributes>title: Receiving a message
+_D:Receiver~d_|_B:SlotManager~b_|_C:Sender~c_|_E:SyncManager~e_|_F:DataSink~f_
 
 d-&gt;&gt;&gt;d:d:receive msg via multicast
 
-d-&gt;b:d,b:{badslot,9}
-d-&gt;d:d:Ignore invalid msgs
-d-&gt;e:d,e:{frameMessages, ListOfMsgs}
-e-&gt;&gt;e:e:calculate time diff
-e-&gt;c:c,e:{timediff, 321}
-e-&gt;d:e,d:{timediff, 321}
-e-&gt;f:e,f:{messages, ListOfMsgs}
+iframe{:After each slot
+b-&gt;d:b,d:{slot_end}
+d-&gt;b:d,b:{reserve_slot,9}
+d-&gt;f:d,f:{data, Data}
+f-&gt;&gt;&gt;f:d,f:send data to stdout
+d-&gt;e:d,e:{add_deviation, StationType, SendTime, ReceiveTime}
+iframe}
 
-f-&gt;&gt;&gt;f:f:send msg to stdout</panel_attributes>
+
+
+iframe{:After frame
+b-&gt;e:b,e:{sync}
+e-&gt;&gt;e:e:calculate time deviation
+b-&gt;e:b,e:{reset_deviations}
+e-&gt;&gt;e:e:reset time deviations list
+b-&gt;&gt;b:b:TransmissionSlot = 9
+b-&gt;&gt;b:b:Reset ReservedSlotList
+b-&gt;c:b,c:{new_timer, WaitTimeTillNextSlot}
+
+iframe}</panel_attributes>
     <additional_attributes/>
   </element>
 </diagram>
