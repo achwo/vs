@@ -35,19 +35,12 @@ requestSlot(SlotManager) ->
   SlotManager ! {get_reservable_slot}.
 
 
-
-newTimer(WaitTime) ->
-  cancel_timer(WaitTime),
-  create_timer(WaitTime, {send}).
- 
-
-
-send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager)
+send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, _)
 when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
   Socket = werkzeug:openSe(Interface, Port),
   Packet = buildPackage(Data, StationType, SyncManager, Slot),
   ok = gen_udp:send(Socket, MultiIP, Port, Packet);
-  send(Context, _, _, _, _, _, _, _, _, SlotManager) ->
+  send(_, _, _, _, _, _, _, _, _, SlotManager) ->
    SlotManager ! {slot_missed}.
   
 
