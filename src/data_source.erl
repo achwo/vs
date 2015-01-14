@@ -6,7 +6,7 @@ start() ->
 
 init() ->
   receive
-  	{setListener, Receiver} -> loop(Receiver)
+  	{set_listener, Receiver} -> loop(Receiver)
   end.
 
 loop(Receiver) ->
