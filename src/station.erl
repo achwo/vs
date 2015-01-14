@@ -16,7 +16,7 @@ start([Interface, MulticastIP, PortInput, StationTypeInput, TimeDeviationInput])
    outputScreen(MultiIP, IP, Port, StationType, TimeDeviation),
 
   %Manager initialisation...  
-   SyncManager = sync_manager:start(TimeDeviation, StationType),
+   SyncManager = sync_manager:start(StationType, TimeDeviation),
    SlotManager = slot_manager:start(SyncManager),
 
   %Sender initialisation...
