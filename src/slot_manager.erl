@@ -16,20 +16,19 @@
 }).
 
 start(SyncManager) -> 
-  State = #s{sync_manager=SyncManager},
-  spawn(fun() -> init(State) end).
+  spawn(fun() -> init(#s{sync_manager=SyncManager}) end).
 
 init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
+  random:seed(now()),
   NewState = startSlotTimer(State, currentTime(State#s.sync_manager)),
   loop(NewState#s{free_slots=free_slot_list:new(?NUMBER_SLOTS)});
 init(State) ->
   receive
     {set_sender, SenderPID} -> 
-      NewState = State#s{sender=SenderPID};
+      init(State#s{sender=SenderPID});
     {set_receiver, ReceiverPID} ->
-      NewState = State#s{receiver=ReceiverPID}
-  end,
-  init(NewState). 
+      init(State#s{receiver=ReceiverPID})
+  end.
 
 loop(State) ->
   receive 
@@ -75,9 +74,9 @@ checkSlotInbox(State) ->
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
-  case State#s.timer == nil of
-    false -> erlang:cancel_timer(State#s.timer);
-    _ -> ok
+  case State#s.timer of
+    nil -> ok;
+    _ -> erlang:cancel_timer(State#s.timer)
   end,
   WaitTime = timeTillNextSlot(CurrentTime),
   State#s{timer=erlang:send_after(WaitTime, self(), {slot_end})}.
@@ -99,7 +98,7 @@ handleFrameEnd(State) ->
     false -> 
       {TransmissionSlot, NewState} = transmissionSlot(State), 
       NewState#s.sender ! {new_timer, timeTillTransmission(TransmissionSlot, currentTime(SyncManager))},
-      resetSlots(State)
+      resetSlots(NewState)
   end.
 
 resetSlots(State) ->
