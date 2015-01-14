@@ -1,5 +1,5 @@
 -module(receiver).
--export([start/0]).
+-export([start/6]).
 
 
 start(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
@@ -12,10 +12,10 @@ init(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
 
 loop(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
   receive 
-    
+
     {slot_end} -> 
       slotEnd(),
-      loop()
+      loop(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port)
   end.
 
 slotEnd() ->
