@@ -97,6 +97,7 @@ handleFrameEnd(State) ->
   % todo: maybe this block is fucked, because my brain is right now:
   case FrameBeforeSync > FrameAfterSync of 
     true -> 
+      % because of sync we are still in the old frame
       State;
     false -> 
       {TransmissionSlot, NewState} = transmissionSlot(State), 
@@ -114,4 +115,4 @@ transmissionSlot(State) when State#s.reserved_slot == nil ->
   {Slot, List} = free_slot_list:reserveLastFreeSlot(State#s.free_slots),
   {Slot, State#s{free_slots=List}};
 transmissionSlot(State) ->
-  State.
+  {nil, State}.
