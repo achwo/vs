@@ -20,11 +20,8 @@ start(SyncManager) ->
   spawn(fun() -> init(State) end).
 
 init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
-  NewState = State#s{
-    timer=startSlotTimer(nil, currentTime(State#s.sync_manager)),
-    free_slots=free_slot_list:new(?NUMBER_SLOTS)
-  },
-  loop(NewState);
+  NewState = startSlotTimer(State, currentTime(State#s.sync_manager)),
+  loop(NewState#s{free_slots=free_slot_list:new(?NUMBER_SLOTS)});
 init(State) ->
   receive
     {set_sender, SenderPID} -> 
