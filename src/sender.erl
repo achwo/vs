@@ -12,10 +12,10 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
     
     {new_timer, WaitTime} -> 
-    cancel_timer(Timer),
-    NewTimer = create_timer(WaitTime, {send}),
-    NewSendTime = sync_util:current_time(SyncManager) + WaitTime,
-    loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
+      cancel_timer(Timer),
+      NewTimer = create_timer(WaitTime, {send}),
+      NewSendTime = sync_util:current_time(SyncManager) + WaitTime,
+      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
     
     {reservable_slot, Slot} ->
       CurrentTime = sync_util:current_time(SyncManager),
