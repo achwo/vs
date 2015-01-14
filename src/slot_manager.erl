@@ -1,5 +1,5 @@
 -module(slot_manager).
--export([start/0]).
+-export([start/1]).
 
 -define(NUMBER_SLOTS, 25).
 
@@ -28,7 +28,7 @@ loop(SyncManager, Sender, Receiver, FreeSlotList) ->
       NewFreeSlotList = reserveRandomSlot(From, FreeSlotList),
       loop(SyncManager, Sender, Receiver, NewFreeSlotList);
     {slot_end} ->
-      NewFreeSlotList = slotEnd(Receiver),
+      NewFreeSlotList = slotEnd(Receiver, FreeSlotList),
       loop(SyncManager, Sender, Receiver, NewFreeSlotList)
   end.
 
@@ -43,7 +43,7 @@ reserveRandomSlot(From, FreeSlotList) ->
   From ! {reserved_slot, Slot},
   NewFreeSlotList.
 
-slotEnd(Receiver) -> 
+slotEnd(Receiver, FreeSlotList) -> 
   Receiver ! {slot_end},
   receive
     {collision} ->
@@ -51,12 +51,13 @@ slotEnd(Receiver) ->
     {no_message} ->
       nothing; % really?
     {reserve_slot, SlotNumber} ->
-      NewFreeSlotList = reserve_slot(SlotNumber, FreeSlotList)
-  end
+      NewFreeSlotList = reserveSlot(SlotNumber, FreeSlotList)
+  end,
   % start new slottimer
   % if first slot, handleFrameEnd()
 
-  NewFreeSlotList.
+  % NewFreeSlotList.
+  FreeSlotList.
 
 handleFrameEnd() ->
   % sync_manager ! {sync},
@@ -74,4 +75,4 @@ createFreeSlotList(List, CurrentSlotNumber, TotalNumber)
   when CurrentSlotNumber >= TotalNumber ->
   List;
 createFreeSlotList(List, CurrentSlotNumber, TotalNumber) ->
-  createFreeSlotList([CurrentSlotNumber | List], CurrentSlotNumber + 1, TotalNumber)
+  createFreeSlotList([CurrentSlotNumber | List], CurrentSlotNumber + 1, TotalNumber).
