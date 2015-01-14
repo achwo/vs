@@ -1,6 +1,6 @@
 -module(util).
 -export([currentTime/1, currentSlot/1, currentFrameTime/1, timeTillNextSlot/1,
-  currentFrame/1]).
+  currentFrame/1, timeTillTransmission/2]).
 
 -define(FRAME_LENGTH_MS, 1000).
 -define(NUMBER_SLOTS, 25).
@@ -23,4 +23,10 @@ timeTillNextSlot(CurrentTime) ->
 
 currentFrame(Time) ->
   Time,
+  todo.
+
+timeTillTransmission(TransmissionSlot, Time) ->
+  TransmissionSlot,
+  Time,
+  % time - transmissionSlotTime
   todo.
