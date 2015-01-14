@@ -3,13 +3,19 @@
 
 start() -> 
 	io:format ("------data_sink------"),
-	spawn(fun() -> loop() end).
+	LogFile = lists:concat(["DataSink.log"]),
+	spawn(fun() -> loop(LogFile) end).
 
-loop() ->
+loop(LogFile) ->
   receive 
-    {data, Data} -> data(Data)
+    {data, Data} -> data(Data, LogFile)
   end,
-  loop().
+  loop(LogFile).
 
-data(Data) ->
-  io:fwrite("~p~n", [Data]). % todo: use output file
+data(Data, LogFile) ->
+  io:fwrite("~p~n", [Data]), % todo: use output file
+  log(LogFile, Data).
+
+ 
+ log(LogFile, Message) ->
+ werkzeug:logging(LogFile, Message ++ "\n").
