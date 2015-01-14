@@ -37,7 +37,6 @@ ipByInterfaceName(InterfaceName) ->
   Data = proplists:get_value(InterfaceName, Interfaces),
   Addrs = proplists:lookup_all(addr, Data),
   {ok, Addr} = getIP(Addrs),
-  io:fwrite("~p~n", [Addr]).
   Addr.
 
 getIP([{addr, Addr}|Addrs]) ->
