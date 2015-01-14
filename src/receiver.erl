@@ -6,7 +6,7 @@ start(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
   spawn(fun() -> init(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port) end).
 
 init(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
-  udp_proc:start(self(), Interface, MultiIP, Port),
+  spawn(fun() -> socketInit(self(), Interface, MultiIP, Port) end),
   loop(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port).
 
 
@@ -25,3 +25,22 @@ slotEnd() ->
   %   answer {reserve_slot, SlotNumber}
   % else -> answer {collision}
   todo.
+
+socketInit(Parent, Interface, MultiIP, Port) ->
+  Socket = werkzeug:openRec(MultiIP, Interface, Port),
+  gen_udp:controlling_process(Socket, self()),
+  socketLoop(Parent, Socket).
+
+socketLoop(Parent, Socket) ->
+  {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),
+  <<StationType:1/binary,
+    Payload:24/binary,
+    Slot:8/integer,
+    Timestamp:64/integer-big>> = Packet,
+  Parent ! {message,
+    binary_to_list (Payload),
+    binary_to_list (StationType),
+    Slot,
+    Timestamp
+  },
+  socketLoop(Parent, Socket).

@@ -84,6 +84,7 @@ handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList) ->
       {TransmissionSlot, _FreeSlotList} = transmissionSlot(ReservedSlot, FreeSlotList), 
       Sender ! {new_timer, timeTillTransmission(TransmissionSlot, CurrentTime)},
       NewFreeSlotList = free_slot_list:new(?NUMBER_SLOTS),
+      NewReservedSlot = nil % todo: richtig?
       % todo: maybe this block is fucked, because my brain is right now
   end,
   {NewFreeSlotList, NewReservedSlot}.
