@@ -17,7 +17,7 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
       NewSendTime = util:current_time(SyncManager) + WaitTime,
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
     
-    {reservable_slot, Slot} ->
+    {reserved_slot, Slot} ->
       CurrentTime = util:current_time(SyncManager),
       send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager);
       
@@ -31,7 +31,7 @@ data(Data) ->
   Data.
 
 requestSlot(SlotManager) ->
-  SlotManager ! {get_reservable_slot}.
+  SlotManager ! {reserve_slot}.
 
 
 send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, _)
@@ -40,11 +40,11 @@ when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
   Packet = buildPackage(Data, StationType, SyncManager, Slot, SlotManager),
   ok = gen_udp:send(Socket, MultiIP, Port, Packet);
   send(_, _, _, _, _, _, _, _, _, SlotManager) ->
-   SlotManager ! {slot_missed}.
+   SlotManager ! {slot_end}.
   
 
 buildPackage(Data,_,_,SlotManager,_) when Data == undefined -> 
-  SlotManager ! {slot_missed};
+  SlotManager ! {slot_end};
 buildPackage(Data, StationType, SyncManager, SlotManager, Slot) ->
   DataForPackage = list_to_binary (Data),
   StationTypeForPackage = list_to_binary (StationType),
