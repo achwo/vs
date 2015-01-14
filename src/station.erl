@@ -56,5 +56,5 @@ outputScreen(MultiIP, Interface, Port, StationType, TimeDeviation) ->
   io:format("ListenPort    : ~p~n", [Port]),
   io:format("StationType   : ~p~n", [StationType]),
   io:format("Time Deviation: ~p~n", [TimeDeviation]),
-  io:format("======================================================~n~n").
+  io:format("====================================================~n~n").
   
