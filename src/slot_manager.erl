@@ -20,7 +20,6 @@ start(SyncManager) ->
   spawn(fun() -> init(State) end).
 
 init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
-
   NewState = State#s{
     timer=startSlotTimer(nil, currentTime(State#s.sync_manager)),
     free_slots=free_slot_list:new(?NUMBER_SLOTS)
@@ -29,89 +28,90 @@ init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
 init(State) ->
   receive
     {set_sender, SenderPID} -> 
-      NewState = State#s{sender=SenderPID},
-      init(NewState);
+      NewState = State#s{sender=SenderPID};
     {set_receiver, ReceiverPID} ->
-      NewState = State#s{receiver=ReceiverPID},
-      init(NewState)
-  end. 
+      NewState = State#s{receiver=ReceiverPID}
+  end,
+  init(NewState). 
 
 loop(State) ->
   receive 
-    {reserve_slot, SlotNumber} -> 
-      {NewReservedSlot, NewFreeSlotList} = free_slot_list:reserveSlot(SlotNumber, State#s.free_slots),
-      NewState = State#s{
-        reserved_slot = NewReservedSlot,
-        free_slots = NewFreeSlotList
-      },
-      loop(NewState);
-    {From, reserve_slot} ->
-      NewState = State#s{free_slots = reserveRandomSlot(From, State#s.free_slots)},
-      loop(NewState);
-    {slot_end} ->
-      NewFreeSlotList = slotEnd(State#s.timer, State#s.receiver, State#s.free_slots, State#s.sync_manager, State#s.reserved_slot, State#s.sender),
-      NewState = State#s{free_slots=NewFreeSlotList},
-      loop(NewState)
+    {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
+    {From, reserve_slot} -> loop(reserveRandomSlot(From, State));
+    {slot_end}           -> loop(slotEnd(State))
   end.
 
-% changes FreeSlotList
-reserveRandomSlot(From, FreeSlotList) -> 
-  {Slot, NewFreeSlotList} = free_slot_list:reserveRandomSlot(FreeSlotList),
-  From ! {reserved_slot, Slot},
-  NewFreeSlotList.
+reserveSlot(Slot, State) ->
+  {ReservedSlot, List} = free_slot_list:reserveSlot(Slot, State#s.free_slots),
+  State#s{
+    reserved_slot = ReservedSlot,
+    free_slots = List
+  }.
 
-% changes FreeSlotList, ReservedSlot
-slotEnd(Timer, Receiver, FreeSlotList, SyncManager, ReservedSlot, Sender) -> 
-  Receiver ! {slot_end},
+reserveRandomSlot(From, State) -> 
+  {Slot, List} = free_slot_list:reserveRandomSlot(State#s.free_slots),
+  From ! {reserved_slot, Slot},
+  State#s{free_slots=List}.
+
+slotEnd(State) -> 
+  NewState = checkSlotInbox(State),
+  CurrentTime = currentTime(State#s.sync_manager),
+
+  case currentSlot(CurrentTime) of
+    1 -> NewNewState = handleFrameEnd(NewState); % todo: 0 or 1? | use result
+    _ -> NewNewState = NewState
+  end,
+  startSlotTimer(NewNewState, CurrentTime).
+
+checkSlotInbox(State) ->
+  State#s.receiver ! {slot_end},
   receive
     {collision} ->
-      NewFreeSlotList = FreeSlotList;  % todo really nothing else? 
+      State;  % todo really nothing else? 
     {no_message} ->
-      NewFreeSlotList = FreeSlotList;  % todo really nothing else?
+      State;  % todo really nothing else?
     {reserve_slot, SlotNumber} ->
-      NewFreeSlotList = free_slot_list:reserveSlot(SlotNumber, FreeSlotList)
-  end,
-
-  CurrentTime = currentTime(SyncManager),
-  case currentSlot(CurrentTime) of
-    1 -> handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList); % todo: 0 or 1? | use result
-    _ -> nothing
-  end,
-  startSlotTimer(Timer, CurrentTime),
-  NewFreeSlotList.
+      State#s{
+        free_slots=free_slot_list:reserveSlot(SlotNumber, State#s.free_slots)
+      }
+  end.
 
 % returns erlang timer
-startSlotTimer(Timer, CurrentTime) ->
-  case Timer == nil of
-    false -> erlang:cancel_timer(Timer);
+startSlotTimer(State, CurrentTime) ->
+  case State#s.timer == nil of
+    false -> erlang:cancel_timer(State#s.timer);
     _ -> ok
   end,
-
   WaitTime = timeTillNextSlot(CurrentTime),
-  erlang:send_after(WaitTime, self(), {slot_end}).
+  State#s{timer=erlang:send_after(WaitTime, self(), {slot_end})}.
 
 % Changes ReservedSlot, FreeSlotList
-handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList) ->
+handleFrameEnd(State) ->
+  SyncManager = State#s.sync_manager,
+
   FrameBeforeSync = currentFrame(currentTime(SyncManager)),
   SyncManager ! {sync},
   SyncManager ! {reset_deviations},
   FrameAfterSync = currentFrame(currentTime(SyncManager)),
 
+  % todo: maybe this block is fucked, because my brain is right now:
   case FrameBeforeSync > FrameAfterSync of 
     true -> 
-      NewFreeSlotList = FreeSlotList,
-      NewReservedSlot = ReservedSlot;
+      State;
     false -> 
-      CurrentTime = currentTime(SyncManager),
-      {TransmissionSlot, _FreeSlotList} = transmissionSlot(ReservedSlot, FreeSlotList), 
-      Sender ! {new_timer, timeTillTransmission(TransmissionSlot, CurrentTime)},
-      NewFreeSlotList = free_slot_list:new(?NUMBER_SLOTS),
-      NewReservedSlot = nil % todo: richtig?
-      % todo: maybe this block is fucked, because my brain is right now
-  end,
-  {NewFreeSlotList, NewReservedSlot}.
+      {TransmissionSlot, NewState} = transmissionSlot(State), 
+      NewState#s.sender ! {new_timer, timeTillTransmission(TransmissionSlot, currentTime(SyncManager))},
+      resetSlots(State)
+  end.
 
-transmissionSlot(nil, FreeSlotList) ->
-  free_slot_list:reserveLastFreeSlot(FreeSlotList);
-transmissionSlot(ReservedSlot, FreeSlotList) ->
-  {ReservedSlot, FreeSlotList}.
+resetSlots(State) ->
+  State#s{
+    free_slots = free_slot_list:new(?NUMBER_SLOTS),
+    reserved_slot = nil % todo: richtig?
+  }.
+
+transmissionSlot(State) when State#s.reserved_slot == nil ->
+  {Slot, List} = free_slot_list:reserveLastFreeSlot(State#s.free_slots),
+  {Slot, State#s{free_slots=List}};
+transmissionSlot(State) ->
+  State.
