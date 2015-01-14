@@ -51,10 +51,10 @@ get_ipv4_address(Addr, _Addrs) ->
 outputScreen(MultiIP, Interface, Port, StationType, TimeDeviation) ->
   io:format("~n~n"),
   io:format("====================================================~n"),
-  io:format("++ Multicast IP  : ~p~n", [MultiIP]),
-  io:format("++ Interface     : ~p~n", [Interface]),
-  io:format("++ ListenPort    : ~p~n", [Port]),
-  io:format("++ StationType   : ~p~n", [StationType]),
-  io:format("++ Time Deviation: ~p~n", [TimeDeviation]),
+  io:format("Multicast IP  : ~p~n", [MultiIP]),
+  io:format("Interface     : ~p~n", [Interface]),
+  io:format("ListenPort    : ~p~n", [Port]),
+  io:format("StationType   : ~p~n", [StationType]),
+  io:format("Time Deviation: ~p~n", [TimeDeviation]),
   io:format("======================================================~n~n").
   
