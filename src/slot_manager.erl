@@ -4,9 +4,7 @@
 -import(util, [currentTime/1, currentSlot/1, timeTillNextSlot/1, currentFrame/1,
   timeTillTransmission/2]).
 
--define(FRAME_LENGTH_MS, 1000).
 -define(NUMBER_SLOTS, 25).
--define(SLOT_LENGTH_MS, 40).
 
 start(SyncManager) -> spawn(fun() -> init(SyncManager, nil, nil) end).
 
@@ -54,7 +52,7 @@ slotEnd(Timer, Receiver, FreeSlotList, SyncManager, ReservedSlot, Sender) ->
 
   CurrentTime = currentTime(SyncManager),
   case currentSlot(CurrentTime) of
-    1 -> handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList); % todo: use result
+    1 -> handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList); % todo: 0 or 1? | use result
     _ -> nothing
   end,
   startSlotTimer(Timer, CurrentTime),
@@ -83,17 +81,13 @@ handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList) ->
       NewReservedSlot = ReservedSlot;
     false -> 
       CurrentTime = currentTime(SyncManager),
-      TransmissionSlot = transmissionSlot(ReservedSlot, currentSlot(CurrentTime)),
+      {TransmissionSlot, _FreeSlotList} = transmissionSlot(ReservedSlot, FreeSlotList), 
       Sender ! {new_timer, timeTillTransmission(TransmissionSlot, CurrentTime)},
-      NewFreeSlotList = free_slot_list:new(?NUMBER_SLOTS),
-      NewReservedSlot = nil
-
+      NewFreeSlotList = free_slot_list:new(?NUMBER_SLOTS)
   end,
   {NewFreeSlotList, NewReservedSlot}.
 
-transmissionSlot(nil, CurrentSlot) ->
-  % reserve Slot > CurrentSlot
-  CurrentSlot,
-  todo;
-transmissionSlot(ReservedSlot, _CurrentSlot) ->
-  ReservedSlot.
+transmissionSlot(nil, FreeSlotList) ->
+  free_slot_list:reserveLastFreeSlot(FreeSlotList);
+transmissionSlot(ReservedSlot, FreeSlotList) ->
+  {ReservedSlot, FreeSlotList}.
