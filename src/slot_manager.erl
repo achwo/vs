@@ -21,6 +21,7 @@ start(SyncManager) ->
 init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
   random:seed(now()),
   NewState = startSlotTimer(State, currentTime(State#s.sync_manager)),
+  io:format("init(bla~n", []),
   loop(NewState#s{free_slots=free_slot_list:new(?NUMBER_SLOTS)});
 init(State) ->
   receive
@@ -31,6 +32,7 @@ init(State) ->
   end.
 
 loop(State) ->
+  io:format("loop~n", []),
   receive 
     {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
     {From, reserve_slot} -> loop(reserveRandomSlot(From, State));
@@ -38,6 +40,7 @@ loop(State) ->
   end.
 
 reserveSlot(Slot, State) ->
+  io:format("reserveSlot~n", []),
   {ReservedSlot, List} = free_slot_list:reserveSlot(Slot, State#s.free_slots),
   State#s{
     reserved_slot = ReservedSlot,
@@ -45,11 +48,13 @@ reserveSlot(Slot, State) ->
   }.
 
 reserveRandomSlot(From, State) -> 
+  io:format("reserveRandomSlot~n", []),
   {Slot, List} = free_slot_list:reserveRandomSlot(State#s.free_slots),
   From ! {reserved_slot, Slot},
   State#s{free_slots=List}.
 
 slotEnd(State) -> 
+  io:format("slotEnd~n", []),
   NewState = checkSlotInbox(State),
   CurrentTime = currentTime(State#s.sync_manager),
 
@@ -60,13 +65,17 @@ slotEnd(State) ->
   startSlotTimer(NewNewState, CurrentTime).
 
 checkSlotInbox(State) ->
+  io:format("checkSlotInbox~n", []),
   State#s.receiver ! {slot_end},
   receive
     {collision} ->
+      io:format("collision~n", []),
       State;  % todo really nothing else? 
     {no_message} ->
+      io:format("no message~n", []),
       State;  % todo really nothing else?
     {reserve_slot, SlotNumber} ->
+      io:format("reserveSlot: ~p~n", [SlotNumber]),
       State#s{
         free_slots=free_slot_list:reserveSlot(SlotNumber, State#s.free_slots)
       }
@@ -74,6 +83,7 @@ checkSlotInbox(State) ->
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
+  io:format("startSlotTimer~n", []),
   case State#s.timer of
     nil -> ok;
     _ -> erlang:cancel_timer(State#s.timer)
@@ -83,6 +93,7 @@ startSlotTimer(State, CurrentTime) ->
 
 % Changes ReservedSlot, FreeSlotList
 handleFrameEnd(State) ->
+  io:format("handleFrameEnd~n", []),
   SyncManager = State#s.sync_manager,
 
   FrameBeforeSync = currentFrame(currentTime(SyncManager)),
@@ -102,6 +113,7 @@ handleFrameEnd(State) ->
   end.
 
 resetSlots(State) ->
+  io:format("resetSlots~n", []),
   State#s{
     free_slots = free_slot_list:new(?NUMBER_SLOTS),
     reserved_slot = nil % todo: richtig?
@@ -109,6 +121,9 @@ resetSlots(State) ->
 
 transmissionSlot(State) when State#s.reserved_slot == nil ->
   {Slot, List} = free_slot_list:reserveLastFreeSlot(State#s.free_slots),
+  io:format("transmissionSlot1: ~p~n", [Slot]),
+  io:format("transmissionSlot1: ~p~n", [List]),
   {Slot, State#s{free_slots=List}};
 transmissionSlot(State) ->
+  io:format("transmissionSlot2 ~n", []),
   {nil, State}.

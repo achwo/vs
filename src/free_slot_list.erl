@@ -18,7 +18,8 @@ reserveRandomSlot(FreeSlotList) ->
   NewFreeSlotList = lists:delete(Slot, FreeSlotList),
   {Slot, NewFreeSlotList}.
 
-reserveLastFreeSlot(FreeSlotList) ->
-  Slot = lists:last(FreeSlotList),
-  NewFreeSlotList = lists:delete(Slot, FreeSlotList),
-  {Slot, NewFreeSlotList}.
+reserveLastFreeSlot([Slot|Rest]) ->
+  {Slot, Rest}.
+  % Slot = lists:last(FreeSlotList),
+  % NewFreeSlotList = lists:delete(Slot, FreeSlotList),
+  % {Slot, NewFreeSlotList}.
