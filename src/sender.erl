@@ -34,7 +34,7 @@ requestSlot(SlotManager) ->
   SlotManager ! {reserve_slot}.
 
 
-send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, _)
+send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager)
 when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
   Socket = werkzeug:openSe(Interface, Port),
   Packet = buildPackage(Data, StationType, SyncManager, Slot, SlotManager),
@@ -45,7 +45,7 @@ when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
 
 buildPackage(Data,_,_,SlotManager,_) when Data == undefined -> 
   SlotManager ! {slot_end};
-buildPackage(Data, StationType, SyncManager, SlotManager, Slot) ->
+buildPackage(Data, StationType, SyncManager, _, Slot) ->
   DataForPackage = list_to_binary (Data),
   StationTypeForPackage = list_to_binary (StationType),
   Timestamp = sync_util:current_time(SyncManager),
