@@ -62,4 +62,4 @@ createTimer(WaitTime, Msg) ->
 cancelTimer(timer) ->
   ok;
 cancelTimer(Timer) ->
-  erlang:cancelTimer(Timer).
+  erlang:cancel_timer(Timer).
