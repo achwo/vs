@@ -13,7 +13,7 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
   {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviation)),
   
   %Show Info about Station
-   outputScreen(MulticastIP, IP, Port, StationType, TimeDeviation),
+   outputScreen(MultiIP, IP, Port, StationType, TimeDeviation),
 
   %Manager initialisation...  
    SyncManager = sync_manager:start(TimeDeviation, StationType),
@@ -21,13 +21,13 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
 
   %Sender initialisation...
    DataSource = data_source:start(),
-   Sender = sender:start(SyncManager, SlotManager, IP, MulticastIP, Port, StationType),
+   Sender = sender:start(SyncManager, SlotManager, IP, MultiIP, Port, StationType),
    DataSource ! {set_listener, Sender},
    SlotManager ! {set_sender, Sender},
 
   %Receiver initialisation...
    DataSink = data_sink:start(),
-   Receiver = receiver:start(DataSink, SlotManager, SyncManager, IP, MulticastIP, Port),
+   Receiver = receiver:start(DataSink, SlotManager, SyncManager, IP, MultiIP, Port),
 
    SlotManager ! {set_receiver, Receiver}.
   
@@ -37,6 +37,7 @@ ipByInterfaceName(InterfaceName) ->
   Data = proplists:get_value(InterfaceName, Interfaces),
   Addrs = proplists:lookup_all(addr, Data),
   {ok, Addr} = getIP(Addrs),
+  io:fwrite("~p~n", [Addr]).
   Addr.
 
 getIP([{addr, Addr}|Addrs]) ->
