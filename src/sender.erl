@@ -12,13 +12,13 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
     
     {new_timer, WaitTime} -> 
-      cancel_timer(Timer),
-      NewTimer = create_timer(WaitTime, {send}),
-      NewSendTime = util:current_time(SyncManager) + WaitTime,
+      cancelTimer(Timer),
+      NewTimer = createTimer(WaitTime, {send}),
+      NewSendTime = util:currentTime(SyncManager) + WaitTime,
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
     
     {reserved_slot, Slot} ->
-      CurrentTime = util:current_time(SyncManager),
+      CurrentTime = util:currentTime(SyncManager),
       send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager);
       
     {send} ->
@@ -45,8 +45,8 @@ send(_, _, _, _, _, _, _, _, _, SlotManager) ->
 buildPackage(Data,_,_,SlotManager,_) when Data == undefined -> 
   SlotManager ! {slot_end};
 buildPackage(Data, StationType, SyncManager, _, Slot) ->
-  DataForPackage = list_to_binary (Data),
-  StationTypeForPackage = list_to_binary (StationType),
+  DataForPackage = list_to_binary(Data),
+  StationTypeForPackage = list_to_binary(StationType),
   Timestamp = sync_util:current_time(SyncManager),
   <<StationTypeForPackage:1/binary,
     DataForPackage:24/binary,
@@ -54,12 +54,12 @@ buildPackage(Data, StationType, SyncManager, _, Slot) ->
     Timestamp:64/integer-big>>.
 
 
-create_timer(WaitTime, Msg) when WaitTime < 0 ->
-  create_timer(0, Msg);
-create_timer(WaitTime, Msg) ->
+createTimer(WaitTime, Msg) when WaitTime < 0 ->
+  createTimer(0, Msg);
+createTimer(WaitTime, Msg) ->
   erlang:send_after(WaitTime, self(), Msg).
 
-cancel_timer(undefined) ->
+cancelTimer(timer) ->
   ok;
-cancel_timer(Timer) ->
-  erlang:cancel_timer(Timer).
+cancelTimer(Timer) ->
+  erlang:cancelTimer(Timer).
