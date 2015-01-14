@@ -1,17 +1,18 @@
 -module(werkzeug).
--export([get_config_value/2,logging/2,logstop/0,
+-export([get_config_value/2,logging/2,logstop/0,openSe/2,openSeA/2,openRec/3,openRecA/3,
 		 pushSL/2,popSL/1,popfiSL/1,findSL/2,findneSL/2,lengthSL/1,minNrSL/1,maxNrSL/1,emptySL/0,notemptySL/1,delete_last/1,shuffle/1,
-		 timeMilliSecond/0,reset_timer/3,
-		 type_is/1,to_String/1,list2String/1,
+		 timeMilliSecond/0,toMilliSeconds/1,reset_timer/3,
+		 type_is/1,to_String/1,
 		 bestimme_mis/2]).
 -define(ZERO, integer_to_list(0)).
+-define(TTL, 1).
 
 %% -------------------------------------------
 % Werkzeug
 %% -------------------------------------------
 %%
 %% -------------------------------------------
-%% Sucht aus einer Config-Liste die gewÃ¼nschten EintrÃ¤ge
+%% Sucht aus einer Config-Liste die gewünschten Einträge
 % Beispielaufruf: 	{ok, ConfigListe} = file:consult("server.cfg"),
 %                  	{ok, Lifetime} = get_config_value(lifetime, ConfigListe),
 %
@@ -24,7 +25,7 @@ get_config_value(Key, [{_OKey, _Value} | ConfigT]) ->
 
 %% -------------------------------------------
 % Schreibt auf den Bildschirm und in eine Datei
-% nebenlÃ¤ufig zur Beschleunigung
+% nebenläufig zur Beschleunigung
 % Beispielaufruf: logging('FileName.log',"Textinhalt"),
 %
 logging(Datei,Inhalt) -> Known = erlang:whereis(logklc),
@@ -52,7 +53,7 @@ logloop(Y) -> 	receive
 %% -------------------------------------------
 %%
 % Unterbricht den aktuellen Timer
-% und erstellt einen neuen und gibt ihn zurÃ¼ck
+% und erstellt einen neuen und gibt ihn zurück
 %%
 reset_timer(Timer,Sekunden,Message) ->
 	{ok, cancel} = timer:cancel(Timer),
@@ -117,21 +118,50 @@ type_is(Something) ->
 to_String(Etwas) ->
 	lists:flatten(io_lib:format("~p", [Etwas])).	
 
-% Wandelt Liste in eine Zeichenketten Liste um
-% Beispielaufruf: list2String(Liste),
-%
-list2String([]) ->
-	lists:concat(["[ ]"]);	
-list2String([Head]) ->
-	lists:concat(["[",werkzeug:to_String(Head),"]"]);	
-list2String([Head|Tail]) ->
-	lists:concat(["[",werkzeug:to_String(Head),",",list2Stringrek(Tail)]).	
-list2Stringrek([Head]) ->
-	lists:concat([werkzeug:to_String(Head),"]"]);	
-list2Stringrek([Head|Tail]) ->
-	lists:concat([werkzeug:to_String(Head),",",list2Stringrek(Tail)]);	
-list2Stringrek([]) -> "]".
-	
+% Oeffnen von UDP Sockets, zum Senden und Empfangen 
+% Schliessen nicht vergessen: timer:apply_after(?LIFETIME, gen_udp, close, [Socket]),
+
+% openSe(IP,Port) -> Socket
+% diesen Prozess PidSend (als Nebenläufigenprozess gestartet) bekannt geben mit
+%  gen_udp:controlling_process(Socket, PidSend),
+% senden  mit gen_udp:send(Socket, Addr, Port, <MESSAGE>)
+openSe(Addr, Port) ->
+  io:format("~nAddr: ~p~nPort: ~p~n", [Addr, Port]),
+  {ok, Socket} = gen_udp:open(Port, [binary, 	{active, false}, {reuseaddr, true}, {ip, Addr}, {multicast_ttl, ?TTL}, inet, 
+												{multicast_loop, true}, {multicast_if, Addr}]),
+  Socket.
+
+% openRec(IP,Port) -> Socket
+% diesen Prozess PidRec (als Nebenläufigenprozess gestartet) bekannt geben mit
+%  gen_udp:controlling_process(Socket, PidRec),
+% aktives Abholen mit   {ok, {Address, Port, Packet}} = gen_udp:recv(Socket, 0),
+openRec(MultiCast, Addr, Port) ->
+  io:format("~nMultiCast: ~p~nAddr: ~p~nPort: ~p~n", [MultiCast, Addr, Port]),
+  {ok, Socket} = gen_udp:open(Port, [binary, 	{active, false}, {reuseaddr, true}, {multicast_if, Addr}, inet, 
+												{multicast_ttl, ?TTL}, {multicast_loop, true}, {add_membership, {MultiCast, Addr}}]),
+  Socket.
+
+  % Aktives UDP-Socket:
+% openSe(IP,Port) -> Socket
+% diesen Prozess PidSend (als Nebenläufigenprozess gestartet) bekannt geben mit
+%  gen_udp:controlling_process(Socket, PidSend),
+% senden  mit gen_udp:send(Socket, Addr, Port, <MESSAGE>)
+openSeA(Addr, Port) ->
+  io:format("~nAddr: ~p~nPort: ~p~n", [Addr, Port]),
+  {ok, Socket} = gen_udp:open(Port, [binary, 	{active, true}, {ip, Addr}, inet, 
+												{multicast_loop, false}, {multicast_if, Addr}]),
+  Socket.
+ 
+% openRec(IP,Port) -> Socket
+% diesen Prozess PidRec (als Nebenläufigenprozess gestartet) bekannt geben mit
+%  gen_udp:controlling_process(Socket, PidRec),
+% passives Empfangen mit   receive	{udp, ReceiveSocket, IP, InPortNo, Packet} -> ... end
+openRecA(MultiCast, Addr, Port) ->
+  io:format("~nMultiCast: ~p~nAddr: ~p~nPort: ~p~n", [MultiCast, Addr, Port]),
+  {ok, Socket} = gen_udp:open(Port, [binary, 	{active, true}, {multicast_if, Addr}, inet, 
+												{multicast_ttl, ?TTL}, {multicast_loop, false}, {add_membership, {MultiCast, Addr}}]),
+  Socket.
+
 	
 %% -------------------------------------------
 %% Mischt eine Liste
@@ -149,15 +179,15 @@ shuffle(List, Acc) ->
 %%push2SL fuegt ein Element gemaess Sortierung ein
 %
 % Wenn ElemNr des Elementes aus der SL groesser oder gleich ist, als die des
-% einzufÃ¼genden Elementes, fÃ¼ge das Element per Rekursion rechts davon ein
+% einzufügenden Elementes, füge das Element per Rekursion rechts davon ein
 pushSL([{ElemNr, Elem}|TSL], {NElemNr,NElem}) when ElemNr >= NElemNr ->
 	[{ElemNr, Elem}|pushSL(TSL,{NElemNr,NElem})];
 % Wenn ElemNr des Elementes aus der SL kleiner ist, als die des
-% einzufÃ¼genden Elementes, fÃ¼ge das Element direkt vor diesem Element(links) davon ein
+% einzufügenden Elementes, füge das Element direkt vor diesem Element(links) davon ein
 pushSL([{ElemNr, Elem}|TSL], {NElemNr,NElem}) when ElemNr < NElemNr ->
 	[{NElemNr,NElem},{ElemNr, Elem}|TSL];
 % Wenn Keine der vorhandenen Nachrichten eine kleinere Elementnummer
-% hat, fÃ¼ge das neue Element ans Ende der SL ein
+% hat, füge das neue Element ans Ende der SL ein
 pushSL([], {NElemNr,NElem}) ->
 	[{NElemNr,NElem}].
 
@@ -232,7 +262,7 @@ notemptySL([]) -> false;
 notemptySL(_SL) -> true.
 	
 %% -------------------------------------------
-%% LÃ¶scht das letzte Element einer Liste
+%% Löscht das letzte Element einer Liste
 %
 delete_last([]) -> [];
 delete_last([_Head]) -> [ ];
@@ -246,16 +276,16 @@ delete_last([Head|Tail]) -> [Head|delete_last(Tail)].
 %% -------------------------------------------
 %
 % initialisiert die Mi der ggT-Prozesse, um den
-% gewÃ¼nschten ggT zu erhalten.
+% gewünschten ggT zu erhalten.
 % Beispielaufruf: bestimme_mis(42,88),
-% 42: gewÃ¼nschter ggT
-% 88: Anzahl benÃ¶tigter Zahlen
+% 42: gewünschter ggT
+% 88: Anzahl benötigter Zahlen
 % 
 %%
 bestimme_mis(WggT,GGTsCount) -> bestimme_mis(WggT,GGTsCount,[]).
 bestimme_mis(_WggT,0,Mis) -> Mis;
 bestimme_mis(WggT,GGTs,Mis) -> 
-	Mi = einmi([3, 5, 11, 13, 23, 37],WggT),
+	Mi = einmi([11, 29, 53, 71, 97, 113, 443, 977],WggT),
 	Enthalten = lists:member(Mi,Mis), 
 	if 	Enthalten -> bestimme_mis(WggT,GGTs,Mis);
 		true ->	bestimme_mis(WggT,GGTs-1,[Mi|Mis])
@@ -263,6 +293,6 @@ bestimme_mis(WggT,GGTs,Mis) ->
 % berechnet ein Mi
 einmi([],Akku) -> Akku;	
 einmi([Prim|Prims],Akku) ->
-	Expo = random:uniform(3)-1, % 0 soll mÃ¶glich sein!
-	AkkuNeu = trunc(Akku * math:pow(Prim,Expo)), % trunc erzeugt integer, was fÃ¼r rem wichtig ist
+	Expo = random:uniform(3)-1, % 0 soll möglich sein!
+	AkkuNeu = trunc(Akku * math:pow(Prim,Expo)), % trunc erzeugt integer, was für rem wichtig ist
 	einmi(Prims,AkkuNeu).		
