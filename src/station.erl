@@ -4,11 +4,11 @@
 start([Interface, MulticastIP, Port, StationType]) ->
   start([Interface, MulticastIP, Port, StationType, '0']);
 
-start([Interface, MulticastIP, PortInput, StationType, TimeDeviationInput]) ->
+start([Interface, MulticastIP, PortInput, StationTypeInput, TimeDeviationInput]) ->
   IP = ipByInterfaceName(atom_to_list(Interface)),
   {ok,MultiIP} = inet_parse:address(atom_to_list(MulticastIP)),
   {Port,_Unused} = string:to_integer(atom_to_list(PortInput)),
-  StationType = atom_to_list(StationType),
+  StationType = atom_to_list(StationTypeInput),
 
   {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviationInput)),
   
