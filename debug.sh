@@ -1,5 +1,5 @@
 #!/bin/bash
 ./composer.sh build
-./startStations.sh wlan0 225.10.1.2 16001 1 1 A 0
+./startStations.sh eth0 224.0.0.8 15001 1 1 A
 killall beam.smp
 
