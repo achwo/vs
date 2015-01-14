@@ -1,6 +1,8 @@
 -module(slot_manager).
 -export([start/1]).
 
+-import(util, [currentTime/1, currentSlot/1, timeTillNextSlot/1, currentFrame/1]).
+
 -define(FRAME_LENGTH_MS, 1000).
 -define(NUMBER_SLOTS, 25).
 -define(SLOT_LENGTH_MS, 40).
@@ -9,7 +11,7 @@ start(SyncManager) -> spawn(fun() -> init(SyncManager, nil, nil) end).
 
 init(SyncManager, Sender, Receiver) when Sender /= nil, Receiver /= nil ->
   Timer = startSlotTimer(nil, currentTime(SyncManager)),
-  loop(SyncManager, Sender, Receiver, resetFreeSlotList(), Timer);
+  loop(nil, SyncManager, Sender, Receiver, resetFreeSlotList(), Timer); % todo: ReservedSlot = nil ok?
 init(SyncManager, Sender, Receiver) ->
   receive
     {set_sender, SenderPID} -> 
@@ -17,12 +19,6 @@ init(SyncManager, Sender, Receiver) ->
     {set_receiver, ReceiverPID} ->
       init(SyncManager, Sender, ReceiverPID)
   end. 
-
-currentTime(SyncManager) ->
-  SyncManager ! {self(), get_current_time},
-  receive 
-    {current_time, Time} -> Time
-  end.
 
 % returns erlang timer
 startSlotTimer(Timer, CurrentTime) ->
@@ -34,26 +30,25 @@ startSlotTimer(Timer, CurrentTime) ->
   WaitTime = timeTillNextSlot(CurrentTime),
   erlang:send_after(WaitTime, self(), {slot_end}).
 
-timeTillNextSlot(CurrentTime) ->
-  ?SLOT_LENGTH_MS - (CurrentTime rem ?SLOT_LENGTH_MS).
-
-loop(SyncManager, Sender, Receiver, FreeSlotList, Timer) ->
+loop(ReservedSlot, SyncManager, Sender, Receiver, FreeSlotList, Timer) ->
   receive 
     {reserve_slot, SlotNumber} -> 
       NewFreeSlotList = reserveSlot(SlotNumber, FreeSlotList),
-      loop(SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
+      loop(ReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
     {From, reserve_slot} ->
       NewFreeSlotList = reserveRandomSlot(From, FreeSlotList),
-      loop(SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
+      loop(ReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
     {slot_end} ->
-      NewFreeSlotList = slotEnd(Timer, Receiver, FreeSlotList, SyncManager),
-      loop(SyncManager, Sender, Receiver, NewFreeSlotList, Timer)
+      NewFreeSlotList = slotEnd(Timer, Receiver, FreeSlotList, SyncManager, ReservedSlot, Sender),
+      loop(ReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer)
   end.
 
 
+% changes FreeSlotList
 reserveSlot(SlotNumber, FreeSlotList) ->
   lists:delete(SlotNumber, FreeSlotList).
 
+% changes FreeSlotList
 reserveRandomSlot(From, FreeSlotList) -> 
   Index = random:uniform(length(FreeSlotList)),
   Slot = lists:nth(Index, FreeSlotList),
@@ -61,7 +56,8 @@ reserveRandomSlot(From, FreeSlotList) ->
   From ! {reserved_slot, Slot},
   NewFreeSlotList.
 
-slotEnd(Timer, Receiver, FreeSlotList, SyncManager) -> 
+% changes FreeSlotList, ReservedSlot
+slotEnd(Timer, Receiver, FreeSlotList, SyncManager, ReservedSlot, Sender) -> 
   Receiver ! {slot_end},
   receive
     {collision} ->
@@ -73,26 +69,46 @@ slotEnd(Timer, Receiver, FreeSlotList, SyncManager) ->
   end,
 
   CurrentTime = currentTime(SyncManager),
-  startSlotTimer(Timer, CurrentTime),
   case currentSlot(CurrentTime) of
-    1 -> handleFrameEnd();
+    1 -> handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList); % todo: use result
     _ -> nothing
   end,
+  startSlotTimer(Timer, CurrentTime),
   NewFreeSlotList.
 
-currentSlot(CurrentTime) ->
-  currentFrameTime(CurrentTime) rem ?SLOT_LENGTH_MS. % todo: slot# base 0 or 1?
 
-currentFrameTime(CurrentTime) ->
-  CurrentTime rem ?FRAME_LENGTH_MS.
+% Changes ReservedSlot, FreeSlotList
+handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList) ->
+  FrameBeforeSync = currentFrame(currentTime(SyncManager)),
+  SyncManager ! {sync},
+  SyncManager ! {reset_deviations},
+  FrameAfterSync = currentFrame(currentTime(SyncManager)),
 
-handleFrameEnd() ->
-  % sync_manager ! {sync},
-  % sync_manager ! {reset_deviations}
+  case FrameBeforeSync > FrameAfterSync of 
+    true -> 
+      NewFreeSlotList = FreeSlotList,
+      NewReservedSlot = ReservedSlot;
+    false -> 
+      CurrentTime = currentTime(SyncManager),
+      TransmissionSlot = transmissionSlot(ReservedSlot, currentSlot(CurrentTime)),
+      Sender ! {new_timer, timeTillTransmission(TransmissionSlot, CurrentTime)},
+      NewFreeSlotList = resetFreeSlotList(),
+      NewReservedSlot = nil
 
-  % transmission_slot setzen
-  % sender ! {new_timer, WaitTimeTillTransmissionSlot}
-  resetFreeSlotList(),
+  end,
+  {NewFreeSlotList, NewReservedSlot}.
+
+transmissionSlot(nil, CurrentSlot) ->
+  % reserve Slot > CurrentSlot
+  CurrentSlot,
+  todo;
+transmissionSlot(ReservedSlot, _CurrentSlot) ->
+  ReservedSlot.
+
+timeTillTransmission(TransmissionSlot, Time) ->
+  TransmissionSlot,
+  Time,
+  % time - transmissionSlotTime
   todo.
 
 resetFreeSlotList() ->
