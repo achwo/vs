@@ -22,7 +22,7 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
   %Sender initialisation...
    DataSource = data_source:start(),
    Sender = sender:start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType),
-   DataSource ! {set_listener, Sender},
+   DataSource ! {setListener, Sender},
    SlotManager ! {set_sender, Sender},
 
   %Receiver initialisation...
