@@ -22,11 +22,10 @@ timeTillNextSlot(CurrentTime) ->
   ?SLOT_LENGTH_MS - (CurrentTime rem ?SLOT_LENGTH_MS).
 
 currentFrame(Time) ->
-  Time,
-  todo.
+  Time / ?FRAME_LENGTH_MS.
 
-timeTillTransmission(TransmissionSlot, Time) ->
-  TransmissionSlot,
-  Time,
-  % time - transmissionSlotTime
-  todo.
+transmissionTime(TransmissionSlot, Frame) ->
+  (?SLOT_LENGTH_MS * TransmissionSlot) + Frame.
+
+timeTillTransmission(TransmissionSlot, CurrentTime) ->
+  transmissionTime(TransmissionSlot, currentFrame(CurrentTime)) - CurrentTime.

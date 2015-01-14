@@ -22,8 +22,8 @@ init(SyncManager, Sender, Receiver) ->
 loop(ReservedSlot, SyncManager, Sender, Receiver, FreeSlotList, Timer) ->
   receive 
     {reserve_slot, SlotNumber} -> 
-      NewFreeSlotList = free_slot_list:reserveSlot(SlotNumber, FreeSlotList),
-      loop(ReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
+      {NewReservedSlot, NewFreeSlotList} = free_slot_list:reserveSlot(SlotNumber, FreeSlotList),
+      loop(NewReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
     {From, reserve_slot} ->
       NewFreeSlotList = reserveRandomSlot(From, FreeSlotList),
       loop(ReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
@@ -83,7 +83,7 @@ handleFrameEnd(SyncManager, ReservedSlot, Sender, FreeSlotList) ->
       CurrentTime = currentTime(SyncManager),
       {TransmissionSlot, _FreeSlotList} = transmissionSlot(ReservedSlot, FreeSlotList), 
       Sender ! {new_timer, timeTillTransmission(TransmissionSlot, CurrentTime)},
-      NewFreeSlotList = free_slot_list:new(?NUMBER_SLOTS)
+      NewFreeSlotList = free_slot_list:new(?NUMBER_SLOTS),
   end,
   {NewFreeSlotList, NewReservedSlot}.
 
