@@ -2,6 +2,7 @@
 -export([start/2]).
 
 start(StationType, TimeOffset) ->  % do we need to know our own station type?
+  StationType,
   spawn(fun() -> loop(TimeOffset, []) end).
 
 loop(TimeOffset, Deviations) ->

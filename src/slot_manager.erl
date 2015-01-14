@@ -6,30 +6,52 @@
 
 -define(NUMBER_SLOTS, 25).
 
-start(SyncManager) -> spawn(fun() -> init(SyncManager, nil, nil) end).
+-record(s, {
+  timer=nil, 
+  sender=nil, 
+  receiver=nil, 
+  sync_manager=nil,
+  reserved_slot=nil,
+  free_slots=nil
+}).
 
-init(SyncManager, Sender, Receiver) when Sender /= nil, Receiver /= nil ->
-  Timer = startSlotTimer(nil, currentTime(SyncManager)),
-  loop(nil, SyncManager, Sender, Receiver, free_slot_list:new(?NUMBER_SLOTS), Timer); % todo: ReservedSlot = nil ok?
-init(SyncManager, Sender, Receiver) ->
+start(SyncManager) -> 
+  State = #s{sync_manager=SyncManager},
+  spawn(fun() -> init(State) end).
+
+init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
+
+  NewState = State#s{
+    timer=startSlotTimer(nil, currentTime(State#s.sync_manager)),
+    free_slots=free_slot_list:new(?NUMBER_SLOTS)
+  },
+  loop(NewState);
+init(State) ->
   receive
     {set_sender, SenderPID} -> 
-      init(SyncManager, SenderPID, Receiver);
+      NewState = State#s{sender=SenderPID},
+      init(NewState);
     {set_receiver, ReceiverPID} ->
-      init(SyncManager, Sender, ReceiverPID)
+      NewState = State#s{receiver=ReceiverPID},
+      init(NewState)
   end. 
 
-loop(ReservedSlot, SyncManager, Sender, Receiver, FreeSlotList, Timer) ->
+loop(State) ->
   receive 
     {reserve_slot, SlotNumber} -> 
-      {NewReservedSlot, NewFreeSlotList} = free_slot_list:reserveSlot(SlotNumber, FreeSlotList),
-      loop(NewReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
+      {NewReservedSlot, NewFreeSlotList} = free_slot_list:reserveSlot(SlotNumber, State#s.free_slots),
+      NewState = State#s{
+        reserved_slot = NewReservedSlot,
+        free_slots = NewFreeSlotList
+      },
+      loop(NewState);
     {From, reserve_slot} ->
-      NewFreeSlotList = reserveRandomSlot(From, FreeSlotList),
-      loop(ReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer);
+      NewState = State#s{free_slots = reserveRandomSlot(From, State#s.free_slots)},
+      loop(NewState);
     {slot_end} ->
-      NewFreeSlotList = slotEnd(Timer, Receiver, FreeSlotList, SyncManager, ReservedSlot, Sender),
-      loop(ReservedSlot, SyncManager, Sender, Receiver, NewFreeSlotList, Timer)
+      NewFreeSlotList = slotEnd(State#s.timer, State#s.receiver, State#s.free_slots, State#s.sync_manager, State#s.reserved_slot, State#s.sender),
+      NewState = State#s{free_slots=NewFreeSlotList},
+      loop(NewState)
   end.
 
 % changes FreeSlotList

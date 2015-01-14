@@ -14,4 +14,3 @@ mkdir -p /tmp/spawner
 # Start sniffing
 ressourcen/sniffer/64bit/STDMAsniffer 224.0.0.8 15001 eth0 -adapt
 killall beam.smp
-
