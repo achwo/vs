@@ -44,7 +44,6 @@ when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
    SlotManager ! {slot_missed}.
   
 
-
 buildPackage(Data, StationType, SyncManager, Slot) ->
   DataForPackage = list_to_binary (Data),
   StationTypeForPackage = list_to_binary (StationType),
@@ -53,7 +52,6 @@ buildPackage(Data, StationType, SyncManager, Slot) ->
     DataForPackage:24/binary,
     Slot:8/integer,
     Timestamp:64/integer-big>>.
-
 
 
 create_timer(WaitTime, Msg) when WaitTime < 0 ->

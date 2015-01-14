@@ -11,33 +11,26 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
   StationType = atom_to_list(StationType),
 
   {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviation)),
-  io:format("~n++--------------------------------------------------~n"),
-  io:format("++ Starte Station mit Parametern:~n++~n", []),
-  io:format("++ Multicast IP    : ~p~n", [MultiIP]),
-  io:format("++ Interface       : ~p~n", [Interface]),
-  io:format("++ Listen Port     : ~p~n", [Port]),
-  io:format("++ Stationsklasse  : ~p~n", [StationType]),
-  io:format("++ Zeitverschiebung: ~p~n", [TimeDeviation]),
-  io:format("++----------------------------------------------------~n"),
+  
+  %Show Info about Station
+   outputScreen(MultiIP, Interface, Port, StationType, TimeDeviation),
 
+  %Manager initialisation...  
+   SyncManager = sync_manager:start(TimeDeviation, StationType),
+   SlotManager = slot_manager:start(SyncManager),
 
-  % todo: our initialization code
-  % SyncManager = sync_manager:start(TimeDeviation, StationType),
-  % SlotManager = slot_manager:start(SyncManager),
+  %Sender initialisation...
+   DataSource = data_source:start(),
+   Sender = sender:start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType),
+   DataSource ! {set_listener, Sender},
+   SlotManager ! {set_sender, Sender},
 
-  % % init the sender
-  % DataSource = data_source:start(),
-  % Sender = sender:start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType),
+  %Receiver initialisation...
+   DataSink = data_sink:start(),
+   Receiver = receiver:start(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port),
 
-  % DataSource ! {set_listener, Sender},
-  % SlotManager ! {set_sender, Sender},
-
-  % % init the receiver
-  % DataSink = data_sink:start(),
-  % Receiver = receiver:start(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port),
-
-  % SlotManager ! {set_receiver, Receiver}.
-  todo.
+   SlotManager ! {set_receiver, Receiver}.
+  
 
 get_ip_by_if_name(InterfaceName) ->
   {ok, Interfaces} = inet:getifaddrs(),
@@ -54,3 +47,14 @@ get_ipv4_address({error, einval}, Addrs) ->
   get_ipv4_address(Addrs);
 get_ipv4_address(Addr, _Addrs) ->
   Addr.
+
+outputScreen(MultiIP, Interface, Port, StationType, TimeDeviation) ->
+  io:format("~n~n"),
+  io:format("====================================================~n"),
+  io:format("Multicast IP  : ~p~n", [MultiIP]),
+  io:format("Interface     : ~p~n", [Interface]),
+  io:format("ListenPort    : ~p~n", [Port]),
+  io:format("StationType   : ~p~n", [StationType]),
+  io:format("Time Deviation: ~p~n", [TimeDeviation]),
+  io:format("====================================================~n~n").
+  
