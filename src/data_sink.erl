@@ -13,7 +13,7 @@ loop(LogFile) ->
   loop(LogFile).
 
 data(Data, LogFile) ->
-  io:fwrite("~p~n", [Data]), % todo: use output file
+  io:fwrite("~p~n", [Data]),
   log(LogFile, Data).
 
  
