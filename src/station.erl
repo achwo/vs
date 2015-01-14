@@ -5,7 +5,7 @@ start([Interface, MulticastIP, Port, StationType]) ->
   start([Interface, MulticastIP, Port, StationType, '0']);
 
 start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
-  Interface = ipByInterfaceName(atom_to_list(Interface)),
+  IP = ipByInterfaceName(atom_to_list(Interface)),
   {ok,MultiIP} = inet_parse:address(atom_to_list(MulticastIP)),
   {Port,_Unused} = string:to_integer(atom_to_list(Port)),
   StationType = atom_to_list(StationType),
@@ -13,7 +13,7 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
   {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviation)),
   
   %Show Info about Station
-   outputScreen(MultiIP, Interface, Port, StationType, TimeDeviation),
+   outputScreen(MulticastIP, IP, Port, StationType, TimeDeviation),
 
   %Manager initialisation...  
    SyncManager = sync_manager:start(TimeDeviation, StationType),
@@ -21,13 +21,13 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
 
   %Sender initialisation...
    DataSource = data_source:start(),
-   Sender = sender:start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType),
+   Sender = sender:start(SyncManager, SlotManager, IP, MulticastIP, Port, StationType),
    DataSource ! {set_listener, Sender},
    SlotManager ! {set_sender, Sender},
 
   %Receiver initialisation...
    DataSink = data_sink:start(),
-   Receiver = receiver:start(DataSink, SlotManager, SyncManager, Interface, MultiIP, Port),
+   Receiver = receiver:start(DataSink, SlotManager, SyncManager, IP, MulticastIP, Port),
 
    SlotManager ! {set_receiver, Receiver}.
   
