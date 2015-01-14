@@ -3,12 +3,12 @@
 -define(DELAY_TOLERANCE_IN_MS, 20).
 
 start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
- spawn(fun() -> loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, data, timer, sendTime) end).
+  spawn(fun() -> loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, data, timer, sendTime) end).
 
 loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime) ->
   receive 
     {data, Data} -> 
-     NewData = data(Data),
+      NewData = data(Data),
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
     
     {new_timer, WaitTime} -> 
@@ -26,7 +26,6 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime)
   end.
 
-
 data(Data) ->
   Data.
 
@@ -34,14 +33,14 @@ requestSlot(SlotManager) ->
   SlotManager ! {reserve_slot}.
 
 
+
 send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager)
 when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
   Socket = werkzeug:openSe(Interface, Port),
   Packet = buildPackage(Data, StationType, SyncManager, Slot, SlotManager),
   ok = gen_udp:send(Socket, MultiIP, Port, Packet);
-  send(_, _, _, _, _, _, _, _, _, SlotManager) ->
-   SlotManager ! {slot_end}.
-  
+send(_, _, _, _, _, _, _, _, _, SlotManager) ->
+  SlotManager ! {slot_end}.
 
 buildPackage(Data,_,_,SlotManager,_) when Data == undefined -> 
   SlotManager ! {slot_end};
