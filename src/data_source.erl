@@ -5,10 +5,11 @@ start() ->
   spawn(fun() -> init() end).
 
 init() ->
-  loop(receiver). %todo use real receiver
-
+  receive
+  	{setListener, Receiver} -> loop(Receiver)
+  end.
 
 loop(Receiver) ->
   Message = io:get_chars("", 24),
-  Receiver ! {msg, Message},
+  Receiver ! {data, Message},
   loop(Receiver).

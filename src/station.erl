@@ -5,7 +5,7 @@ start([Interface, MulticastIP, Port, StationType]) ->
   start([Interface, MulticastIP, Port, StationType, '0']);
 
 start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
-  Interface = get_ip_by_if_name(atom_to_list(Interface)),
+  Interface = ipByInterfaceName(atom_to_list(Interface)),
   {ok,MultiIP} = inet_parse:address(atom_to_list(MulticastIP)),
   {Port,_Unused} = string:to_integer(atom_to_list(Port)),
   StationType = atom_to_list(StationType),
@@ -22,7 +22,7 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
   %Sender initialisation...
    DataSource = data_source:start(),
    Sender = sender:start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType),
-   DataSource ! {set_listener, Sender},
+   DataSource ! {setListener, Sender},
    SlotManager ! {set_sender, Sender},
 
   %Receiver initialisation...
@@ -32,20 +32,20 @@ start([Interface, MulticastIP, Port, StationType, TimeDeviation]) ->
    SlotManager ! {set_receiver, Receiver}.
   
 
-get_ip_by_if_name(InterfaceName) ->
+ipByInterfaceName(InterfaceName) ->
   {ok, Interfaces} = inet:getifaddrs(),
   Data = proplists:get_value(InterfaceName, Interfaces),
   Addrs = proplists:lookup_all(addr, Data),
-  {ok, Addr} = get_ipv4_address(Addrs),
+  {ok, Addr} = getIP(Addrs),
   Addr.
 
-get_ipv4_address([{addr, Addr}|Addrs]) ->
+getIP([{addr, Addr}|Addrs]) ->
   AddrString = inet:ntoa(Addr),
-  get_ipv4_address(inet:parse_ipv4_address(AddrString), Addrs).
+  getIP(inet:parse_ipv4_address(AddrString), Addrs).
 
-get_ipv4_address({error, einval}, Addrs) ->
-  get_ipv4_address(Addrs);
-get_ipv4_address(Addr, _Addrs) ->
+getIP({error, einval}, Addrs) ->
+  getIP(Addrs);
+getIP(Addr, _Addrs) ->
   Addr.
 
 outputScreen(MultiIP, Interface, Port, StationType, TimeDeviation) ->
