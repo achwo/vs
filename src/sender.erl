@@ -42,6 +42,7 @@ send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slo
 when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
   Socket = werkzeug:openSe(Interface, Port),
   Packet = buildPackage(Data, StationType, SyncManager, Slot, SlotManager),
+  io:format("sending packet~n", []),
   ok = gen_udp:send(Socket, MultiIP, Port, Packet);
 send(_, _, _, _, _, _, _, _, _, SlotManager) ->
   SlotManager ! {slot_missed}.
