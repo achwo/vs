@@ -88,16 +88,16 @@ socketInit(Parent, Interface, MultiIP, Port) ->
   socketLoop(Parent, Socket).
 
 socketLoop(Parent, Socket) ->
-io:format("socketLoop~n", []),
   {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),
   <<StationType:1/binary,
     Data:24/binary,
     Slot:8/integer,
-    Timestamp:64/integer-big>> = Packet,
+    SendTime:64/integer-big>> = Packet,
+
   Parent ! {message,
-    binary_to_list (Data),
-    binary_to_list (StationType),
+    binary_to_list(Data),
+    binary_to_list(StationType),
     Slot,
-    Timestamp
+    SendTime
   },
   socketLoop(Parent, Socket).

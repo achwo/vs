@@ -41,13 +41,9 @@ loop(State) ->
       loop(NewState);
     
     {reserved_slot, Slot} ->
-    io:format("~p sender:reserved_slot: ~p~n", [self(), Slot]),
-      CurrentTime = ?U:currentTime(State#s.sync_manager),
-
-      send(CurrentTime, Slot, State),
+      send(?U:currentTime(State#s.sync_manager), Slot, State),
       loop(State);
     {send} ->
-      io:format("sender:send~n", []),
       State#s.slot_manager ! {self(), reserve_slot},
       loop(State)
   end.
@@ -56,7 +52,6 @@ send(CurrentTime, Slot, State)
 when CurrentTime < abs(State#s.send_time) + ?DELAY_TOLERANCE_IN_MS ->
   Socket = werkzeug:openSe(State#s.interface, State#s.port),
   Packet = buildPackage(State, Slot),
-  io:format("sending packet~n", []),
   ok = gen_udp:send(Socket, State#s.multicast_ip, State#s.port, Packet);
 send(_CurrentTime, _Slot, State) ->
   State#s.slot_manager ! {slot_missed}.

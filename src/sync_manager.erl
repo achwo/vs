@@ -1,8 +1,7 @@
 -module(sync_manager).
--export([start/2]).
+-export([start/1]).
 
-start(StationType, TimeOffset) ->  % do we need to know our own station type?
-  StationType,
+start(TimeOffset) -> 
   spawn(fun() -> loop(TimeOffset, []) end).
 
 loop(TimeOffset, Deviations) ->
@@ -20,7 +19,7 @@ loop(TimeOffset, Deviations) ->
       NewTimeOffset = sync(TimeOffset, Deviations),
       loop(NewTimeOffset, Deviations);
     Any ->
-      io:fwrite("Received unknown message type: ~p~n", [Any]),
+      io:format("SyncManager: Received unknown message type: ~p~n", [Any]),
       loop(TimeOffset, Deviations)
   end.
 
@@ -49,4 +48,4 @@ sync(TimeOffset, Deviations) ->
 
 calculateNewOffset(Deviations) ->
   Sum = lists:sum(Deviations),
-  round(Sum / length(Deviations)). %Special case if own station is class A?
+  Sum div length(Deviations). %Special case if own station is class A?
