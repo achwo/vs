@@ -46,11 +46,11 @@ when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
   Packet = buildPackage(Data, StationType, SyncManager, Slot, SlotManager),
   ok = gen_udp:send(Socket, MultiIP, Port, Packet);
 send(_, _, _, _, _, _, _, _, _, SlotManager) ->
-  SlotManager ! {slot_end}.
+  SlotManager ! {slot_missed}.
 
-buildPackage(Data,_,_,SlotManager,_) when Data == undefined -> 
-  SlotManager ! {slot_end};
-buildPackage(Data, StationType, SyncManager, _, Slot) ->
+buildPackage(Data,_,_,SlotManager,_) when Data == data -> 
+  SlotManager ! {slot_missed};
+buildPackage(Data, StationType, SyncManager, Slot, _SlotManager) ->
 
   DataForPackage = list_to_binary(Data),
   StationTypeForPackage = list_to_binary(StationType),
