@@ -18,6 +18,7 @@ loop(MessageCount, ReceivedMessage, Sink, SlotManager, SyncManager, Interface, M
       ReceiveTime = util:currentTime(SyncManager),
       NewReceivedMessage = {message, Data, StationType, Slot, SendTime, ReceiveTime},
       NewMessageCount = MessageCount + 1,
+      io:format("r: MessageCount: ~p~n", [NewMessageCount]),
       loop(NewMessageCount, NewReceivedMessage, Sink, SlotManager, SyncManager, Interface, MultiIP, Port);
     {slot_end} -> 
       io:format("receiver:slot_end~n", []),
