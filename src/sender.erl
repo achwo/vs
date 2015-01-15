@@ -32,7 +32,7 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
 
     MSG -> 
       io:format("sender: unknown message: ~p~n", [MSG]),
-      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime);
+      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime)
   end.
 
 data(Data) ->
