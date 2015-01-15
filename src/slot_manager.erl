@@ -19,7 +19,7 @@ start(SyncManager) ->
 
 init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
   random:seed(now()),
-  io:format("init done~n", []),
+  io:format("~ninit done~n", []),
   loop(resetSlots(startSlotTimer(State, ?U:currentTime(State#s.sync_manager))));
 init(State) ->
   receive
@@ -28,7 +28,7 @@ init(State) ->
   end.
 
 loop(State) ->
-  io:format("loop~n", []),
+  io:format("~nloop~n", []),
   receive 
     {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
     {From, reserve_slot} -> loop(reserveRandomSlot(From, State));
@@ -54,7 +54,7 @@ slotEnd(State) ->
   CurrentTime = ?U:currentTime(State#s.sync_manager),
 
   case ?U:currentSlot(CurrentTime) of
-    1 -> NewNewState = handleFrameEnd(NewState); % todo: 0 or 1? | use result
+    1 -> NewNewState = handleFrameEnd(NewState);
     _ -> NewNewState = NewState
   end,
   startSlotTimer(NewNewState, CurrentTime).
@@ -65,16 +65,20 @@ checkSlotInbox(State) ->
   receive
     {collision} ->
       io:format("collision~n", []),
-      State;  % todo really nothing else? 
+      handleCollision(State);
     {no_message} ->
       io:format("no message~n", []),
-      State;  % todo really nothing else?
+      State;
     {reserve_slot, SlotNumber} ->
       io:format("reserveSlot: ~p~n", [SlotNumber]),
       State#s{
         free_slots=?L:reserveSlot(SlotNumber, State#s.free_slots)
       }
   end.
+
+handleCollision(State) ->
+  todo, % todo might have to do sth here
+  State.
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->

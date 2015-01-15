@@ -13,11 +13,13 @@ init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
 loop(MessageCount, ReceivedMessage, Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
   receive 
     {message, Data, StationType, Slot, SendTime} -> 
+      io:format("receiver:message~n", []),
       ReceiveTime = util:currentTime(SyncManager),
       NewReceivedMessage = {message, Data, StationType, Slot, SendTime, ReceiveTime},
       NewMessageCount = MessageCount + 1,
       loop(NewMessageCount, NewReceivedMessage, Sink, SlotManager, SyncManager, Interface, MultiIP, Port);
     {slot_end} -> 
+      io:format("receiver:slot_end~n", []),
       {NewMessageCount, NewReceivedMessage} = slotEnd(MessageCount, ReceivedMessage, SlotManager, SyncManager, Sink),
       loop(NewMessageCount, NewReceivedMessage, Sink, SlotManager, SyncManager, Interface, MultiIP, Port)
   end.
