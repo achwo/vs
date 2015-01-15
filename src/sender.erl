@@ -34,7 +34,7 @@ data(Data) ->
   Data.
 
 requestSlot(SlotManager) ->
-  SlotManager ! {reserve_slot}.
+  SlotManager ! {self(), reserve_slot}.
 
 
 
