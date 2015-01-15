@@ -42,7 +42,6 @@ requestSlot(SlotManager) ->
 
 send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager)
 when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
-  io:format("sender:send() Data: ~p~n", [Data]),
   Socket = werkzeug:openSe(Interface, Port),
   Packet = buildPackage(Data, StationType, SyncManager, Slot, SlotManager),
   ok = gen_udp:send(Socket, MultiIP, Port, Packet);
@@ -52,9 +51,12 @@ send(_, _, _, _, _, _, _, _, _, SlotManager) ->
 buildPackage(Data,_,_,SlotManager,_) when Data == undefined -> 
   SlotManager ! {slot_end};
 buildPackage(Data, StationType, SyncManager, _, Slot) ->
+
   DataForPackage = list_to_binary(Data),
   StationTypeForPackage = list_to_binary(StationType),
   Timestamp = ?U:currentTime(SyncManager),
+  io:format("sender:buildPackage() StationType: ~p~n", [StationType]),
+  io:format("sender:buildPackage() StationTypeForPackage: ~p~n", [StationTypeForPackage]),
   <<StationTypeForPackage:1/binary,
     DataForPackage:24/binary,
     Slot:8/integer,
