@@ -1,6 +1,5 @@
 -module(util_tests).
 -include_lib("eunit/include/eunit.hrl").
--compile(export_all).
 
 -define(TEST_TIME, 1421323650360).
 -define(TEST_TIME2, 1421323650039).

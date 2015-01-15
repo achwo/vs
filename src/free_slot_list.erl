@@ -1,16 +1,19 @@
 -module(free_slot_list).
 -export([new/1, reserveSlot/2, reserveRandomSlot/1, reserveLastFreeSlot/1]).
 
-new(NumberSlots) -> createFreeSlotList([], 0, NumberSlots).
+new(NumberSlots) -> createFreeSlotList([], 1, NumberSlots).
 
 createFreeSlotList(List, CurrentSlotNumber, TotalNumber) 
-  when CurrentSlotNumber >= TotalNumber ->
+  when CurrentSlotNumber >= TotalNumber + 1 ->
   List;
 createFreeSlotList(List, CurrentSlotNumber, TotalNumber) ->
-  createFreeSlotList([CurrentSlotNumber | List], CurrentSlotNumber + 1, TotalNumber).
+  createFreeSlotList(
+    [CurrentSlotNumber | List], 
+    CurrentSlotNumber + 1, 
+    TotalNumber).
 
-reserveSlot(SlotNumber, FreeSlotList) ->
-  lists:delete(SlotNumber, FreeSlotList).
+reserveSlot(Slot, FreeSlotList) ->
+  lists:delete(Slot, FreeSlotList).
 
 reserveRandomSlot(FreeSlotList) -> 
   Index = random:uniform(length(FreeSlotList)),
