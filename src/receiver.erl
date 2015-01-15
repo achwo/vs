@@ -1,44 +1,86 @@
 -module(receiver).
 -export([start/6]).
 
+-record(m, {
+  data,
+  station_type,
+  slot,
+  send_time,
+  receive_time
+}).
+
+-record(s, {
+  sink,
+  slot_manager,
+  sync_manager,
+  interface,
+  multicast_ip,
+  port,
+  msg=nil,
+  msg_count=0
+}).
 
 start(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
-  spawn(fun() -> init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) end).
+  State = #s{
+    sink=Sink,
+    slot_manager=SlotManager,
+    sync_manager=SyncManager,
+    interface=Interface,
+    multicast_ip=MultiIP,
+    port=Port
+  },
+  spawn(fun() -> init(State) end).
 
-init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
+init(State) ->
   Receiver = self(),
-  spawn(fun() -> socketInit(Receiver, Interface, MultiIP, Port) end),
-  loop(0, nil, Sink, SlotManager, SyncManager, Interface, MultiIP, Port).
+  spawn(fun() -> 
+    socketInit(Receiver, State#s.interface, State#s.multicast_ip, State#s.port) 
+  end),
+  loop(State).
 
-
-loop(MessageCount, ReceivedMessage, Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
+loop(State) ->
   receive 
     {message, Data, StationType, Slot, SendTime} -> 
       io:format("receiver:message~n", []),
-      ReceiveTime = util:currentTime(SyncManager),
-      NewReceivedMessage = {message, Data, StationType, Slot, SendTime, ReceiveTime},
-      NewMessageCount = MessageCount + 1,
-      io:format("r: MessageCount: ~p~n", [NewMessageCount]),
-      loop(NewMessageCount, NewReceivedMessage, Sink, SlotManager, SyncManager, Interface, MultiIP, Port);
+      NewState = State#s{
+        msg = #m{
+          data = Data,
+          station_type = StationType,
+          slot = Slot,
+          send_time = SendTime,
+          receive_time = util:currentTime(State#s.sync_manager)
+        },
+        msg_count = State#s.msg_count + 1
+      },
+      loop(NewState);
     {slot_end} -> 
       io:format("receiver:slot_end~n", []),
-      {NewMessageCount, NewReceivedMessage} = slotEnd(MessageCount, ReceivedMessage, SlotManager, SyncManager, Sink),
-      loop(NewMessageCount, NewReceivedMessage, Sink, SlotManager, SyncManager, Interface, MultiIP, Port)
+      loop(slotEnd(State))
   end.
 
-slotEnd(MessageCount, ReceivedMessage, SlotManager, SyncManager, Sink) ->
-  case MessageCount of
+slotEnd(State) ->
+  case State#s.msg_count of
     0 -> 
-      SlotManager ! {no_message};
+      State#s.slot_manager ! {no_message};
     1 ->
-      {Data, StationType, Slot, SendTime, ReceiveTime} = ReceivedMessage,
-      SlotManager ! {reserve_slot, Slot},
-      SyncManager ! {add_deviation, StationType, SendTime, ReceiveTime},
-      Sink ! {data, Data};
+      State#s.slot_manager ! {reserve_slot, State#s.msg#m.slot},
+      State#s.sync_manager ! 
+        {add_deviation, 
+          State#s.msg#m.station_type, 
+          State#s.msg#m.send_time, 
+          State#s.msg#m.receive_time
+        },
+      State#s.sink ! {data, State#s.msg#m.data};
     _ -> 
-      SlotManager ! {collision}
+      State#s.slot_manager ! {collision}
   end,
-  {0, nil}.
+  reset(State).
+
+reset(State) ->
+  State#s{
+    msg = nil,
+    msg_count = 0
+  }.
 
 socketInit(Parent, Interface, MultiIP, Port) ->
   Socket = werkzeug:openRec(MultiIP, Interface, Port),
