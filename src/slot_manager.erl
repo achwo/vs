@@ -28,7 +28,6 @@ init(State) ->
   end.
 
 loop(State) ->
-  io:format("~nloop~n", []),
   receive 
     {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
     {From, reserve_slot} -> loop(reserveRandomSlot(From, State));
@@ -36,20 +35,20 @@ loop(State) ->
   end.
 
 reserveSlot(Slot, State) ->
-  io:format("reserveSlot~n", []),
+  io:format("reserveSlot: ~p~n", [Slot]),
   State#s{
     reserved_slot = Slot,
     free_slots = ?L:reserveSlot(Slot, State#s.free_slots)
   }.
 
 reserveRandomSlot(From, State) -> 
-  io:format("reserveRandomSlot~n", []),
+  io:format("~p: reserveRandomSlot~n", [From]),
   {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
   From ! {reserved_slot, Slot},
   State#s{free_slots=List}.
 
 slotEnd(State) -> 
-  io:format("slotEnd: ~p~n", [?U:currentSlot(?U:currentTime(State#s.sync_manager))]),
+  io:format("~nslotEnd: ~p~n", [?U:currentSlot(?U:currentTime(State#s.sync_manager))]),
   NewState = checkSlotInbox(State),
   CurrentTime = ?U:currentTime(State#s.sync_manager),
 
