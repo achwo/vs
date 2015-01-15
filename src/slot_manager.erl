@@ -49,7 +49,7 @@ reserveRandomSlot(From, State) ->
   State#s{free_slots=List}.
 
 slotEnd(State) -> 
-  io:format("slotEnd~n", []),
+  io:format("slotEnd: ~p~n", [?U:currentSlot(?U:currentTime(State#s.sync_manager))]),
   NewState = checkSlotInbox(State),
   CurrentTime = ?U:currentTime(State#s.sync_manager),
 

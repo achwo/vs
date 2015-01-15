@@ -10,7 +10,6 @@ start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
 loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime) ->
   receive 
     {data, IncomingData} -> 
-    io:format("sender:data~n", []),
       NewData = data(IncomingData),
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
     
@@ -51,12 +50,10 @@ send(_, _, _, _, _, _, _, _, _, SlotManager) ->
 buildPackage(Data,_,_,SlotManager,_) when Data == data -> 
   SlotManager ! {slot_missed};
 buildPackage(Data, StationType, SyncManager, Slot, _SlotManager) ->
-
   DataForPackage = list_to_binary(Data),
   StationTypeForPackage = list_to_binary(StationType),
   Timestamp = ?U:currentTime(SyncManager),
-  io:format("sender:buildPackage() StationType: ~p~n", [StationType]),
-  io:format("sender:buildPackage() StationTypeForPackage: ~p~n", [StationTypeForPackage]),
+
   <<StationTypeForPackage:1/binary,
     DataForPackage:24/binary,
     Slot:8/integer,
