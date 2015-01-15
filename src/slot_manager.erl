@@ -123,13 +123,14 @@ handleFrameEnd(State) ->
       State;
     false -> 
     io:format("sync time: ok~n", []),
-      NewState = transmissionSlot(State), 
+      TransmissionSlot = transmissionSlot(State), 
       TransmissionTimeOffset = 10,
       TimeTillTransmission = TransmissionTimeOffset 
-        + ?U:timeTillTransmission(State#s.transmission_slot, ?U:currentTime(SyncManager)),
+        + ?U:timeTillTransmission(TransmissionSlot, ?U:currentTime(SyncManager)),
       io:format("TimeTillTransmission: ~p~n", [TimeTillTransmission]),
-      NewState#s.sender ! {new_timer, TimeTillTransmission},
-      resetSlots(NewState)
+      State#s.sender ! {new_timer, TimeTillTransmission},
+      NewState = resetSlots(State),
+      NewState#s {transmission_slot = TransmissionSlot}
   end.
 
 resetSlots(State) ->
@@ -141,12 +142,11 @@ resetSlots(State) ->
 
 transmissionSlot(State) when State#s.reserved_slot == nil ->
   % {Slot, List} = ?L:reserveLastFreeSlot(State#s.free_slots),
-  {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
+  CurrentSlot = ?U:currentSlot(?U:currentTime(State#s.sync_manager)),
+  FutureSlots = ?L:slotsAfter(CurrentSlot, State#s.free_slots),
+  {Slot, _List} = ?L:reserveRandomSlot(FutureSlots),
   io:format("transmissionSlot1: ~p~n", [Slot]),
-  State#s {
-    free_slots = List,
-    transmission_slot = Slot
-  };
+  Slot;
 transmissionSlot(State) ->
   io:format("transmissionSlot2 ~n", []),
-  State.
+  State#s.reserved_slot.

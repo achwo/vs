@@ -1,7 +1,11 @@
 -module(free_slot_list).
--export([new/1, reserveSlot/2, reserveRandomSlot/1, readdReservedSlot/2]).
+-export([new/1, reserveSlot/2, reserveRandomSlot/1, readdReservedSlot/2,
+  slotsAfter/2]).
 
 new(NumberSlots) -> createFreeSlotList([], 1, NumberSlots).
+
+slotsAfter(Slot, FreeSlotList) ->
+  [S || S <- FreeSlotList, S >= Slot].
 
 createFreeSlotList(List, CurrentSlotNumber, TotalNumber) 
   when CurrentSlotNumber >= TotalNumber + 1 ->
