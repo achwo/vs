@@ -88,7 +88,8 @@ startSlotTimer(State, CurrentTime) ->
     _ -> erlang:cancel_timer(State#s.timer)
   end,
   WaitTime = ?U:timeTillNextSlot(CurrentTime),
-  io:format("currentTime: ~p, WaitTime: ~p~n", [CurrentTime, WaitTime]),
+  io:format("currentTime: ~p~n", [CurrentTime]),
+  io:format("realCurrentTime: ~p~n", [?U:currentTime(State#s.sync_manager)]),
   State#s{timer=erlang:send_after(WaitTime, self(), {slot_end})}.
 
 % Changes ReservedSlot, FreeSlotList
