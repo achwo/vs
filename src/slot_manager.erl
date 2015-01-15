@@ -48,7 +48,7 @@ reserveRandomSlot(From, State) ->
   State#s{free_slots=List}.
 
 slotEnd(State) -> 
-  io:format("~nslotEnd: ~p~n", [?U:currentSlot(?U:currentTime(State#s.sync_manager))]),
+  io:format("~nslotEnd: ~p~n", [?U:currentSlot(?U:currentTime(State#s.sync_manager)) - 1]),
   io:format("time: ~p~n", [?U:currentTime(State#s.sync_manager)]),
   NewState = checkSlotInbox(State),
   CurrentTime = ?U:currentTime(State#s.sync_manager),
@@ -89,7 +89,6 @@ startSlotTimer(State, CurrentTime) ->
   end,
   WaitTime = ?U:timeTillNextSlot(CurrentTime),
   io:format("currentTime: ~p~n", [CurrentTime]),
-  io:format("realCurrentTime: ~p~n", [?U:currentTime(State#s.sync_manager)]),
   State#s{timer=erlang:send_after(WaitTime, self(), {slot_end})}.
 
 % Changes ReservedSlot, FreeSlotList
@@ -101,6 +100,8 @@ handleFrameEnd(State) ->
   SyncManager ! {sync},
   SyncManager ! {reset_deviations},
   FrameAfterSync = ?U:currentFrame(?U:currentTime(SyncManager)),
+
+  io:format("FrameSyncDiff: ~p~n", [FrameAfterSync - FrameBeforeSync]),
 
   % todo: maybe this block is fucked, because my brain is right now:
   case FrameBeforeSync > FrameAfterSync of 
