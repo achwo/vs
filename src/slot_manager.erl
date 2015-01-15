@@ -11,7 +11,8 @@
   receiver=nil, 
   sync_manager=nil,
   reserved_slot=nil,
-  free_slots=nil
+  free_slots=nil,
+  transmission_slot=nil
 }).
 
 start(SyncManager) -> 
@@ -77,8 +78,19 @@ checkSlotInbox(State) ->
   end.
 
 handleCollision(State) ->
-  todo, % todo might have to do sth here
-  State.
+  CurrentTime = sync_util:current_time(State#s.sync_manager),
+  PreviousSlot = sync_util:current_slot(CurrentTime) - 1,
+  collisionWithOwnMessage(State, State#s.transmission_slot, PreviousSlot).
+
+collisionWithOwnMessage(State, Slot, 0) ->
+  collisionWithOwnMessage(State, Slot, 25);
+collisionWithOwnMessage(State, Slot, Slot) 
+  when State#s.reserved_slot /= nil ->
+  State#s{
+    free_slots = ?L:readdReservedSlot(State#s.reserved_slot, State#s.free_slots),
+    reserved_slot = nil
+  };
+collisionWithOwnMessage(Context, _, _) -> Context.
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
@@ -111,10 +123,10 @@ handleFrameEnd(State) ->
       State;
     false -> 
     io:format("sync time: ok~n", []),
-      {TransmissionSlot, NewState} = transmissionSlot(State), 
+      NewState = transmissionSlot(State), 
       TransmissionTimeOffset = 10,
       TimeTillTransmission = TransmissionTimeOffset 
-        + ?U:timeTillTransmission(TransmissionSlot, ?U:currentTime(SyncManager)),
+        + ?U:timeTillTransmission(State#s.transmission_slot, ?U:currentTime(SyncManager)),
       io:format("TimeTillTransmission: ~p~n", [TimeTillTransmission]),
       NewState#s.sender ! {new_timer, TimeTillTransmission},
       resetSlots(NewState)
@@ -131,7 +143,10 @@ transmissionSlot(State) when State#s.reserved_slot == nil ->
   % {Slot, List} = ?L:reserveLastFreeSlot(State#s.free_slots),
   {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
   io:format("transmissionSlot1: ~p~n", [Slot]),
-  {Slot, State#s{free_slots=List}};
+  State#s {
+    free_slots = List,
+    transmission_slot = Slot
+  };
 transmissionSlot(State) ->
   io:format("transmissionSlot2 ~n", []),
-  {nil, State}.
+  State.
