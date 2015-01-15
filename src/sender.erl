@@ -8,20 +8,24 @@ start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
 loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime) ->
   receive 
     {data, Data} -> 
+    io:format("sender:data~n", []),
       NewData = data(Data),
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
     
     {new_timer, WaitTime} -> 
+    io:format("sender:new_timer~n", []),
       cancelTimer(Timer),
       NewTimer = createTimer(WaitTime, {send}),
       NewSendTime = util:currentTime(SyncManager) + WaitTime,
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
     
     {reserved_slot, Slot} ->
+    io:format("sender:reserved_slot:~p~n", [Slot]),
       CurrentTime = util:currentTime(SyncManager),
       send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager);
       
     {send} ->
+      io:format("sender:send~n", []),
       requestSlot(SlotManager),
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime)
   end.
