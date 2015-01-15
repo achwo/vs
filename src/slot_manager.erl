@@ -128,7 +128,8 @@ resetSlots(State) ->
   }.
 
 transmissionSlot(State) when State#s.reserved_slot == nil ->
-  {Slot, List} = ?L:reserveLastFreeSlot(State#s.free_slots),
+  % {Slot, List} = ?L:reserveLastFreeSlot(State#s.free_slots),
+  {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
   io:format("transmissionSlot1: ~p~n", [Slot]),
   {Slot, State#s{free_slots=List}};
 transmissionSlot(State) ->
