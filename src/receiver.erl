@@ -44,6 +44,7 @@ socketInit(Parent, Interface, MultiIP, Port) ->
   socketLoop(Parent, Socket).
 
 socketLoop(Parent, Socket) ->
+io:format("socketLoop~n", []),
   {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),
   <<StationType:1/binary,
     Data:24/binary,
