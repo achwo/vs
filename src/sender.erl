@@ -8,9 +8,9 @@ start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
 loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime) ->
   io:format("Sender: PID: ~p~n", [self()]),
   receive 
-    {data, Data} -> 
+    {data, IncomingData} -> 
     io:format("sender:data~n", []),
-      NewData = data(Data),
+      NewData = data(IncomingData),
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
     
     {new_timer, WaitTime} -> 
@@ -29,10 +29,6 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
       io:format("sender:send~n", []),
       requestSlot(SlotManager),
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime);
-
-    MSG -> 
-      io:format("sender: unknown message: ~p~n", [MSG]),
-      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime)
   end.
 
 data(Data) ->
