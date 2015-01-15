@@ -108,7 +108,8 @@ handleFrameEnd(State) ->
       State;
     false -> 
       {TransmissionSlot, NewState} = transmissionSlot(State), 
-      TimeTillTransmission = timeTillTransmission(TransmissionSlot, currentTime(SyncManager)),
+      TransmissionTimeOffset = 10,
+      TimeTillTransmission = TransmissionTimeOffset + timeTillTransmission(TransmissionSlot, currentTime(SyncManager)),
       io:format("TimeTillTransmission: ~p~n", [TimeTillTransmission]),
       NewState#s.sender ! {new_timer, TimeTillTransmission},
       resetSlots(NewState)
