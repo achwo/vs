@@ -4,55 +4,69 @@
 -define(U, util).
 -define(DELAY_TOLERANCE_IN_MS, 20).
 
-start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
-  spawn(fun() -> loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, data, timer, sendTime) end).
+-record(s, {
+  sync_manager=nil,
+  slot_manager=nil,
+  interface=nil,
+  multicast_ip=nil,
+  port=nil,
+  station_type=nil,
+  data=nil,
+  timer=nil,
+  send_time=nil
+}).
 
-loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime) ->
+
+start(SyncManager, SlotManager, Interface, MulticastIP, Port, StationType) ->
+  State = #s{
+    sync_manager=SyncManager, 
+    slot_manager=SlotManager,
+    interface=Interface,
+    multicast_ip=MulticastIP,
+    port=Port,
+    station_type=StationType
+  },
+  spawn(fun() -> loop(State) end).
+
+loop(State) ->
   receive 
     {data, IncomingData} -> 
-      NewData = data(IncomingData),
-      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
-    
+      loop(State#s{data=IncomingData});
     {new_timer, WaitTime} -> 
-      cancelTimer(Timer),
-      NewTimer = createTimer(WaitTime, {send}),
-      NewSendTime = ?U:currentTime(SyncManager) + WaitTime,
-      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
+      cancelTimer(State#s.timer),
+      NewState = State#s{
+        timer=createTimer(WaitTime, {send}),
+        send_time=?U:currentTime(State#s.sync_manager) + WaitTime
+      },
+      loop(NewState);
     
     {reserved_slot, Slot} ->
     io:format("~p sender:reserved_slot: ~p~n", [self(), Slot]),
-      CurrentTime = ?U:currentTime(SyncManager),
-      send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager);
-      
+      CurrentTime = ?U:currentTime(State#s.sync_manager),
+
+      send(CurrentTime, Slot, State),
+      loop(State);
     {send} ->
       io:format("sender:send~n", []),
-      requestSlot(SlotManager),
-      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime)
+      State#s.slot_manager ! {self(), reserve_slot},
+      loop(State)
   end.
 
-data(Data) ->
-  Data.
-
-requestSlot(SlotManager) ->
-  SlotManager ! {self(), reserve_slot}.
-
-
-
-send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager)
-when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_IN_MS ->
-  Socket = werkzeug:openSe(Interface, Port),
-  Packet = buildPackage(Data, StationType, SyncManager, Slot, SlotManager),
+send(CurrentTime, Slot, State)
+when CurrentTime < abs(State#s.send_time) + ?DELAY_TOLERANCE_IN_MS ->
+  Socket = werkzeug:openSe(State#s.interface, State#s.port),
+  Packet = buildPackage(State, Slot),
   io:format("sending packet~n", []),
-  ok = gen_udp:send(Socket, MultiIP, Port, Packet);
-send(_, _, _, _, _, _, _, _, _, SlotManager) ->
-  SlotManager ! {slot_missed}.
+  ok = gen_udp:send(Socket, State#s.multicast_ip, State#s.port, Packet);
+send(_CurrentTime, _Slot, State) ->
+  State#s.slot_manager ! {slot_missed}.
 
-buildPackage(Data,_,_,SlotManager,_) when Data == data -> 
-  SlotManager ! {slot_missed};
-buildPackage(Data, StationType, SyncManager, Slot, _SlotManager) ->
-  DataForPackage = list_to_binary(Data),
-  StationTypeForPackage = list_to_binary(StationType),
-  Timestamp = ?U:currentTime(SyncManager),
+buildPackage(State, _Slot) when State#s.data == nil -> 
+  State#s.slot_manager ! {slot_missed};
+buildPackage(State, Slot) ->
+  DataForPackage = list_to_binary(State#s.data),
+  StationTypeForPackage = list_to_binary(State#s.station_type),
+  Timestamp = ?U:currentTime(State#s.sync_manager),
 
   <<StationTypeForPackage:1/binary,
     DataForPackage:24/binary,
