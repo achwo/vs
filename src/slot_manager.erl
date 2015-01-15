@@ -78,8 +78,8 @@ checkSlotInbox(State) ->
   end.
 
 handleCollision(State) ->
-  CurrentTime = sync_util:current_time(State#s.sync_manager),
-  PreviousSlot = sync_util:current_slot(CurrentTime) - 1,
+  CurrentTime = ?U:currentTime(State#s.sync_manager),
+  PreviousSlot = ?U:currentSlot(CurrentTime) - 1,
   collisionWithOwnMessage(State, State#s.transmission_slot, PreviousSlot).
 
 collisionWithOwnMessage(State, Slot, 0) ->
