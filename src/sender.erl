@@ -1,12 +1,13 @@
 -module(sender).
 -export([start/6]).
+
+-define(U, util).
 -define(DELAY_TOLERANCE_IN_MS, 20).
 
 start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
   spawn(fun() -> loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, data, timer, sendTime) end).
 
 loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime) ->
-  io:format("Sender: PID: ~p~n", [self()]),
   receive 
     {data, IncomingData} -> 
     io:format("sender:data~n", []),
@@ -17,12 +18,12 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
     io:format("sender:new_timer~n", []),
       cancelTimer(Timer),
       NewTimer = createTimer(WaitTime, {send}),
-      NewSendTime = util:currentTime(SyncManager) + WaitTime,
+      NewSendTime = ?U:currentTime(SyncManager) + WaitTime,
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
     
     {reserved_slot, Slot} ->
     io:format("sender:reserved_slot:~p~n", [Slot]),
-      CurrentTime = util:currentTime(SyncManager),
+      CurrentTime = ?U:currentTime(SyncManager),
       send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager);
       
     {send} ->
@@ -53,7 +54,7 @@ buildPackage(Data,_,_,SlotManager,_) when Data == undefined ->
 buildPackage(Data, StationType, SyncManager, _, Slot) ->
   DataForPackage = list_to_binary(Data),
   StationTypeForPackage = list_to_binary(StationType),
-  Timestamp = sync_util:current_time(SyncManager),
+  Timestamp = ?U:currentTime(SyncManager),
   <<StationTypeForPackage:1/binary,
     DataForPackage:24/binary,
     Slot:8/integer,

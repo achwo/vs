@@ -29,15 +29,7 @@ start([Interface, MulticastIP, PortInput, StationTypeInput, TimeDeviationInput])
    DataSink = data_sink:start(),
    Receiver = receiver:start(DataSink, SlotManager, SyncManager, IP, MultiIP, Port),
 
-   SlotManager ! {set_receiver, Receiver},
-   io:format("SenderPID: ~p~n", [Sender]),
-   io:format("ReceiverPID: ~p~n", [Receiver]),
-   io:format("SlotManagerPID: ~p~n", [SlotManager]),
-   io:format("SyncManagerPID: ~p~n", [SyncManager]),
-   io:format("DataSourcePID: ~p~n", [DataSource]),
-   io:format("DataSinkPID: ~p~n", [DataSink]).
-
-  
+   SlotManager ! {set_receiver, Receiver}.
 
 ipByInterfaceName(InterfaceName) ->
   {ok, Interfaces} = inet:getifaddrs(),
