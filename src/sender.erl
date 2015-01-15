@@ -14,14 +14,13 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, NewData, Timer, SendTime);
     
     {new_timer, WaitTime} -> 
-    io:format("sender:new_timer~n", []),
       cancelTimer(Timer),
       NewTimer = createTimer(WaitTime, {send}),
       NewSendTime = ?U:currentTime(SyncManager) + WaitTime,
       loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, NewTimer, NewSendTime);
     
     {reserved_slot, Slot} ->
-    io:format("sender:reserved_slot:~p~n", [Slot]),
+    io:format("~p sender:reserved_slot: ~p~n", [self(), Slot]),
       CurrentTime = ?U:currentTime(SyncManager),
       send(CurrentTime, SendTime, Interface, Port, Data, StationType, SyncManager, Slot, MultiIP, SlotManager);
       

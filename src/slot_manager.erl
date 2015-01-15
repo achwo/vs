@@ -125,10 +125,7 @@ resetSlots(State) ->
 
 transmissionSlot(State) when State#s.reserved_slot == nil ->
   {Slot, List} = ?L:reserveLastFreeSlot(State#s.free_slots),
-  io:format("transmissionSlot1: currentSlot: ~p~n", 
-    [?U:currentSlot(?U:currentTime(State#s.sync_manager))]),
   io:format("transmissionSlot1: ~p~n", [Slot]),
-  io:format("transmissionSlot1: ~p~n", [List]),
   {Slot, State#s{free_slots=List}};
 transmissionSlot(State) ->
   io:format("transmissionSlot2 ~n", []),
