@@ -6,10 +6,13 @@ start() ->
 
 init() ->
   receive
-  	{set_listener, Receiver} -> loop(Receiver)
+  	{set_listener, Receiver} -> 
+      io:format("ds: set_listener~n", []),
+      loop(Receiver)
   end.
 
 loop(Receiver) ->
-  Message = io:get_chars("", 24),
-  Receiver ! {data, Message},
+  Data = io:get_chars("", 24),
+  io:format("ds: sendData~n", []),
+  Receiver ! {data, Data},
   loop(Receiver).
