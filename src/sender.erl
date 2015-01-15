@@ -79,7 +79,7 @@ createTimer(WaitTime, Msg) when WaitTime < 0 ->
 createTimer(WaitTime, Msg) ->
   erlang:send_after(WaitTime, self(), Msg).
 
-cancelTimer(timer) ->
+cancelTimer(nil) ->
   ok;
 cancelTimer(Timer) ->
   erlang:cancel_timer(Timer).
