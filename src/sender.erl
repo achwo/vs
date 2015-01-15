@@ -28,7 +28,7 @@ loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Time
     {send} ->
       io:format("sender:send~n", []),
       requestSlot(SlotManager),
-      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime);
+      loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime)
   end.
 
 data(Data) ->
