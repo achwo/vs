@@ -30,6 +30,7 @@ all_test_() -> [
 test_currentFrame() -> [
     ?_assertEqual(1421323650, util:currentFrame(?TEST_TIME))
   , ?_assertEqual(1421323650, util:currentFrame(?TEST_TIME2))
+  , ?_assertEqual(1421331978, util:currentFrame(1421331978962))
 ].
 
 test_currentFrameTime() -> [
@@ -43,6 +44,7 @@ test_currentSlot() -> [
   , ?_assertEqual(10, util:currentSlot(?TEST_TIME))
   , ?_assertEqual(1, util:currentSlot(?TEST_TIME2))
   , ?_assertEqual(25, util:currentSlot(999))
+  , ?_assertEqual(25, util:currentSlot(1421331978962))
 ].
 
 test_timeTillNextSlot() -> [
@@ -50,6 +52,7 @@ test_timeTillNextSlot() -> [
   , ?_assertEqual(40, util:timeTillNextSlot(0))
   , ?_assertEqual(40, util:timeTillNextSlot(?TEST_TIME))
   , ?_assertEqual(1, util:timeTillNextSlot(?TEST_TIME2))
+  , ?_assertEqual(38, util:timeTillNextSlot(1421331978962))
 ].
 
 % test_timeTillNextFrame() -> [
