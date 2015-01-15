@@ -6,7 +6,8 @@ start(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
   spawn(fun() -> init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) end).
 
 init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
-  spawn(fun() -> socketInit(self(), Interface, MultiIP, Port) end),
+  Receiver = self(),
+  spawn(fun() -> socketInit(Receiver, Interface, MultiIP, Port) end),
   loop(0, nil, Sink, SlotManager, SyncManager, Interface, MultiIP, Port).
 
 
