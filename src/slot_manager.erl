@@ -103,9 +103,11 @@ handleFrameEnd(State) ->
   % todo: maybe this block is fucked, because my brain is right now:
   case FrameBeforeSync > FrameAfterSync of 
     true -> 
+    io:format("sync time: old frame~n", []),
       % because of sync we are still in the old frame
       State;
     false -> 
+    io:format("sync time: ok~n", []),
       {TransmissionSlot, NewState} = transmissionSlot(State), 
       TransmissionTimeOffset = 10,
       TimeTillTransmission = TransmissionTimeOffset 

@@ -11,12 +11,14 @@ loop(TimeOffset, Deviations) ->
       NewDeviations = addDeviation(StationType, SendTime, ReceiveTime, Deviations),
       loop(TimeOffset, NewDeviations);
     {reset_deviations} ->
+    io:format("sync_manager: reset_deviations~n", []),
       NewDeviations = resetDeviations(),
       loop(TimeOffset, NewDeviations);
     {From, get_current_time} ->
       getCurrentTime(From, TimeOffset),
       loop(TimeOffset, Deviations);
     {sync} ->
+    io:format("sync_manager: sync~n", []),
       NewTimeOffset = sync(TimeOffset, Deviations),
       loop(NewTimeOffset, Deviations);
     Any ->
