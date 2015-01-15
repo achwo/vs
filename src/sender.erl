@@ -6,6 +6,7 @@ start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
   spawn(fun() -> loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, data, timer, sendTime) end).
 
 loop(SyncManager, SlotManager, Interface, MultiIP, Port, StationType, Data, Timer, SendTime) ->
+  io:format("Sender: PID: ~p~n", [self()]),
   receive 
     {data, Data} -> 
     io:format("sender:data~n", []),
