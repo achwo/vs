@@ -71,7 +71,8 @@ slotEnd(State) ->
   startSlotTimer(NewNewState, CurrentTime).
 
 slotMissed(State) ->
-
+  todo,
+  State.
 
 checkSlotInbox(State) ->
   debug(State#s.log, "checkSlotInbox", []),
