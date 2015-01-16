@@ -61,8 +61,10 @@ send(State) ->
 
 doSend(State, CurrentTime, Slot)
 when CurrentTime < abs(State#s.send_time) + ?DELAY_TOLERANCE_IN_MS ->
+  Socket = werkzeug:openSe(State#s.interface, State#s.port),
   Packet = buildPackage(State, Slot),
-  ok = gen_udp:send(State#s.socket, State#s.multicast_ip, State#s.port, Packet);
+  ok = gen_udp:send(Socket, State#s.multicast_ip, State#s.port, Packet);
+  % ok = gen_udp:send(State#s.socket, State#s.multicast_ip, State#s.port, Packet);
 doSend(State, _CurrentTime, _Slot) ->
   State#s.slot_manager ! {slot_missed}.
 
