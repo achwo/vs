@@ -64,6 +64,7 @@ slotEnd(State) ->
   startSlotTimer(NewNewState, CurrentTime).
 
 slotMissed(State) ->
+  debug(State#s.log, "slotMissed", []),
   unsetReservation(State).
 
 checkSlotInbox(State) ->
@@ -113,6 +114,7 @@ collisionWithOwnMessage(State, Slot, Slot)
 collisionWithOwnMessage(Context, _, _) -> Context.
 
 unsetReservation(State) when State#s.reserved_slot /= nil ->
+  debug(State#s.log, "unsetReservation", []),
   State#s{
     free_slots = ?L:readdReservedSlot(State#s.reserved_slot, State#s.free_slots),
     reserved_slot = nil
