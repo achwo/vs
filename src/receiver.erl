@@ -1,6 +1,6 @@
 -module(receiver).
 -export([start/7]).
--import(log, [log/3, debug/3]).
+-import(log, [log/4, debug/4]).
 
 -record(m, {
   data,
@@ -35,6 +35,7 @@ start(Sink, SlotManager, SyncManager, Interface, MultiIP, Port, Log) ->
   spawn(fun() -> init(State) end).
 
 init(State) ->
+  log(State#s.log, "Initializing...", []),
   Receiver = self(),
   spawn(fun() -> 
     socketInit(Receiver, State#s.interface, State#s.multicast_ip, State#s.port) 
@@ -44,7 +45,7 @@ init(State) ->
 loop(State) ->
   receive 
     {message, Data, StationType, Slot, SendTime} -> 
-      log(State#s.log, "receiver:message", []),
+      debug(State#s.log, "receiver:message", []),
       NewState = State#s{
         msg = #m{
           data = Data,
@@ -57,7 +58,7 @@ loop(State) ->
       },
       loop(NewState);
     {slot_end} -> 
-      log(State#s.log, "receiver:slot_end", []),
+      debug(State#s.log, "receiver:slot_end", []),
       loop(slotEnd(State))
   end.
 
@@ -104,3 +105,11 @@ socketLoop(Parent, Socket) ->
     SendTime
   },
   socketLoop(Parent, Socket).
+
+log(Log, Msg, Args) ->
+  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+  log(Log, Module, Msg, Args).
+
+debug(Log, Msg, Args) ->
+  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+  debug(Log, Module, Msg, Args).

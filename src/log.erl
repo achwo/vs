@@ -1,12 +1,12 @@
 -module(log).
--export([start/1, log/3, debug/3]).
+-export([start/1, log/4, debug/4]).
 
 
-log(Logger, Msg, Args) ->
-  Logger ! {log, Msg, Args}.
+log(Logger, Module, Msg, Args) ->
+  Logger ! {log, Module, Msg, Args}.
 
-debug(Logger, Msg, Args) ->
-  Logger ! {debug, Msg, Args}.
+debug(Logger, Module, Msg, Args) ->
+  Logger ! {debug, Module, Msg, Args}.
 
 
 start(Debug) ->
@@ -14,21 +14,21 @@ start(Debug) ->
 
 loop(Debug) ->
   receive
-    {log, Msg, Args} ->
-      processLog(Msg, Args);
-    {debug, Msg, Args} ->
-      processDebug(Msg, Args, Debug)
+    {log, Module, Msg, Args} ->
+      processLog(Module, Msg, Args);
+    {debug, Module, Msg, Args} ->
+      processDebug(Module, Msg, Args, Debug)
   end,
   loop(Debug).
 
-processLog(Msg, Args) ->
-  NewMsg = "[LOG] " ++ Msg,
+processLog(Module, Msg, Args) ->
+  NewMsg = "[LOG] " ++ Module ++ ": " ++ Msg,
   write(NewMsg, Args).
 
-processDebug(Msg, Args, true) ->
-  NewMsg = "[DEBUG] " ++ Msg,
+processDebug(Module, Msg, Args, true) ->
+  NewMsg = "[DEBUG] " ++ Module ++ ": " ++ Msg,
   write(NewMsg, Args);
-processDebug(_Msg, _Args, _Debug) ->
+processDebug(_Module, _Msg, _Args, _Debug) ->
   ok.
 
 write(Msg, Args) ->

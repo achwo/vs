@@ -1,8 +1,9 @@
 -module(sync_manager).
 -export([start/2]).
--import(log, [log/3, debug/3]).
+-import(log, [log/4, debug/4]).
 
 start(TimeOffset, Log) -> 
+  log(Log, "Initializing...", []),
   spawn(fun() -> loop(TimeOffset, [], Log) end).
 
 loop(TimeOffset, Deviations, Log) ->
@@ -20,7 +21,7 @@ loop(TimeOffset, Deviations, Log) ->
       NewTimeOffset = sync(TimeOffset, Deviations),
       loop(NewTimeOffset, Deviations, Log);
     Any ->
-      log(Log, "SyncManager: Received unknown message type: ~p", [Any]),
+      debug(Log, "SyncManager: Received unknown message type: ~p", [Any]),
       loop(TimeOffset, Deviations, Log)
   end.
 
@@ -50,3 +51,11 @@ sync(TimeOffset, Deviations) ->
 calculateNewOffset(Deviations) ->
   Sum = lists:sum(Deviations),
   Sum div length(Deviations). %Special case if own station is class A?
+
+log(Log, Msg, Args) ->
+  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+  log(Log, Module, Msg, Args).
+
+debug(Log, Msg, Args) ->
+  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+  debug(Log, Module, Msg, Args).

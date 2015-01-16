@@ -1,6 +1,6 @@
 -module(sender).
 -export([start/7]).
--import(log, [log/3, debug/3]).
+-import(log, [log/4, debug/4]).
 
 -define(U, util).
 -define(DELAY_TOLERANCE_IN_MS, 20).
@@ -81,3 +81,11 @@ cancelTimer(nil) ->
   ok;
 cancelTimer(Timer) ->
   erlang:cancel_timer(Timer).
+
+% log(Log, Msg, Args) ->
+%   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+%   log(Log, Module, Msg, Args).
+
+% debug(Log, Msg, Args) ->
+%   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+%   debug(Log, Module, Msg, Args).
