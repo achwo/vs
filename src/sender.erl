@@ -15,6 +15,7 @@
   data=nil,
   timer=nil,
   send_time=nil,
+  socket=nil,
   log=nil
 }).
 
@@ -27,6 +28,7 @@ start(SyncManager, SlotManager, Interface, MulticastIP, Port, StationType, Log) 
     multicast_ip=MulticastIP,
     port=Port,
     station_type=StationType,
+    socket = werkzeug:openSe(Interface, Port),
     log=Log
   },
   spawn(fun() -> loop(State) end).
@@ -50,23 +52,22 @@ newTimer(State, WaitTime) ->
   }.
 
 reservedSlot(State, Slot) ->
-  CurrentTime = ?U:currentTime(State#s.sync_manager),
-  doSend(CurrentTime, Slot, State),
+  doSend(State, ?U:currentTime(State#s.sync_manager), Slot),
   State.
 
 send(State) ->
   State#s.slot_manager ! {self(), reserve_slot},
   State.
 
-doSend(CurrentTime, Slot, State)
+doSend(State, CurrentTime, Slot)
 when CurrentTime < abs(State#s.send_time) + ?DELAY_TOLERANCE_IN_MS ->
-  Socket = werkzeug:openSe(State#s.interface, State#s.port),
   Packet = buildPackage(State, Slot),
-  ok = gen_udp:send(Socket, State#s.multicast_ip, State#s.port, Packet);
-doSend(_CurrentTime, _Slot, State) ->
+  ok = gen_udp:send(State#s.socket, State#s.multicast_ip, State#s.port, Packet);
+doSend(State, _CurrentTime, _Slot) ->
   State#s.slot_manager ! {slot_missed}.
 
 buildPackage(State, _Slot) when State#s.data == nil -> 
+  debug(State#s.log, "No Data for Package!", []),
   State#s.slot_manager ! {slot_missed};
 buildPackage(State, Slot) ->
   DataForPackage = list_to_binary(State#s.data),
@@ -93,6 +94,6 @@ cancelTimer(Timer) ->
 %   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
 %   log(Log, Module, Msg, Args).
 
-% debug(Log, Msg, Args) ->
-%   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-%   debug(Log, Module, Msg, Args).
+debug(Log, Msg, Args) ->
+  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+  debug(Log, Module, Msg, Args).
