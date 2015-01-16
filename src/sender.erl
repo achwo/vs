@@ -33,30 +33,37 @@ start(SyncManager, SlotManager, Interface, MulticastIP, Port, StationType, Log) 
 
 loop(State) ->
   receive 
-    {data, IncomingData} -> 
-      loop(State#s{data=IncomingData});
-    {new_timer, WaitTime} -> 
-      cancelTimer(State#s.timer),
-      NewState = State#s{
-        timer=createTimer(WaitTime, {send}),
-        send_time=?U:currentTime(State#s.sync_manager) + WaitTime
-      },
-      loop(NewState);
-    
-    {reserved_slot, Slot} ->
-      send(?U:currentTime(State#s.sync_manager), Slot, State),
-      loop(State);
-    {send} ->
-      State#s.slot_manager ! {self(), reserve_slot},
-      loop(State)
+    {data, IncomingData}  -> loop(data(State, IncomingData));
+    {new_timer, WaitTime} -> loop(newTimer(State, WaitTime));
+    {reserved_slot, Slot} -> loop(reservedSlot(State, Slot));
+    {send}                -> loop(send(State))
   end.
 
-send(CurrentTime, Slot, State)
+data(State, IncomingData) ->
+  State#s{ data = IncomingData }.
+
+newTimer(State, WaitTime) ->
+  cancelTimer(State#s.timer),
+  State#s{
+    timer=createTimer(WaitTime, {send}),
+    send_time=?U:currentTime(State#s.sync_manager) + WaitTime
+  }.
+
+reservedSlot(State, Slot) ->
+  CurrentTime = ?U:currentTime(State#s.sync_manager),
+  doSend(CurrentTime, Slot, State),
+  State.
+
+send(State) ->
+  State#s.slot_manager ! {self(), reserve_slot},
+  State.
+
+doSend(CurrentTime, Slot, State)
 when CurrentTime < abs(State#s.send_time) + ?DELAY_TOLERANCE_IN_MS ->
   Socket = werkzeug:openSe(State#s.interface, State#s.port),
   Packet = buildPackage(State, Slot),
   ok = gen_udp:send(Socket, State#s.multicast_ip, State#s.port, Packet);
-send(_CurrentTime, _Slot, State) ->
+doSend(_CurrentTime, _Slot, State) ->
   State#s.slot_manager ! {slot_missed}.
 
 buildPackage(State, _Slot) when State#s.data == nil -> 
