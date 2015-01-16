@@ -53,15 +53,17 @@ currentTime(TimeOffset) ->
   (MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000) + TimeOffset.
 
 sync(State) when length(State#s.deviations) == 0 ->
+  debug(State#s.log, "sync, Deviations=[]", []),
   State;
 sync(State) ->
-  State#s {
-    offset = State#s.offset + calculateNewOffset(State#s.deviations)
-  }.
+  debug(State#s.log, "sync, Deviations=~p", [State#s.deviations]),
+  NewOffset = State#s.offset + calculateNewOffset(State#s.deviations), 
+  debug(State#s.log, "new Offset= ~p", [NewOffset]),
+  State#s { offset = NewOffset }.
 
 calculateNewOffset(Deviations) ->
   Sum = lists:sum(Deviations),
-  Sum div length(Deviations). %Special case if own station is class A?
+  Sum div length(Deviations).
 
 log(Log, Msg, Args) ->
   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
