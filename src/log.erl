@@ -22,15 +22,14 @@ loop(Debug) ->
   loop(Debug).
 
 processLog(Module, Msg, Args) ->
-  NewMsg = "[LOG] " ++ Module ++ ": " ++ Msg,
-  write(NewMsg, Args).
+  write("[LOG] ", Module, Msg, Args).
 
 processDebug(Module, Msg, Args, true) ->
-  NewMsg = "[DEBUG] " ++ Module ++ ": " ++ Msg,
-  write(NewMsg, Args);
+  write("[DEBUG] ", Module, Msg, Args);
 processDebug(_Module, _Msg, _Args, _Debug) ->
   ok.
 
-write(Msg, Args) ->
-  NewMsg = Msg ++ "~n",
+write(Prefix, Module, Msg, Args) ->
+  ModuleString = io_lib:format("~p: ", [Module]),
+  NewMsg = Prefix ++ ModuleString ++ Msg ++ "~n",
   io:format(NewMsg, Args).
