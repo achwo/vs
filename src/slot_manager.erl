@@ -38,18 +38,11 @@ init(State) ->
 
 loop(State) ->
   receive 
-    {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
+    % {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
     {From, reserve_slot} -> loop(reserveRandomSlot(From, State));
     {slot_end}           -> loop(slotEnd(State));
     {slot_missed}        -> loop(slotMissed(State))
   end.
-
-reserveSlot(Slot, State) ->
-  debug(State#s.log, "reserveSlot: ~p", [Slot]),
-  State#s{
-    % reserved_slot = Slot, % todo: i think this is wrong
-    free_slots = ?L:reserveSlot(Slot, State#s.free_slots)
-  }.
 
 reserveRandomSlot(From, State) -> 
   debug(State#s.log, "~p: reserveRandomSlot", [From]),
@@ -83,12 +76,16 @@ checkSlotInbox(State) ->
     {no_message} ->
       debug(State#s.log, "no message", []),
       State;
-    {reserve_slot, SlotNumber} ->
-      debug(State#s.log, "reserveSlot: ~p", [SlotNumber]),
-      State#s{
-        free_slots=?L:reserveSlot(SlotNumber, State#s.free_slots)
-      }
+    {reserve_slot, Slot} ->
+      debug(State#s.log, "reserveSlot: ~p", [Slot]),
+      reserveSlot(Slot, State)
   end.
+
+reserveSlot(Slot, State) ->
+  debug(State#s.log, "reserveSlot: ~p", [Slot]),
+  State#s{
+    free_slots = ?L:reserveSlot(Slot, State#s.free_slots)
+  }.
 
 handleCollision(State) ->
   CurrentTime = ?U:currentTime(State#s.sync_manager),
