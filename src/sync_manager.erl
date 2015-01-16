@@ -2,51 +2,61 @@
 -export([start/2]).
 -import(log, [log/4, debug/4]).
 
+-record(s, {
+  offset,
+  deviations = [],
+  log
+}).
+
 start(TimeOffset, Log) -> 
   log(Log, "Initializing...", []),
-  spawn(fun() -> loop(TimeOffset, [], Log) end).
+  State = #s{
+    offset = TimeOffset,
+    log = Log
+  },
+  spawn(fun() -> loop(State) end).
 
-loop(TimeOffset, Deviations, Log) ->
+loop(State) ->
   receive 
     {add_deviation, StationType, SendTime, ReceiveTime} ->
-      NewDeviations = addDeviation(StationType, SendTime, ReceiveTime, Deviations),
-      loop(TimeOffset, NewDeviations, Log);
+      loop(addDeviation(State, StationType, SendTime, ReceiveTime));
     {reset_deviations} ->
-      NewDeviations = resetDeviations(),
-      loop(TimeOffset, NewDeviations, Log);
+      loop(resetDeviations(State));
     {From, get_current_time} ->
-      getCurrentTime(From, TimeOffset),
-      loop(TimeOffset, Deviations, Log);
+      loop(getCurrentTime(State, From));
     {sync} ->
-      NewTimeOffset = sync(TimeOffset, Deviations),
-      loop(NewTimeOffset, Deviations, Log);
+      loop(sync(State));
     Any ->
-      debug(Log, "SyncManager: Received unknown message type: ~p", [Any]),
-      loop(TimeOffset, Deviations, Log)
+      debug(State#s.log, "Received unknown message type: ~p", [Any]),
+      loop(State)
   end.
 
-addDeviation(StationType, SendTime, ReceiveTime, Deviations) 
+addDeviation(State, StationType, SendTime, ReceiveTime)
+% addDeviation(StationType, SendTime, ReceiveTime, Deviations) 
   when StationType == "A" ->
   Deviation = SendTime - ReceiveTime,
-  [Deviation | Deviations];
-addDeviation(_, _, _, Deviations) ->
-  Deviations.
+  State#s{ deviations = [Deviation | State#s.deviations] };
+addDeviation(State, _, _, _) ->
+  State.
 
-resetDeviations() ->
-  [].
+resetDeviations(State) ->
+  State#s{ deviations = [] }.
 
-getCurrentTime(From, TimeOffset) ->
-  CurrentTime = currentTime(TimeOffset),
-  From ! {current_time, CurrentTime}.
+getCurrentTime(State, From) ->
+  CurrentTime = currentTime(State#s.offset),
+  From ! {current_time, CurrentTime},
+  State.
 
 currentTime(TimeOffset) ->
   {MegaSecs, Secs, MicroSecs} = erlang:now(),
   (MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000) + TimeOffset.
 
-sync(TimeOffset, Deviations) when length(Deviations) == 0 ->
-  TimeOffset;
-sync(TimeOffset, Deviations) ->
-  TimeOffset + calculateNewOffset(Deviations).
+sync(State) when length(State#s.deviations) == 0 ->
+  State;
+sync(State) ->
+  State#s {
+    offset = State#s.offset + calculateNewOffset(State#s.deviations)
+  }.
 
 calculateNewOffset(Deviations) ->
   Sum = lists:sum(Deviations),

@@ -134,6 +134,7 @@ handleFrameEnd(State) ->
     debug(State#s.log, "sync time: ok", []),
       TransmissionSlot = transmissionSlot(State), 
       TransmissionTimeOffset = 10,
+      debug(State#s.log, "transmissionSlot: ~p", [TransmissionSlot]),
       TimeTillTransmission = TransmissionTimeOffset 
         + ?U:timeTillTransmission(TransmissionSlot, ?U:currentTime(SyncManager)),
       debug(State#s.log, "TimeTillTransmission: ~p", [TimeTillTransmission]),
