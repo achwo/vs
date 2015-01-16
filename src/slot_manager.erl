@@ -155,10 +155,9 @@ transmissionSlot(State) when State#s.reserved_slot == nil ->
   CurrentSlot = ?U:currentSlot(?U:currentTime(State#s.sync_manager)),
   FutureSlots = ?L:slotsAfter(CurrentSlot, State#s.free_slots),
   {Slot, _List} = ?L:reserveRandomSlot(FutureSlots),
-  debug(State#s.log, "transmissionSlot1: ~p", [Slot]),
   Slot;
 transmissionSlot(State) ->
-  debug(State#s.log, "transmissionSlot2 ", []),
+  debug(State#s.log, "have reserved_slot ", []),
   State#s.reserved_slot.
 
 log(Log, Msg, Args) ->
