@@ -44,7 +44,7 @@ init(State) ->
 loop(State) ->
   receive 
     {message, Data, StationType, Slot, SendTime} -> 
-      log(State#s.log, "receiver:message~n", []),
+      log(State#s.log, "receiver:message", []),
       NewState = State#s{
         msg = #m{
           data = Data,
@@ -57,7 +57,7 @@ loop(State) ->
       },
       loop(NewState);
     {slot_end} -> 
-      log(State#s.log, "receiver:slot_end~n", []),
+      log(State#s.log, "receiver:slot_end", []),
       loop(slotEnd(State))
   end.
 

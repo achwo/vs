@@ -20,7 +20,7 @@ loop(TimeOffset, Deviations, Log) ->
       NewTimeOffset = sync(TimeOffset, Deviations),
       loop(NewTimeOffset, Deviations, Log);
     Any ->
-      log(Log, "SyncManager: Received unknown message type: ~p~n", [Any]),
+      log(Log, "SyncManager: Received unknown message type: ~p", [Any]),
       loop(TimeOffset, Deviations, Log)
   end.
 
