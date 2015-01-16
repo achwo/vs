@@ -83,9 +83,19 @@ checkSlotInbox(State) ->
 
 reserveSlot(Slot, State) ->
   debug(State#s.log, "reserveSlot: ~p", [Slot]),
-  State#s{
-    free_slots = ?L:reserveSlot(Slot, State#s.free_slots)
-  }.
+
+  case State#s.reserved_slot of
+    Slot ->
+      check_if_own_reservation(State, Slot, State#s.transmission_slot);
+    _ -> State#s{ free_slots = ?L:reserveSlot(Slot, State#s.free_slots)}
+  end.
+
+check_if_own_reservation (State, 0, TransmissionSlot) ->
+  check_if_own_reservation (State, 25, TransmissionSlot);
+check_if_own_reservation (State, TransmissionSlot, TransmissionSlot) ->
+  State;
+check_if_own_reservation (State, _LastSlot, _TransmissionSlot) ->
+  unsetReservation(State).
 
 handleCollision(State) ->
   CurrentTime = ?U:currentTime(State#s.sync_manager),
