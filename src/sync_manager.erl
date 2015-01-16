@@ -32,11 +32,12 @@ loop(State) ->
   end.
 
 addDeviation(State, StationType, SendTime, ReceiveTime)
-% addDeviation(StationType, SendTime, ReceiveTime, Deviations) 
   when StationType == "A" ->
+  debug(State#s.log, "addDeviation, StationType: A", []),
   Deviation = SendTime - ReceiveTime,
   State#s{ deviations = [Deviation | State#s.deviations] };
-addDeviation(State, _, _, _) ->
+addDeviation(State, StationType, _, _) ->
+  debug(State#s.log, "addDeviation, StationType: ~p", [StationType]),
   State.
 
 resetDeviations(State) ->
