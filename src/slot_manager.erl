@@ -184,6 +184,6 @@ log(Log, Msg, Args) ->
   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
   log(Log, Module, Msg, Args).
 
-% debug(Log, Msg, Args) ->
+debug(Log, Msg, Args) ->
   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  % debug(Log, Module, Msg, Args).
+  debug(Log, Module, Msg, Args).
