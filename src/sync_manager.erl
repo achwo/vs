@@ -2,6 +2,8 @@
 -export([start/2]).
 -import(log, [log/4, debug/4]).
 
+-define(DEVIATION_THRESHOLD_MS, 1).
+
 -record(s, {
   offset,
   deviations = [],
@@ -19,7 +21,8 @@ start(TimeOffset, Log) ->
 loop(State) ->
   receive 
     {add_deviation, StationType, SendTime, ReceiveTime} ->
-      loop(addDeviation(State, StationType, SendTime, ReceiveTime));
+      Deviation = SendTime - ReceiveTime,
+      loop(addDeviation(State, StationType, Deviation));
     {reset_deviations} ->
       loop(resetDeviations(State));
     {From, get_current_time} ->
@@ -31,16 +34,16 @@ loop(State) ->
       loop(State)
   end.
 
-addDeviation(State, StationType, SendTime, ReceiveTime)
-  when StationType == "A" ->
+addDeviation(State, StationType, Deviation)
+  when StationType == "A" , abs(Deviation) > ?DEVIATION_THRESHOLD_MS ->
   debug(State#s.log, "addDeviation, StationType: A", []),
-  Deviation = SendTime - ReceiveTime,
   State#s{ deviations = [Deviation | State#s.deviations] };
-addDeviation(State, StationType, _, _) ->
+addDeviation(State, StationType, _) ->
   debug(State#s.log, "addDeviation, StationType: ~p", [StationType]),
   State.
 
 resetDeviations(State) ->
+  debug(State#s.log, "resetDeviations", []),
   State#s{ deviations = [] }.
 
 getCurrentTime(State, From) ->
@@ -53,10 +56,8 @@ currentTime(TimeOffset) ->
   (MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000) + TimeOffset.
 
 sync(State) when length(State#s.deviations) == 0 ->
-  debug(State#s.log, "sync, Deviations=[]", []),
   State;
 sync(State) ->
-  debug(State#s.log, "sync, Deviations=~p", [State#s.deviations]),
   NewOffset = State#s.offset + calculateNewOffset(State#s.deviations), 
   debug(State#s.log, "new Offset= ~p", [NewOffset]),
   State#s { offset = NewOffset }.
