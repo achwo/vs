@@ -1,6 +1,6 @@
 -module(slot_manager).
 -export([start/2]).
--import(log, [log/4, debug/4]).
+-import(log, [log/4, debug/4, nl/1]).
 
 -define(NUMBER_SLOTS, 25).
 -define(U, util).
@@ -27,7 +27,8 @@ start(SyncManager, Log) ->
 init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
   log(State#s.log, "Initializing...", []),
   random:seed(now()),
-  debug(State#s.log, "~ninit done", []),
+  nl(State#s.log),
+  debug(State#s.log, "init done", []),
   loop(resetSlots(startSlotTimer(State, ?U:currentTime(State#s.sync_manager))));
 init(State) ->
   receive
@@ -56,7 +57,8 @@ reserveRandomSlot(From, State) ->
   State#s{free_slots=List}.
 
 slotEnd(State) -> 
-  debug(State#s.log, "~nslotEnd: ~p", [?U:currentSlot(?U:currentTime(State#s.sync_manager)) - 1]),
+  nl(State#s.log),
+  debug(State#s.log, "slotEnd: ~p", [?U:currentSlot(?U:currentTime(State#s.sync_manager)) - 1]),
   debug(State#s.log, "time: ~p", [?U:currentTime(State#s.sync_manager)]),
   NewState = checkSlotInbox(State),
   CurrentTime = ?U:currentTime(State#s.sync_manager),
