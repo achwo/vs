@@ -28,7 +28,7 @@ init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
   log(State#s.log, "Initializing...", []),
   random:seed(now()),
   nl(State#s.log),
-  debug(State#s.log, "init done", []),
+  % debug(State#s.log, "init done", []),
   loop(resetSlots(startSlotTimer(State, ?U:currentTime(State#s.sync_manager))));
 init(State) ->
   receive
@@ -45,15 +45,15 @@ loop(State) ->
   end.
 
 reserveRandomSlot(From, State) -> 
-  debug(State#s.log, "~p: reserveRandomSlot", [From]),
+  % debug(State#s.log, "~p: reserveRandomSlot", [From]),
   {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
   From ! {reserved_slot, Slot}, % todo: i think the receiver doesn't use it
   State#s{free_slots=List, reserved_slot=Slot}.
 
 slotEnd(State) -> 
   nl(State#s.log),
-  debug(State#s.log, "slotEnd: ~p", [?U:currentSlot(?U:currentTime(State#s.sync_manager)) - 1]),
-  debug(State#s.log, "time: ~p", [?U:currentTime(State#s.sync_manager)]),
+  % debug(State#s.log, "slotEnd: ~p", [?U:currentSlot(?U:currentTime(State#s.sync_manager)) - 1]),
+  % debug(State#s.log, "time: ~p", [?U:currentTime(State#s.sync_manager)]),
   NewState = checkSlotInbox(State),
   CurrentTime = ?U:currentTime(State#s.sync_manager),
 
@@ -64,26 +64,26 @@ slotEnd(State) ->
   startSlotTimer(NewNewState, CurrentTime).
 
 slotMissed(State) ->
-  debug(State#s.log, "slotMissed", []),
+  % debug(State#s.log, "slotMissed", []),
   unsetReservation(State).
 
 checkSlotInbox(State) ->
-  debug(State#s.log, "checkSlotInbox", []),
+  % debug(State#s.log, "checkSlotInbox", []),
   State#s.receiver ! {slot_end},
   receive
     {collision} ->
-      debug(State#s.log, "collision", []),
+      % debug(State#s.log, "collision", []),
       handleCollision(State);
     {no_message} ->
-      debug(State#s.log, "no message", []),
+      % debug(State#s.log, "no message", []),
       State;
     {reserve_slot, Slot} ->
-      debug(State#s.log, "reserveSlot: ~p", [Slot]),
+      % debug(State#s.log, "reserveSlot: ~p", [Slot]),
       reserveSlot(Slot, State)
   end.
 
 reserveSlot(Slot, State) ->
-  debug(State#s.log, "reserveSlot: ~p", [Slot]),
+  % debug(State#s.log, "reserveSlot: ~p", [Slot]),
 
   case State#s.reserved_slot of
     Slot ->
@@ -114,7 +114,7 @@ collisionWithOwnMessage(State, Slot, Slot)
 collisionWithOwnMessage(Context, _, _) -> Context.
 
 unsetReservation(State) when State#s.reserved_slot /= nil ->
-  debug(State#s.log, "unsetReservation", []),
+  % debug(State#s.log, "unsetReservation", []),
   State#s{
     free_slots = ?L:readdReservedSlot(State#s.reserved_slot, State#s.free_slots),
     reserved_slot = nil
@@ -124,18 +124,18 @@ unsetReservation(State) ->
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
-  debug(State#s.log, "startSlotTimer", []),
+  % debug(State#s.log, "startSlotTimer", []),
   case State#s.timer of
     nil -> ok;
     _ -> erlang:cancel_timer(State#s.timer)
   end,
   WaitTime = ?U:timeTillNextSlot(CurrentTime),
-  debug(State#s.log, "currentTime: ~p", [CurrentTime]),
+  % debug(State#s.log, "currentTime: ~p", [CurrentTime]),
   State#s{timer=erlang:send_after(WaitTime, self(), {slot_end})}.
 
 % Changes ReservedSlot, FreeSlotList
 handleFrameEnd(State) ->
-  debug(State#s.log, "handleFrameEnd", []),
+  % debug(State#s.log, "handleFrameEnd", []),
   SyncManager = State#s.sync_manager,
 
   FrameBeforeSync = ?U:currentFrame(?U:currentTime(SyncManager)),
@@ -143,29 +143,29 @@ handleFrameEnd(State) ->
   SyncManager ! {reset_deviations},
   FrameAfterSync = ?U:currentFrame(?U:currentTime(SyncManager)),
 
-  debug(State#s.log, "FrameSyncDiff: ~p", [FrameAfterSync - FrameBeforeSync]),
+  % debug(State#s.log, "FrameSyncDiff: ~p", [FrameAfterSync - FrameBeforeSync]),
 
   % todo: maybe this block is fucked, because my brain is right now:
   case FrameBeforeSync > FrameAfterSync of 
     true -> 
-    debug(State#s.log, "sync time: old frame", []),
+    % debug(State#s.log, "sync time: old frame", []),
       % because of sync we are still in the old frame
       State;
     false -> 
-    debug(State#s.log, "sync time: ok", []),
+    % debug(State#s.log, "sync time: ok", []),
       TransmissionSlot = transmissionSlot(State), 
       TransmissionTimeOffset = 10,
-      debug(State#s.log, "transmissionSlot: ~p", [TransmissionSlot]),
+      % debug(State#s.log, "transmissionSlot: ~p", [TransmissionSlot]),
       TimeTillTransmission = TransmissionTimeOffset 
         + ?U:timeTillTransmission(TransmissionSlot, ?U:currentTime(SyncManager)),
-      debug(State#s.log, "TimeTillTransmission: ~p", [TimeTillTransmission]),
+      % debug(State#s.log, "TimeTillTransmission: ~p", [TimeTillTransmission]),
       State#s.sender ! {new_timer, TimeTillTransmission},
       NewState = resetSlots(State),
       NewState#s {transmission_slot = TransmissionSlot}
   end.
 
 resetSlots(State) ->
-  debug(State#s.log, "resetSlots", []),
+  % debug(State#s.log, "resetSlots", []),
   State#s{
     free_slots = ?L:new(?NUMBER_SLOTS),
     reserved_slot = nil % todo: richtig?
@@ -177,13 +177,13 @@ transmissionSlot(State) when State#s.reserved_slot == nil ->
   {Slot, _List} = ?L:reserveRandomSlot(FutureSlots),
   Slot;
 transmissionSlot(State) ->
-  debug(State#s.log, "have reserved_slot ", []),
+  % debug(State#s.log, "have reserved_slot ", []),
   State#s.reserved_slot.
 
 log(Log, Msg, Args) ->
   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
   log(Log, Module, Msg, Args).
 
-debug(Log, Msg, Args) ->
+% debug(Log, Msg, Args) ->
   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  debug(Log, Module, Msg, Args).
+  % debug(Log, Module, Msg, Args).
