@@ -40,21 +40,22 @@ loop(State) ->
   receive 
     {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
     {From, reserve_slot} -> loop(reserveRandomSlot(From, State));
-    {slot_end}           -> loop(slotEnd(State))
+    {slot_end}           -> loop(slotEnd(State));
+    {slot_missed}        -> loop(slotMissed(State))
   end.
 
 reserveSlot(Slot, State) ->
   debug(State#s.log, "reserveSlot: ~p", [Slot]),
   State#s{
-    reserved_slot = Slot,
+    % reserved_slot = Slot, % todo: i think this is wrong
     free_slots = ?L:reserveSlot(Slot, State#s.free_slots)
   }.
 
 reserveRandomSlot(From, State) -> 
   debug(State#s.log, "~p: reserveRandomSlot", [From]),
   {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
-  From ! {reserved_slot, Slot},
-  State#s{free_slots=List}.
+  From ! {reserved_slot, Slot}, % todo: i think the receiver doesn't use it
+  State#s{free_slots=List, reserved_slot=Slot}.
 
 slotEnd(State) -> 
   nl(State#s.log),
@@ -68,6 +69,9 @@ slotEnd(State) ->
     _ -> NewNewState = NewState
   end,
   startSlotTimer(NewNewState, CurrentTime).
+
+slotMissed(State) ->
+
 
 checkSlotInbox(State) ->
   debug(State#s.log, "checkSlotInbox", []),
@@ -151,7 +155,6 @@ resetSlots(State) ->
   }.
 
 transmissionSlot(State) when State#s.reserved_slot == nil ->
-  % {Slot, List} = ?L:reserveLastFreeSlot(State#s.free_slots),
   CurrentSlot = ?U:currentSlot(?U:currentTime(State#s.sync_manager)),
   FutureSlots = ?L:slotsAfter(CurrentSlot, State#s.free_slots),
   {Slot, _List} = ?L:reserveRandomSlot(FutureSlots),
