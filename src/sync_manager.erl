@@ -1,26 +1,27 @@
 -module(sync_manager).
--export([start/1]).
+-export([start/2]).
+-import(log, [log/3, debug/3]).
 
-start(TimeOffset) -> 
-  spawn(fun() -> loop(TimeOffset, []) end).
+start(TimeOffset, Log) -> 
+  spawn(fun() -> loop(TimeOffset, [], Log) end).
 
-loop(TimeOffset, Deviations) ->
+loop(TimeOffset, Deviations, Log) ->
   receive 
     {add_deviation, StationType, SendTime, ReceiveTime} ->
       NewDeviations = addDeviation(StationType, SendTime, ReceiveTime, Deviations),
-      loop(TimeOffset, NewDeviations);
+      loop(TimeOffset, NewDeviations, Log);
     {reset_deviations} ->
       NewDeviations = resetDeviations(),
-      loop(TimeOffset, NewDeviations);
+      loop(TimeOffset, NewDeviations, Log);
     {From, get_current_time} ->
       getCurrentTime(From, TimeOffset),
-      loop(TimeOffset, Deviations);
+      loop(TimeOffset, Deviations, Log);
     {sync} ->
       NewTimeOffset = sync(TimeOffset, Deviations),
-      loop(NewTimeOffset, Deviations);
+      loop(NewTimeOffset, Deviations, Log);
     Any ->
-      io:format("SyncManager: Received unknown message type: ~p~n", [Any]),
-      loop(TimeOffset, Deviations)
+      log(Log, "SyncManager: Received unknown message type: ~p~n", [Any]),
+      loop(TimeOffset, Deviations, Log)
   end.
 
 addDeviation(StationType, SendTime, ReceiveTime, Deviations) 

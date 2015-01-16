@@ -1,5 +1,6 @@
 -module(sender).
--export([start/6]).
+-export([start/7]).
+-import(log, [log/3, debug/3]).
 
 -define(U, util).
 -define(DELAY_TOLERANCE_IN_MS, 20).
@@ -13,18 +14,20 @@
   station_type=nil,
   data=nil,
   timer=nil,
-  send_time=nil
+  send_time=nil,
+  log=nil
 }).
 
 
-start(SyncManager, SlotManager, Interface, MulticastIP, Port, StationType) ->
+start(SyncManager, SlotManager, Interface, MulticastIP, Port, StationType, Log) ->
   State = #s{
     sync_manager=SyncManager, 
     slot_manager=SlotManager,
     interface=Interface,
     multicast_ip=MulticastIP,
     port=Port,
-    station_type=StationType
+    station_type=StationType,
+    log=Log
   },
   spawn(fun() -> loop(State) end).
 

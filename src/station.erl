@@ -1,6 +1,8 @@
 -module(station).
 -export([start/1]).
 
+-define(DEBUG, true).
+
 start([Interface, MulticastIP, Port, StationType]) ->
   start([Interface, MulticastIP, Port, StationType, '0']);
 
@@ -12,22 +14,27 @@ start([Interface, MulticastIP, PortInput, StationTypeInput, TimeDeviationInput])
 
   {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviationInput)),
   
+  Log = log:start(?DEBUG),
+
   %Show Info about Station
    outputScreen(MultiIP, IP, Port, StationType, TimeDeviation),
 
   %Manager initialisation...  
-   SyncManager = sync_manager:start(TimeDeviation),
-   SlotManager = slot_manager:start(SyncManager),
+   SyncManager = sync_manager:start(TimeDeviation, Log),
+   SlotManager = slot_manager:start(SyncManager, Log),
 
   %Sender initialisation...
    DataSource = data_source:start(),
-   Sender = sender:start(SyncManager, SlotManager, IP, MultiIP, Port, StationType),
+   Sender = sender:start(SyncManager, SlotManager, IP, 
+    MultiIP, Port, StationType, Log),
+
    DataSource ! {set_listener, Sender},
    SlotManager ! {set_sender, Sender},
 
   %Receiver initialisation...
    DataSink = data_sink:start(),
-   Receiver = receiver:start(DataSink, SlotManager, SyncManager, IP, MultiIP, Port),
+   Receiver = receiver:start(DataSink, SlotManager, 
+    SyncManager, IP, MultiIP, Port, Log),
 
    SlotManager ! {set_receiver, Receiver}.
 

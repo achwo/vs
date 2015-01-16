@@ -1,5 +1,6 @@
 -module(receiver).
--export([start/6]).
+-export([start/7]).
+-import(log, [log/3, debug/3]).
 
 -record(m, {
   data,
@@ -17,17 +18,19 @@
   multicast_ip,
   port,
   msg=nil,
-  msg_count=0
+  msg_count=0,
+  log
 }).
 
-start(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
+start(Sink, SlotManager, SyncManager, Interface, MultiIP, Port, Log) ->
   State = #s{
     sink=Sink,
     slot_manager=SlotManager,
     sync_manager=SyncManager,
     interface=Interface,
     multicast_ip=MultiIP,
-    port=Port
+    port=Port,
+    log=Log
   },
   spawn(fun() -> init(State) end).
 
@@ -41,7 +44,7 @@ init(State) ->
 loop(State) ->
   receive 
     {message, Data, StationType, Slot, SendTime} -> 
-      io:format("receiver:message~n", []),
+      log(State#s.log, "receiver:message~n", []),
       NewState = State#s{
         msg = #m{
           data = Data,
@@ -54,7 +57,7 @@ loop(State) ->
       },
       loop(NewState);
     {slot_end} -> 
-      io:format("receiver:slot_end~n", []),
+      log(State#s.log, "receiver:slot_end~n", []),
       loop(slotEnd(State))
   end.
 
