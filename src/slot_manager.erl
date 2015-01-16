@@ -71,8 +71,7 @@ slotEnd(State) ->
   startSlotTimer(NewNewState, CurrentTime).
 
 slotMissed(State) ->
-  todo,
-  State.
+  unsetReservation(State).
 
 checkSlotInbox(State) ->
   debug(State#s.log, "checkSlotInbox", []),
@@ -105,6 +104,14 @@ collisionWithOwnMessage(State, Slot, Slot)
     reserved_slot = nil
   };
 collisionWithOwnMessage(Context, _, _) -> Context.
+
+unsetReservation(State) when State#s.reserved_slot /= nil ->
+  State#s{
+    free_slots = ?L:readdReservedSlot(State#s.reserved_slot, State#s.free_slots),
+    reserved_slot = nil
+  };
+unsetReservation(State) ->
+  State.
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
