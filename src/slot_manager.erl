@@ -108,6 +108,7 @@ isOwnReservationMessage(State, TransmissionSlot, TransmissionSlot) ->
   % is our own reservation
   State;
 isOwnReservationMessage(State, _PreviousSlot, _TransmissionSlot) ->
+  debug(State#s.log, "our reservation was overwritten!", []);
   State#s{ reserved_slot = nil }.
 
 handleCollision(State) ->
@@ -144,8 +145,6 @@ handleFrameEnd(State) ->
   FrameAfterSync = ?U:currentFrame(?U:currentTime(SyncManager)),
 
   debug(State#s.log, "FrameSyncDiff: ~p", [FrameAfterSync - FrameBeforeSync]),
-
-  % todo: maybe this block is fucked, because my brain is right now:
   case FrameBeforeSync > FrameAfterSync of 
     true -> 
     debug(State#s.log, "sync time: old frame", []),
