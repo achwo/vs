@@ -28,7 +28,7 @@ loop(State) ->
     {From, get_current_time} ->
       loop(getCurrentTime(State, From));
     {sync} ->
-      loop(sync(State));
+      loop(sync(State))
     % Any ->
     %   debug(State#s.log, "Received unknown message type: ~p", [Any]),
     %   loop(State)
