@@ -13,9 +13,8 @@ loop(LogFile) ->
   loop(LogFile).
 
 data(Data, LogFile) ->
-  io:fwrite("~p~n", [Data]),
+  % io:fwrite("~p~n", [Data]),
   log(LogFile, Data).
 
- 
- log(LogFile, Message) ->
- werkzeug:logging(LogFile, Message ++ "\n").
+log(LogFile, Message) ->
+  file:write_file(LogFile, io_lib:fwrite("~p~n", [Message])).
