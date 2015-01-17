@@ -120,8 +120,10 @@ collisionWithOwnMessage(State, Slot, 0) ->
   collisionWithOwnMessage(State, Slot, 25);
 collisionWithOwnMessage(State, Slot, Slot) 
   when State#s.reserved_slot /= nil ->
+  % collsion with our message -> void reservation
   unsetReservation(State);
-collisionWithOwnMessage(State, _, _) -> State.
+collisionWithOwnMessage(State, _, _) -> 
+  State.
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
