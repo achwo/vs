@@ -22,7 +22,7 @@ loop(Debug) ->
     {debug, Module, Msg, Args} ->
       processDebug(Module, Msg, Args, Debug);
     {nl} ->
-      processNl()
+      processNl(Debug)
   end,
   loop(Debug).
 
@@ -34,8 +34,10 @@ processDebug(Module, Msg, Args, true) ->
 processDebug(_Module, _Msg, _Args, _Debug) ->
   ok.
 
-processNl() ->
-  io:format("~n", []).
+processNl(true) ->
+  io:format("~n", []);
+processNl(_) ->
+  ok.
 
 write(Prefix, Module, Msg, Args) ->
   ModuleString = io_lib:format("~p: ", [Module]),
