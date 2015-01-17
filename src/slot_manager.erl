@@ -64,8 +64,7 @@ slotEnd(State) ->
   startSlotTimer(NewNewState, CurrentTime).
 
 slotMissed(State) ->
-  State.
-  % unsetReservation(State).
+  unsetReservation(State).
 
 unsetReservation(State) when State#s.reserved_slot /= nil ->
   State#s{
@@ -120,11 +119,8 @@ collisionWithOwnMessage(State, Slot, 0) ->
   collisionWithOwnMessage(State, Slot, 25);
 collisionWithOwnMessage(State, Slot, Slot) 
   when State#s.reserved_slot /= nil ->
-  State#s{
-    free_slots = ?L:readdReservedSlot(State#s.reserved_slot, State#s.free_slots),
-    reserved_slot = nil
-  };
-collisionWithOwnMessage(Context, _, _) -> Context.
+  unsetReservation(State);
+collisionWithOwnMessage(State, _, _) -> State.
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
