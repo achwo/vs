@@ -80,8 +80,8 @@ checkSlotInbox(State) ->
   receive
     {collision} ->
       debug(State#s.log, "collision", []),
-      % handleCollision(State);
-      unsetReservation(State);
+      handleCollision(State);
+      % unsetReservation(State);
     {no_message} ->
       debug(State#s.log, "no message", []),
       State;
