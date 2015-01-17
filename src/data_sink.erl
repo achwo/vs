@@ -18,4 +18,4 @@ data(Data, LogFile) ->
 
 log(LogFile, Message) ->
   NewMessage = lists:flatten(io_lib:format("~p", [Message])),
-  file:write_file(LogFile, io_lib:fwrite("MSG:~p~n", [NewMessage])).
+  file:write_file(LogFile, io_lib:fwrite("~p~n", [NewMessage])).
