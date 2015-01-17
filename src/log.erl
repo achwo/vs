@@ -43,5 +43,5 @@ processNl(_, _) ->
 write(File, Prefix, Module, Msg, Args) ->
   ModuleString = io_lib:format("~p: ", [Module]),
   NewMsg = Prefix ++ ModuleString ++ Msg ++ "~n",
-  file:write_file(File, io_lib:fwrite(NewMsg, [Args]), append),
+  file:write_file(File, io_lib:fwrite(NewMsg, [Args]), [append]),
   io:format(NewMsg, Args).
