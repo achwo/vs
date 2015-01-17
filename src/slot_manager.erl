@@ -15,7 +15,7 @@
   reserved_slot=nil,
   free_slots=nil,
   transmission_slot=nil,
-  log=nil
+  log
 }).
 
 start(SyncManager, Log) -> 
@@ -64,7 +64,8 @@ slotEnd(State) ->
   startSlotTimer(NewNewState, CurrentTime).
 
 slotMissed(State) ->
-  unsetReservation(State).
+  State.
+  % unsetReservation(State).
 
 unsetReservation(State) when State#s.reserved_slot /= nil ->
   State#s{
