@@ -3,6 +3,7 @@
 -import(log, [log/4, debug/4, nl/1]).
 
 -define(NUMBER_SLOTS, 25).
+-define(TRANSMISSION_TIME_OFFSET, 10).
 -define(U, util).
 -define(L, free_slot_list).
 
@@ -38,16 +39,15 @@ init(State) ->
 
 loop(State) ->
   receive 
-    % {reserve_slot, Slot} -> loop(reserveSlot(Slot, State));
-    {From, reserve_slot} -> loop(reserveRandomSlot(From, State));
+    {Sender, reserve_slot} -> loop(reserveRandomSlot(Sender, State));
     {slot_end}           -> loop(slotEnd(State));
     {slot_missed}        -> loop(slotMissed(State))
   end.
 
-reserveRandomSlot(From, State) -> 
-  debug(State#s.log, "~p: reserveRandomSlot", [From]),
+reserveRandomSlot(Sender, State) -> 
+  debug(State#s.log, "~p: reserveRandomSlot", [Sender]),
   {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
-  From ! {reserved_slot, Slot}, % todo: i think the receiver doesn't use it
+  Sender ! {reserved_slot, Slot}, 
   State#s{free_slots=List, reserved_slot=Slot}.
 
 slotEnd(State) -> 
@@ -66,6 +66,14 @@ slotEnd(State) ->
 slotMissed(State) ->
   unsetReservation(State).
 
+unsetReservation(State) when State#s.reserved_slot /= nil ->
+  State#s{
+    free_slots = ?L:readdReservedSlot(State#s.reserved_slot, State#s.free_slots),
+    reserved_slot = nil
+  };
+unsetReservation(State) ->
+  State.
+
 checkSlotInbox(State) ->
   debug(State#s.log, "checkSlotInbox", []),
   State#s.receiver ! {slot_end},
@@ -76,7 +84,7 @@ checkSlotInbox(State) ->
     {no_message} ->
       debug(State#s.log, "no message", []),
       State;
-    {reserve_slot, Slot} ->
+    {reserve_slot, Slot} -> % used by receiver
       debug(State#s.log, "reserveSlot: ~p", [Slot]),
       reserveSlot(Slot, State)
   end.
@@ -101,14 +109,6 @@ collisionWithOwnMessage(State, Slot, Slot)
     reserved_slot = nil
   };
 collisionWithOwnMessage(Context, _, _) -> Context.
-
-unsetReservation(State) when State#s.reserved_slot /= nil ->
-  State#s{
-    free_slots = ?L:readdReservedSlot(State#s.reserved_slot, State#s.free_slots),
-    reserved_slot = nil
-  };
-unsetReservation(State) ->
-  State.
 
 % returns erlang timer
 startSlotTimer(State, CurrentTime) ->
@@ -142,9 +142,8 @@ handleFrameEnd(State) ->
     false -> 
     debug(State#s.log, "sync time: ok", []),
       TransmissionSlot = transmissionSlot(State), 
-      TransmissionTimeOffset = 10,
       debug(State#s.log, "transmissionSlot: ~p", [TransmissionSlot]),
-      TimeTillTransmission = TransmissionTimeOffset 
+      TimeTillTransmission = ?TRANSMISSION_TIME_OFFSET 
         + ?U:timeTillTransmission(TransmissionSlot, ?U:currentTime(SyncManager)),
       debug(State#s.log, "TimeTillTransmission: ~p", [TimeTillTransmission]),
       State#s.sender ! {new_timer, TimeTillTransmission},
@@ -156,16 +155,17 @@ resetSlots(State) ->
   debug(State#s.log, "resetSlots", []),
   State#s{
     free_slots = ?L:new(?NUMBER_SLOTS),
-    reserved_slot = nil % todo: richtig?
+    reserved_slot = nil
   }.
 
 transmissionSlot(State) when State#s.reserved_slot == nil ->
+  % find a slot for use in current frame
   CurrentSlot = ?U:currentSlot(?U:currentTime(State#s.sync_manager)),
   FutureSlots = ?L:slotsAfter(CurrentSlot, State#s.free_slots),
   {Slot, _List} = ?L:reserveRandomSlot(FutureSlots),
   Slot;
 transmissionSlot(State) ->
-  debug(State#s.log, "have reserved_slot ", []),
+  debug(State#s.log, "having reserved_slot ", []),
   State#s.reserved_slot.
 
 log(Log, Msg, Args) ->

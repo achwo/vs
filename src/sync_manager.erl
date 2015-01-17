@@ -66,9 +66,9 @@ calculateNewOffset(Deviations) ->
   Sum = lists:sum(Deviations),
   Sum div length(Deviations).
 
-log(Log, Msg, Args) ->
-  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  log(Log, Module, Msg, Args).
+% log(Log, Msg, Args) ->
+%   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
+%   log(Log, Module, Msg, Args).
 
 debug(Log, Msg, Args) ->
   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
