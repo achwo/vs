@@ -2,8 +2,7 @@
 -export([start/0]).
 
 start() -> 
-	io:format ("------data_sink------"),
-	LogFile = lists:concat(["DataSink.log"]),
+	LogFile = "DataSink.log",
 	spawn(fun() -> loop(LogFile) end).
 
 loop(LogFile) ->
