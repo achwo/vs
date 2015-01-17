@@ -29,9 +29,9 @@ loop(State) ->
       loop(getCurrentTime(State, From));
     {sync} ->
       loop(sync(State));
-    Any ->
-      debug(State#s.log, "Received unknown message type: ~p", [Any]),
-      loop(State)
+    % Any ->
+    %   debug(State#s.log, "Received unknown message type: ~p", [Any]),
+    %   loop(State)
   end.
 
 addDeviation(State, StationType, Deviation)
