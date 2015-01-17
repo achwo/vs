@@ -108,7 +108,7 @@ isOwnReservationMessage(State, TransmissionSlot, TransmissionSlot) ->
   % is our own reservation
   State;
 isOwnReservationMessage(State, _PreviousSlot, _TransmissionSlot) ->
-  debug(State#s.log, "our reservation was overwritten!", []);
+  debug(State#s.log, "our reservation was overwritten!", []),
   State#s{ reserved_slot = nil }.
 
 handleCollision(State) ->
