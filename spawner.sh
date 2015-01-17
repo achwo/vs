@@ -3,6 +3,7 @@
 ./composer.sh build
 mkdir -p /tmp/spawner
 rm /tmp/spawner/*
+rm dbg.log
 # Spawn station A with zero offset
 
 ./startStations.sh eth0 224.0.0.8 15001 1 1 A 10 #> /tmp/spawner/a.log
