@@ -14,7 +14,12 @@ start([Interface, MulticastIP, PortInput, StationTypeInput, TimeDeviationInput])
 
   {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviationInput)),
   
-  Log = log:start(?DEBUG),
+  case StationType of
+    "A" -> File = "debug_a.log";
+    _ -> File = "debug_b.log"
+  end,
+
+  Log = log:start(File, ?DEBUG),
 
   %Show Info about Station
    outputScreen(MultiIP, IP, Port, StationType, TimeDeviation),

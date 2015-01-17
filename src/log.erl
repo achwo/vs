@@ -1,5 +1,5 @@
 -module(log).
--export([start/1, log/4, debug/4, nl/1]).
+-export([start/2, log/4, debug/4, nl/1]).
 
 
 log(Logger, Module, Msg, Args) ->
@@ -12,34 +12,36 @@ nl(Logger) ->
   Logger ! {nl}.
 
 
-start(Debug) ->
-  spawn(fun() -> loop(Debug) end).
+start(File, Debug) ->
+  spawn(fun() -> loop(File, Debug) end).
 
-loop(Debug) ->
+loop(File, Debug) ->
   receive
     {log, Module, Msg, Args} ->
-      processLog(Module, Msg, Args);
+      processLog(File, Module, Msg, Args);
     {debug, Module, Msg, Args} ->
-      processDebug(Module, Msg, Args, Debug);
+      processDebug(File, Module, Msg, Args, Debug);
     {nl} ->
-      processNl(Debug)
+      processNl(File, Debug)
   end,
-  loop(Debug).
+  loop(File, Debug).
 
-processLog(Module, Msg, Args) ->
-  write("[LOG] ", Module, Msg, Args).
+processLog(File, Module, Msg, Args) ->
+  write(File, "[LOG] ", Module, Msg, Args).
 
-processDebug(Module, Msg, Args, true) ->
-  write("[DEBUG] ", Module, Msg, Args);
-processDebug(_Module, _Msg, _Args, _Debug) ->
+processDebug(File, Module, Msg, Args, true) ->
+  write(File, "[DEBUG] ", Module, Msg, Args);
+processDebug(_File, _Module, _Msg, _Args, _Debug) ->
   ok.
 
-processNl(true) ->
+processNl(File, true) ->
+  file:write_file(File, io_lib:fwrite("~n", [])),
   io:format("~n", []);
-processNl(_) ->
+processNl(_, _) ->
   ok.
 
-write(Prefix, Module, Msg, Args) ->
+write(File, Prefix, Module, Msg, Args) ->
   ModuleString = io_lib:format("~p: ", [Module]),
   NewMsg = Prefix ++ ModuleString ++ Msg ++ "~n",
+  file:write_file(File, io_lib:fwrite(NewMsg, [Args])),
   io:format(NewMsg, Args).
