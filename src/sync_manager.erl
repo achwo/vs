@@ -11,7 +11,7 @@
 }).
 
 start(TimeOffset, Log) -> 
-  log(Log, "Initializing...", []),
+  % log(Log, "Initializing...", []),
   State = #s{
     offset = TimeOffset,
     log = Log
