@@ -1,20 +1,20 @@
--module(data_sink).
--export([start/0]).
+-module (data_sink).
+-export ([start/0]).
 
-start() -> 
-	LogFile = "DataSink.log",
-	spawn(fun() -> loop(LogFile) end).
+-define(LOG_PATH, "logs/").
 
-loop(LogFile) ->
-  receive 
-    {data, Data} -> data(Data, LogFile)
-  end,
-  loop(LogFile).
+start() ->
+  io:format("data_sink: starting logging process."),
+  spawn(fun() -> loop() end).
 
-data(Data, LogFile) ->
-  % io:fwrite("~p~n", [Data]),
-  log(LogFile, Data).
+loop() ->
+  receive
+    {data, Data} -> 
+      data(Data),
+      loop()
+  end.
 
-log(LogFile, Message) ->
-  NewMessage = lists:flatten(io_lib:format("~p", [Message])),
-  file:write_file(LogFile, io_lib:fwrite("~p~n", [NewMessage]), [append]).
+data(Data) ->
+  Text = io_lib:format("~s\n", [Data]),
+  FilePath = ?LOG_PATH ++ lists:sublist(Data, 1, 10) ++ ".log",
+  file:write_file(FilePath, [Text], [append]).

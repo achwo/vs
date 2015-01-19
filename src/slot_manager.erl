@@ -1,70 +1,95 @@
 -module(slot_manager).
--export([start/2]).
--import(log, [log/4, debug/4, nl/1]).
+-export([start/1]).
 
--define(NUMBER_SLOTS, 25).
--define(TRANSMISSION_TIME_OFFSET, 10).
 -define(U, util).
 -define(L, free_slot_list).
 
+-define(NUMBER_SLOTS, 25).
+-define(TRANSMISSION_DELAY, 10).
+
 -record(s, {
-  timer=nil, 
-  sender=nil, 
-  receiver=nil, 
-  sync_manager=nil,
-  reserved_slot=nil,
-  free_slots=nil,
-  transmission_slot=nil,
-  log
+  sync_manager,
+  sender,
+  receiver,
+  free_slots,
+  reserved_slot = nil,
+  timer = undefined,
+  send_slot
 }).
 
-start(SyncManager, Log) -> 
-  State = #s{
-    sync_manager=SyncManager,
-    log=Log
-  },
-  spawn(fun() -> init(State) end).
 
-init(State) when State#s.sender /= nil, State#s.receiver /= nil ->
-  log(State#s.log, "Initializing...", []),
-  random:seed(now()),
-  nl(State#s.log),
-  debug(State#s.log, "init done", []),
-  loop(resetSlots(startSlotTimer(State, ?U:currentTime(State#s.sync_manager))));
-init(State) ->
+start(SyncManager) ->
+  spawn(fun () -> getComponents(#s { sync_manager = SyncManager }) end).
+
+getComponents(State) ->
   receive
-    {set_sender, SenderPID}     -> init(State#s{sender=SenderPID});
-    {set_receiver, ReceiverPID} -> init(State#s{receiver=ReceiverPID})
-  end.
+    {set, Sender, Receiver} ->
+      NewState = State#s { 
+        sender = Sender,
+        receiver = Receiver 
+      }
+  end,
+  init(NewState).
+
+init(State) ->
+  T = ?U:currentTime(State#s.sync_manager),
+  random:seed(now()),
+  loop(resetSlots(startTimer(State, T))).
 
 loop(State) ->
-  receive 
-    {Sender, reserve_slot} -> loop(reserveRandomSlot(Sender, State));
-    {slot_end}           -> loop(slotEnd(State));
-    {slot_missed}        -> loop(slotMissed(State))
+  receive
+    {_Sender, reserve_slot} -> loop(reserveSlot(State));
+    {slot_missed}           -> loop(unsetReservation(State));
+    {slot_end}              -> loop(slotEnd(State))
   end.
 
-reserveRandomSlot(Sender, State) -> 
-  debug(State#s.log, "~p: reserveRandomSlot", [Sender]),
-  {Slot, List} = ?L:reserveRandomSlot(State#s.free_slots),
-  Sender ! {reserved_slot, Slot}, 
-  State#s{free_slots=List, reserved_slot=Slot}.
+reserveSlot(State) ->
+  {NextSlot, NewList} = ?L:reserveRandomSlot(State#s.free_slots),
+  State#s.sender ! {reserved_slot, NextSlot},
+  State#s { 
+    free_slots = NewList,
+    reserved_slot = NextSlot
+  }.
 
 slotEnd(State) -> 
-  nl(State#s.log),
-  debug(State#s.log, "slotEnd: ~p", [?U:currentSlot(?U:currentTime(State#s.sync_manager)) - 1]),
-  debug(State#s.log, "time: ~p", [?U:currentTime(State#s.sync_manager)]),
-  NewState = checkSlotInbox(State),
-  CurrentTime = ?U:currentTime(State#s.sync_manager),
-
-  case ?U:currentSlot(CurrentTime) of
-    1 -> NewNewState = handleFrameEnd(NewState);
-    _ -> NewNewState = NewState
+  State#s.receiver ! {slot_end},
+  receive
+    {no_message}          -> NewState = State;
+    {reserve_slot, Slot}  -> NewState = reserveSlot(State, Slot);
+    {collision}           -> NewState = collision(State)
   end,
-  startSlotTimer(NewNewState, CurrentTime).
+  T = ?U:currentTime(NewState#s.sync_manager),
+  CurrentSlot = ?U:currentSlot(T),
 
-slotMissed(State) ->
-  unsetReservation(State).
+  case CurrentSlot of
+    1 -> frameEnd(NewState, T);
+    _ -> startTimer(NewState, T)
+  end.
+
+reserveSlot(State, Slot) ->
+  case State#s.reserved_slot of
+    Slot -> 
+      case wasPreviousSlotOurSendSlot(State) of
+        false -> unsetReservation(State);
+        true  -> State
+      end;
+    _ ->
+      State#s{ free_slots = ?L:reserveSlot(Slot, State#s.free_slots) }
+  end.
+
+collision(State) ->
+  case wasPreviousSlotOurSendSlot(State) of
+    true  -> unsetReservation(State);
+    false -> State
+  end.
+
+wasPreviousSlotOurSendSlot(State) ->
+  TransmissionSlot = State#s.send_slot,
+
+  case ?U:previousSlot(?U:currentTime(State#s.sync_manager)) of 
+    TransmissionSlot  -> true;
+    _                 -> false
+  end.
 
 unsetReservation(State) when State#s.reserved_slot /= nil ->
   State#s{
@@ -74,117 +99,57 @@ unsetReservation(State) when State#s.reserved_slot /= nil ->
 unsetReservation(State) ->
   State.
 
-checkSlotInbox(State) ->
-  debug(State#s.log, "checkSlotInbox", []),
-  State#s.receiver ! {slot_end},
-  receive
-    {collision} ->
-      debug(State#s.log, "collision", []),
-      handleCollision(State);
-      % unsetReservation(State);
-    {no_message} ->
-      debug(State#s.log, "no message", []),
-      State;
-    {reserve_slot, Slot} -> % used by receiver
-      debug(State#s.log, "reserveSlot: ~p", [Slot]),
-      reserveSlot(Slot, State)
-  end.
+frameEnd(State, PreSyncT) ->
+  FrameBeforeSync = ?U:currentFrame(PreSyncT),
+  sync(State),
+  TimeAfterSync = ?U:currentTime(State#s.sync_manager),
+  FrameAfterSync = ?U:currentFrame(TimeAfterSync),
+  startTimer(
+    prepareFrame(State, FrameBeforeSync, FrameAfterSync, TimeAfterSync),
+    TimeAfterSync
+  ).
 
-reserveSlot(Slot, State) ->
-  debug(State#s.log, "reserveSlot: ~p", [Slot]),
+sync(State) ->
+  State#s.sync_manager ! {sync},
+  State#s.sync_manager ! {reset_deviations}.
 
-  case State#s.reserved_slot of
-    Slot -> % reservation of the slot we have reserved
-      CurrentTime = ?U:currentTime(State#s.sync_manager),
-      PreviousSlot = ?U:currentSlot(CurrentTime) - 1,
-      isOwnReservationMessage(State, PreviousSlot, State#s.transmission_slot);
-    _ ->
-      State#s{ free_slots = ?L:reserveSlot(Slot, State#s.free_slots) }
-  end.
-
-isOwnReservationMessage(State, 0, TransmissionSlot) ->
-  isOwnReservationMessage(State, 25, TransmissionSlot);
-isOwnReservationMessage(State, TransmissionSlot, TransmissionSlot) ->
-  % is our own reservation
+prepareFrame(State, FrameBeforeSync, FrameAfterSync, _)
+  when FrameBeforeSync > FrameAfterSync ->
   State;
-isOwnReservationMessage(State, _PreviousSlot, _TransmissionSlot) ->
-  debug(State#s.log, "our reservation was overwritten!", []),
-  State#s{ reserved_slot = nil }.
+prepareFrame(State, _PreSyncFrame, _PostSyncFrame, TimeAfterSync) ->
+  TransmissionSlot = sendSlot(State),
+  informSender(State, TransmissionSlot, TimeAfterSync),
+  NewState = resetSlots(State),
+  NewState#s { send_slot = TransmissionSlot }.
 
-handleCollision(State) ->
-  CurrentTime = ?U:currentTime(State#s.sync_manager),
-  PreviousSlot = ?U:currentSlot(CurrentTime) - 1,
-  collisionWithOwnMessage(State, State#s.transmission_slot, PreviousSlot).
+sendSlot(State) ->
+  case State#s.reserved_slot of
+    nil -> 
+      CurrentSlot = ?U:currentSlot(?U:currentTime(State#s.sync_manager)),
+      FreeSlots = ?L:slotsAfter(CurrentSlot, State#s.free_slots),
+      {Slot, _List} = ?L:reserveRandomSlot(FreeSlots);
+    _ -> 
+      Slot = State#s.reserved_slot
+  end,
+  Slot.
 
-collisionWithOwnMessage(State, Slot, 0) ->
-  collisionWithOwnMessage(State, Slot, 25);
-collisionWithOwnMessage(State, Slot, Slot) 
-  when State#s.reserved_slot /= nil ->
-  % collsion with our message -> void reservation
-  unsetReservation(State);
-collisionWithOwnMessage(State, _, _) -> 
-  State.
+informSender(_Context, nil, _T) ->
+  ok;
+informSender(State, Slot, T) ->
+  WaitTime = ?TRANSMISSION_DELAY + ?U:timeTillTransmission(Slot, T),
+  State#s.sender ! {new_timer, WaitTime}.
 
-% returns erlang timer
-startSlotTimer(State, CurrentTime) ->
-  debug(State#s.log, "startSlotTimer", []),
+startTimer(State, CurrentTime) ->
   case State#s.timer of
-    nil -> ok;
+    undefined -> ok;
     _ -> erlang:cancel_timer(State#s.timer)
   end,
   WaitTime = ?U:timeTillNextSlot(CurrentTime),
-  debug(State#s.log, "currentTime: ~p", [CurrentTime]),
   State#s{timer=erlang:send_after(WaitTime, self(), {slot_end})}.
 
-% Changes ReservedSlot, FreeSlotList
-handleFrameEnd(State) ->
-  debug(State#s.log, "handleFrameEnd", []),
-  SyncManager = State#s.sync_manager,
-
-  FrameBeforeSync = ?U:currentFrame(?U:currentTime(SyncManager)),
-  SyncManager ! {sync},
-  SyncManager ! {reset_deviations},
-  FrameAfterSync = ?U:currentFrame(?U:currentTime(SyncManager)),
-
-  debug(State#s.log, "FrameSyncDiff: ~p", [FrameAfterSync - FrameBeforeSync]),
-  case FrameBeforeSync > FrameAfterSync of 
-    true -> 
-    debug(State#s.log, "sync time: old frame", []),
-      % because of sync we are still in the old frame
-      State;
-    false -> 
-    debug(State#s.log, "sync time: ok", []),
-      TransmissionSlot = transmissionSlot(State), 
-      debug(State#s.log, "transmissionSlot: ~p", [TransmissionSlot]),
-      TimeTillTransmission = ?TRANSMISSION_TIME_OFFSET 
-        + ?U:timeTillTransmission(TransmissionSlot, ?U:currentTime(SyncManager)),
-      debug(State#s.log, "TimeTillTransmission: ~p", [TimeTillTransmission]),
-      State#s.sender ! {new_timer, TimeTillTransmission},
-      NewState = resetSlots(State),
-      NewState#s {transmission_slot = TransmissionSlot}
-  end.
-
+% resets the list of free slots
 resetSlots(State) ->
-  debug(State#s.log, "resetSlots", []),
-  State#s{
+  State#s {
     free_slots = ?L:new(?NUMBER_SLOTS),
     reserved_slot = nil
   }.
-
-transmissionSlot(State) when State#s.reserved_slot == nil ->
-  % find a slot for use in current frame
-  CurrentSlot = ?U:currentSlot(?U:currentTime(State#s.sync_manager)),
-  FutureSlots = ?L:slotsAfter(CurrentSlot, State#s.free_slots),
-  {Slot, _List} = ?L:reserveRandomSlot(FutureSlots),
-  Slot;
-transmissionSlot(State) ->
-  debug(State#s.log, "having reserved_slot ", []),
-  State#s.reserved_slot.
-
-log(Log, Msg, Args) ->
-  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  log(Log, Module, Msg, Args).
-
-debug(Log, Msg, Args) ->
-  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  debug(Log, Module, Msg, Args).

@@ -1,6 +1,15 @@
 -module(receiver).
--export([start/7]).
--import(log, [log/4, debug/4]).
+-export([start/6]).
+
+-define(U, util).
+
+-record(s, {
+  sync_manager,
+  slot_manager,
+  sink,
+  msg,
+  msg_count = 0
+}).
 
 -record(m, {
   data,
@@ -10,57 +19,44 @@
   receive_time
 }).
 
--record(s, {
-  sink,
-  slot_manager,
-  sync_manager,
-  interface,
-  multicast_ip,
-  port,
-  msg=nil,
-  msg_count=0,
-  log
-}).
-
-start(Sink, SlotManager, SyncManager, Interface, MultiIP, Port, Log) ->
-  State = #s{
-    sink=Sink,
-    slot_manager=SlotManager,
-    sync_manager=SyncManager,
-    interface=Interface,
-    multicast_ip=MultiIP,
-    port=Port,
-    log=Log
-  },
-  spawn(fun() -> init(State) end).
-
-init(State) ->
-  log(State#s.log, "Initializing...", []),
-  Receiver = self(),
+start(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
   spawn(fun() -> 
-    socketInit(Receiver, State#s.interface, State#s.multicast_ip, State#s.port) 
-  end),
+    init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) end).
+
+init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
+  State = #s{
+    sync_manager = SyncManager,
+    slot_manager = SlotManager,
+    sink = Sink
+  },
+  udp_proc:start(self(), Interface, MultiIP, Port),
   loop(State).
 
 loop(State) ->
   receive 
-    {message, Data, StationType, Slot, SendTime} -> 
-      debug(State#s.log, "message", []),
-      NewState = State#s{
-        msg = #m{
-          data = Data,
-          station_type = StationType,
-          slot = Slot,
-          send_time = SendTime,
-          receive_time = util:currentTime(State#s.sync_manager)
-        },
-        msg_count = State#s.msg_count + 1
-      },
-      loop(NewState);
-    {slot_end} -> 
-      debug(State#s.log, "slot_end", []),
-      loop(slotEnd(State))
+    {message, Data, StationType, Slot, SendTime} ->
+      loop(message(Data, StationType, Slot, SendTime, State));
+    {slot_end} ->
+      loop(slotEnd(State));
+    Any ->
+      loop(unknown(Any, State))
   end.
+
+message(Data, StationType, Slot, SendTime, State) ->
+  State#s{
+    msg = #m{
+      data = Data,
+      station_type = StationType,
+      slot = Slot,
+      send_time = SendTime,
+      receive_time = ?U:currentTime(State#s.sync_manager)
+    },
+    msg_count = State#s.msg_count + 1
+  }.
+
+unknown(Any, State) ->
+  io:fwrite("Received unknown message ~p~n", [Any]),
+  State.
 
 slotEnd(State) ->
   case State#s.msg_count of
@@ -82,34 +78,6 @@ slotEnd(State) ->
 
 reset(State) ->
   State#s{
-    msg = nil,
+    msg = undefined,
     msg_count = 0
   }.
-
-socketInit(Parent, Interface, MultiIP, Port) ->
-  Socket = werkzeug:openRec(MultiIP, Interface, Port),
-  gen_udp:controlling_process(Socket, self()),
-  socketLoop(Parent, Socket).
-
-socketLoop(Parent, Socket) ->
-  {ok, {_Address, _Port, Packet}} = gen_udp:recv(Socket, 0),
-  <<StationType:1/binary,
-    Data:24/binary,
-    Slot:8/integer,
-    SendTime:64/integer-big>> = Packet,
-
-  Parent ! {message,
-    binary_to_list(Data),
-    binary_to_list(StationType),
-    Slot,
-    SendTime
-  },
-  socketLoop(Parent, Socket).
-
-log(Log, Msg, Args) ->
-  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  log(Log, Module, Msg, Args).
-
-debug(Log, Msg, Args) ->
-  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  debug(Log, Module, Msg, Args).

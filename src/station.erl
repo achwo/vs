@@ -1,71 +1,38 @@
 -module(station).
 -export([start/1]).
 
--define(DEBUG, true).
+start([InterfaceAtom, MulticastIPAtom, PortAtom, StationTypeAtom]) ->
+  start([InterfaceAtom, MulticastIPAtom, PortAtom, StationTypeAtom, '0']);
+start([InterfaceAtom, MulticastIPAtom, PortAtom, StationTypeAtom, TimeDeviationAtom]) ->
+  IP = ip(atom_to_list(InterfaceAtom)),
+  {ok,MultiIP} = inet_parse:address(atom_to_list(MulticastIPAtom)),
+  {Port,_Unused} = string:to_integer(atom_to_list(PortAtom)),
+  StationType = atom_to_list(StationTypeAtom),
+  {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviationAtom)),
 
-start([Interface, MulticastIP, Port, StationType]) ->
-  start([Interface, MulticastIP, Port, StationType, '0']);
+  SyncManager = sync_manager:start(TimeDeviation),
+  SlotManager = slot_manager:start(SyncManager),
+  DataSource = data_source:start(),
+  Sender = sender:start(SyncManager, SlotManager, IP, MultiIP, Port, StationType),
 
-start([Interface, MulticastIP, PortInput, StationTypeInput, TimeDeviationInput]) ->
-  IP = ipByInterfaceName(atom_to_list(Interface)),
-  {ok,MultiIP} = inet_parse:address(atom_to_list(MulticastIP)),
-  {Port,_Unused} = string:to_integer(atom_to_list(PortInput)),
-  StationType = atom_to_list(StationTypeInput),
+  DataSink = data_sink:start(),
+  Receiver = receiver:start(DataSink, SlotManager, SyncManager, IP, MultiIP, Port),
 
-  {TimeDeviation, _Unused} = string:to_integer(atom_to_list(TimeDeviationInput)),
-  
-  case StationType of
-    "A" -> File = "debug_a.log";
-    _ -> File = "debug_b.log"
-  end,
+  DataSource ! {set_listener, Sender},
+  SlotManager ! {set, Sender, Receiver}.
 
-  Log = log:start(File, ?DEBUG),
-
-  %Show Info about Station
-   outputScreen(MultiIP, IP, Port, StationType, TimeDeviation),
-
-  %Manager initialisation...  
-   SyncManager = sync_manager:start(TimeDeviation, Log),
-   SlotManager = slot_manager:start(SyncManager, Log),
-
-  %Sender initialisation...
-   DataSource = data_source:start(),
-   Sender = sender:start(SyncManager, SlotManager, IP, 
-    MultiIP, Port, StationType, Log),
-
-   DataSource ! {set_listener, Sender},
-   SlotManager ! {set_sender, Sender},
-
-  %Receiver initialisation...
-   DataSink = data_sink:start(),
-   Receiver = receiver:start(DataSink, SlotManager, 
-    SyncManager, IP, MultiIP, Port, Log),
-
-   SlotManager ! {set_receiver, Receiver}.
-
-ipByInterfaceName(InterfaceName) ->
+ip(InterfaceName) ->
   {ok, Interfaces} = inet:getifaddrs(),
   Data = proplists:get_value(InterfaceName, Interfaces),
   Addrs = proplists:lookup_all(addr, Data),
-  {ok, Addr} = getIP(Addrs),
+  {ok, Addr} = ip4Address(Addrs),
   Addr.
 
-getIP([{addr, Addr}|Addrs]) ->
+ip4Address([{addr, Addr}|Addrs]) ->
   AddrString = inet:ntoa(Addr),
-  getIP(inet:parse_ipv4_address(AddrString), Addrs).
+  ip4Address(inet:parse_ipv4_address(AddrString), Addrs).
 
-getIP({error, einval}, Addrs) ->
-  getIP(Addrs);
-getIP(Addr, _Addrs) ->
+ip4Address({error, einval}, Addrs) ->
+  ip4Address(Addrs);
+ip4Address(Addr, _Addrs) ->
   Addr.
-
-outputScreen(MultiIP, Interface, Port, StationType, TimeDeviation) ->
-  io:format("~n~n"),
-  io:format("====================================================~n"),
-  io:format("Multicast IP  : ~p~n", [MultiIP]),
-  io:format("Interface     : ~p~n", [Interface]),
-  io:format("ListenPort    : ~p~n", [Port]),
-  io:format("StationType   : ~p~n", [StationType]),
-  io:format("Time Deviation: ~p~n", [TimeDeviation]),
-  io:format("====================================================~n~n").
-  

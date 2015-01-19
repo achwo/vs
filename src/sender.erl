@@ -1,45 +1,40 @@
 -module(sender).
--export([start/7]).
--import(log, [log/4, debug/4]).
+-export([start/6]).
 
+-define(DELAY_TOLERANCE_MS, 20).
 -define(U, util).
--define(DELAY_TOLERANCE_IN_MS, 20).
 
 -record(s, {
-  sync_manager=nil,
-  slot_manager=nil,
-  interface=nil,
-  multicast_ip=nil,
-  port=nil,
-  station_type=nil,
-  data=nil,
-  timer=nil,
-  send_time=nil,
-  socket=nil,
-  log=nil
+  sync_manager,
+  slot_manager,
+  multicast_ip,
+  port,
+  station_type,
+  data,
+  timer,
+  send_time,
+  socket
 }).
 
+start(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
+  spawn(fun() -> init(
+    SyncManager, SlotManager, Interface, MultiIP, Port, StationType
+  ) end).
 
-start(SyncManager, SlotManager, Interface, MulticastIP, Port, StationType, Log) ->
-  spawn(fun() -> 
-    init(SyncManager, SlotManager, Interface, MulticastIP, 
-      Port, StationType, Log) end).
-
-init(SyncManager, SlotManager, Interface, MulticastIP, Port, StationType, Log) ->
+init(SyncManager, SlotManager, Interface, MultiIP, Port, StationType) ->
+  Socket = werkzeug:openSe(Interface, Port),
   State = #s{
-    sync_manager=SyncManager, 
-    slot_manager=SlotManager,
-    interface=Interface,
-    multicast_ip=MulticastIP,
-    port=Port,
-    station_type=StationType,
-    socket = werkzeug:openSe(Interface, Port),
-    log=Log
+    socket = Socket,
+    multicast_ip = MultiIP,
+    port = Port,
+    sync_manager = SyncManager,
+    slot_manager = SlotManager,
+    station_type = StationType
   },
   loop(State).
 
 loop(State) ->
-  receive 
+  receive
     {data, IncomingData}  -> loop(data(State, IncomingData));
     {new_timer, WaitTime} -> loop(newTimer(State, WaitTime));
     {reserved_slot, Slot} -> loop(reservedSlot(State, Slot));
@@ -52,53 +47,43 @@ data(State, IncomingData) ->
 newTimer(State, WaitTime) ->
   cancelTimer(State#s.timer),
   State#s{
-    timer=createTimer(WaitTime, {send}),
-    send_time=?U:currentTime(State#s.sync_manager) + WaitTime
+    timer = createTimer(WaitTime, {send}),
+    send_time = ?U:currentTime(State#s.sync_manager) + WaitTime
   }.
-
-reservedSlot(State, Slot) ->
-  doSend(State, ?U:currentTime(State#s.sync_manager), Slot),
-  State.
 
 send(State) ->
   State#s.slot_manager ! {self(), reserve_slot},
   State.
 
-doSend(State, CurrentTime, Slot)
-when CurrentTime < abs(State#s.send_time) + ?DELAY_TOLERANCE_IN_MS ->
-  Packet = buildPackage(State, Slot),
-  ok = gen_udp:send(State#s.socket, State#s.multicast_ip, State#s.port, Packet);
-doSend(State, _CurrentTime, _Slot) ->
-  State#s.slot_manager ! {slot_missed}.
-
-buildPackage(State, _Slot) when State#s.data == nil -> 
-  debug(State#s.log, "No Data for Package!", []),
-  State#s.slot_manager ! {slot_missed};
-buildPackage(State, Slot) ->
-  DataForPackage = list_to_binary(State#s.data),
-  StationTypeForPackage = list_to_binary(State#s.station_type),
-  Timestamp = ?U:currentTime(State#s.sync_manager),
-
-  <<StationTypeForPackage:1/binary,
-    DataForPackage:24/binary,
-    Slot:8/integer,
-    Timestamp:64/integer-big>>.
-
+reservedSlot(State, Slot) ->
+  SendTime = State#s.send_time,
+  CurrentTime = ?U:currentTime(State#s.sync_manager),
+  doSend(State, SendTime, CurrentTime, Slot),
+  State.
 
 createTimer(WaitTime, Msg) when WaitTime < 0 ->
   createTimer(0, Msg);
 createTimer(WaitTime, Msg) ->
   erlang:send_after(WaitTime, self(), Msg).
 
-cancelTimer(nil) ->
-  ok;
-cancelTimer(Timer) ->
-  erlang:cancel_timer(Timer).
+cancelTimer(undefined) -> ok;
+cancelTimer(Timer) -> erlang:cancel_timer(Timer).
 
-% log(Log, Msg, Args) ->
-%   {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-%   log(Log, Module, Msg, Args).
+doSend(State, SendTime, CurrentTime, Slot)
+when CurrentTime < abs(SendTime) + ?DELAY_TOLERANCE_MS ->
+  Packet = buildPacket(State, Slot),
+  ok = gen_udp:send(State#s.socket, State#s.multicast_ip, State#s.port, Packet);
+doSend(State, _, _, _) ->
+  State#s.slot_manager ! {slot_missed}.
 
-debug(Log, Msg, Args) ->
-  {_, {Module, _Function, _Arity}} = process_info(self(), current_function),
-  debug(Log, Module, Msg, Args).
+buildPacket(State, _) when State#s.data == undefined ->
+  State#s.slot_manager ! {slot_missed}; 
+buildPacket(State, Slot) ->
+  Data = list_to_binary (State#s.data),
+  StationType = list_to_binary (State#s.station_type),
+  SendTime = ?U:currentTime(State#s.sync_manager),
+
+  <<StationType:1/binary,
+    Data:24/binary,
+    Slot:8/integer,
+    SendTime:64/integer-big>>.
