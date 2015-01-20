@@ -1,0 +1,2 @@
+- sync koennte reset_deviations evtl verschlucken
+- collision detection: 2 nachrichten, die vllt teilweise aus anderem slot kommt 

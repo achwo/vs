@@ -1,4 +1,4 @@
--module(udp_proc).
+-module(rcv).
 -export([start/4]).
 
 start(Parent, Interface, MultiIP, Port) ->

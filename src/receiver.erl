@@ -29,7 +29,7 @@ init(Sink, SlotManager, SyncManager, Interface, MultiIP, Port) ->
     slot_manager = SlotManager,
     sink = Sink
   },
-  udp_proc:start(self(), Interface, MultiIP, Port),
+  rcv:start(self(), Interface, MultiIP, Port),
   loop(State).
 
 loop(State) ->
